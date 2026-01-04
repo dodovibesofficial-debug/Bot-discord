@@ -6636,7 +6636,7 @@ setTimeout(sendRozliczeniaMessage, 5000);
 // FULL MONITORING MODE - System statusów i alertów
 // ---------------------------------------------------
 
-const fetch = require("node-fetch");
+const https = require('https');
 
 let startTime = Date.now();
 let lastPingCheck = Date.now();
@@ -6660,22 +6660,41 @@ async function sendMonitoringEmbed(title, description, color) {
   if (!webhookUrl) return;
 
   try {
-    await fetch(webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        embeds: [{
-          title: title,
-          description: description,
-          color: color,
-          timestamp: new Date().toISOString(),
-          footer: {
-            text: "Majkel Bot Monitoring System",
-            icon_url: client.user?.displayAvatarURL()
-          }
-        }]
-      })
+    const payload = JSON.stringify({
+      embeds: [{
+        title: title,
+        description: description,
+        color: color,
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: "Majkel Bot Monitoring System",
+          icon_url: client.user?.displayAvatarURL()
+        }
+      }]
     });
+
+    const url = new URL(webhookUrl);
+    const options = {
+      hostname: url.hostname,
+      path: url.pathname + url.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      res.on('data', () => {});
+      res.on('end', () => {});
+    });
+
+    req.on('error', (err) => {
+      console.error("Błąd wysyłania monitoringu:", err);
+    });
+
+    req.write(payload);
+    req.end();
   } catch (err) {
     console.error("Błąd wysyłania monitoringu:", err);
   }
@@ -6750,21 +6769,40 @@ setInterval(async () => {
 
   try {
     const startTime = Date.now();
-    const res = await fetch("https://bot-discord-hixl.onrender.com", { 
-      method: "GET"
-    });
-    const responseTime = Date.now() - startTime;
+    
+    const options = {
+      hostname: 'bot-discord-hixl.onrender.com',
+      path: '/',
+      method: 'GET'
+    };
 
-    if (res.ok) {
-      const description = `🌐 **Monitor HTTP:** Aktywny\n📡 **Response time:** ${responseTime}ms\n📊 **Status:** HTTP ${res.status}`;
-      await sendMonitoringEmbed("🟢 Monitor HTTP - OK", description, 0x00ff00);
-    } else {
-      const description = `🟠 **Monitor HTTP:** Nieoczekiwana odpowiedź\n📊 **Status:** HTTP ${res.status}\n⏱ **Response time:** ${responseTime}ms`;
-      await sendMonitoringEmbed("🟠 Monitor HTTP - Ostrzeżenie", description, 0xffaa00);
-    }
+    const req = https.request(options, (res) => {
+      const responseTime = Date.now() - startTime;
+      
+      if (res.statusCode === 200) {
+        const description = `🌐 **Monitor HTTP:** Aktywny\n📡 **Response time:** ${responseTime}ms\n📊 **Status:** HTTP ${res.statusCode}`;
+        sendMonitoringEmbed("🟢 Monitor HTTP - OK", description, 0x00ff00);
+      } else {
+        const description = `🟠 **Monitor HTTP:** Nieoczekiwana odpowiedź\n📊 **Status:** HTTP ${res.statusCode}\n⏱ **Response time:** ${responseTime}ms`;
+        sendMonitoringEmbed("🟠 Monitor HTTP - Ostrzeżenie", description, 0xffaa00);
+      }
+    });
+
+    req.on('error', (err) => {
+      const description = `🔴 **Monitor HTTP:** Brak odpowiedzi\n**Błąd:** ${err.message}\n**Czas:** ${new Date().toLocaleString("pl-PL")}`;
+      sendMonitoringEmbed("🔴 Monitor HTTP - Błąd", description, 0xff0000);
+    });
+
+    req.setTimeout(10000, () => {
+      req.destroy();
+      const description = `🔴 **Monitor HTTP:** Timeout\n**Czas:** ${new Date().toLocaleString("pl-PL")}`;
+      sendMonitoringEmbed("🔴 Monitor HTTP - Timeout", description, 0xff0000);
+    });
+
+    req.end();
   } catch (err) {
-    const description = `🔴 **Monitor HTTP:** Brak odpowiedzi\n**Błąd:** ${err.message}\n**Czas:** ${new Date().toLocaleString("pl-PL")}`;
-    await sendMonitoringEmbed("🔴 Monitor HTTP - Błąd", description, 0xff0000);
+    const description = `🔴 **Monitor HTTP:** Błąd sprawdzania\n**Błąd:** ${err.message}\n**Czas:** ${new Date().toLocaleString("pl-PL")}`;
+    sendMonitoringEmbed("🔴 Monitor HTTP - Błąd", description, 0xff0000);
   }
 }, 10 * 60 * 1000); // co 10 minut
 
