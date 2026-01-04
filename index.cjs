@@ -6771,8 +6771,7 @@ client.on('messageCreate', async (message) => {
         await message.author.send({
           content: `❌ Na kanale <#${ROZLICZENIA_CHANNEL_ID}> można używać tylko komend rozliczeń!\n\n` +
                    `Dostępne komendy:\n` +
-                   `• \`/rozliczenie [kwota]\` - dodaj sprzedaż\n` +
-                   `• Inne komendy rozliczeń (dla właściciela)`
+                   `• \`/rozliczenie [kwota]\` - dodaj sprzedaż`
         });
       } catch (err) {
         console.error("Błąd usuwania wiadomości z kanału rozliczeń:", err);
