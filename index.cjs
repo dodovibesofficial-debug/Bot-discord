@@ -6618,3 +6618,8 @@ setTimeout(sendRozliczeniaMessage, 5000);
 client
   .login(process.env.BOT_TOKEN)
   .catch((err) => console.error("Discord Login Error:", err));
+const express = require('express');
+const app = express();
+app.get('/', (req, res) => res.send('Bot is alive'));
+app.listen(3000);
+
