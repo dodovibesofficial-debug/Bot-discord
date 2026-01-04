@@ -2688,12 +2688,12 @@ async function handleZakonczTicketCommand(interaction) {
   ];
 
   for (const roleId of limitRoles) {
-      await interaction.channel.permissionOverwrites.edit(roleId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true
-      }).catch(() => null);
-    }
+    await interaction.channel.permissionOverwrites.edit(roleId, {
+      ViewChannel: true,
+      SendMessages: true,
+      ReadMessageHistory: true
+    }).catch(() => null);
+  }
 
   // Wyślij wiadomość na kanale ticketu
   const embed = new EmbedBuilder()
@@ -4429,6 +4429,23 @@ async function handleModalSubmit(interaction) {
             PermissionsBitField.Flags.ReadMessageHistory,
           ],
         },
+        // Dodaj rangi limitów
+        {
+          id: "1449448705563557918", // limit 20
+          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory]
+        },
+        {
+          id: "1449448702925209651", // limit 50
+          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory]
+        },
+        {
+          id: "1449448686156255333", // limit 100
+          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory]
+        },
+        {
+          id: "1449448860517798061", // limit 200
+          allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory]
+        }
       ],
     };
     if (ticketTopic) createOptions.topic = ticketTopic;
