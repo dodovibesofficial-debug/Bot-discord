@@ -3396,13 +3396,65 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
       }
     }
 
-    // Przywróć standardowe uprawnienia
-    await ch.permissionOverwrites.set([
-      {
-        id: interaction.guild.roles.everyone,
-        allow: [] // @everyone ma / (neutral permissions) po odprzejmowaniu
+    // Przywróć uprawnienia w zależności od oryginalnej kategorii
+    if (ticketData.originalCategoryId) {
+      const categoryId = ticketData.originalCategoryId;
+      
+      // Zakup 0-20 - wszystkie rangi widzą
+      if (categoryId === "1449526840942268526") {
+        await ch.permissionOverwrites.set([
+          { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        ]);
       }
-    ]);
+      // Zakup 20-50 - limit 20 nie widzi
+      else if (categoryId === "1449526958508474409") {
+        await ch.permissionOverwrites.set([
+          { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        ]);
+      }
+      // Zakup 50-100 - limit 20 i 50 nie widzą
+      else if (categoryId === "1449451716129984595") {
+        await ch.permissionOverwrites.set([
+          { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        ]);
+      }
+      // Zakup 100-200 - tylko limit 200 widzi
+      else if (categoryId === "1449452354201190485") {
+        await ch.permissionOverwrites.set([
+          { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        ]);
+      }
+      // Sprzedaż - wszystkie rangi widzą
+      else if (categoryId === "1449455848043708426") {
+        await ch.permissionOverwrites.set([
+          { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        ]);
+      }
+      // Inne - wszystkie rangi widzą
+      else if (categoryId === "1449527585271976131") {
+        await ch.permissionOverwrites.set([
+          { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        ]);
+      }
+    }
 
     // Przywróć dostęp właścicielowi ticketu
     if (ticketData && ticketData.userId) {
@@ -4271,7 +4323,7 @@ async function handleModalSubmit(interaction) {
           .setDescription(
             `### **ZAKUP ITY × ${ticketTypeLabel}**\n\n` +
             `### ・ \`👤\` × Informacje o kliencie:\n` +
-            `> \`➖\` **× Ping:** <@${user.id}>\n` +
+            `> \`➖\` **× Ping:** @everyone\n` +
             `> \`➖\` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
             `> \`➖\` × **ID:** \`${user.id}\`\n\n` +
             `### ・ \`📋\` × Informacje z formularza:\n` +
@@ -4495,7 +4547,7 @@ async function handleModalSubmit(interaction) {
       .setDescription(
         `## \`🛒 NEW SHOP × ${ticketTypeLabel}\`\n\n` +
         `### ・ \`👤\` × Informacje o kliencie:\n` +
-        `> \`➖\` **× Ping:** <@${user.id}>\n` +
+        `> \`➖\` **× Ping:** @everyone\n` +
         `> \`➖\` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
         `> \`➖\` × **ID:** \`${user.id}\`\n` +
         `### ・ \`📋\` × Informacje z formularza:\n` +
