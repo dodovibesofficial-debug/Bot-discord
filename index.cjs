@@ -1779,8 +1779,8 @@ async function handleRozliczenieCommand(interaction) {
   userData.lastUpdate = Date.now();
 
   const embed = new EmbedBuilder()
-    .setColor(0x00ff00)
-    .setTitle("💱 Rozliczenie dodane")
+    .setColor(COLOR_BLUE)
+    .setTitle("\`💱\` Rozliczenie dodane")
     .setDescription(
       `> 👤 **Użytkownik:** <@${userId}>\n` +
       `> \`✅\` × **Dodano sprzedaż:** ${kwota.toLocaleString("pl-PL")} zł\n` +
