@@ -2679,6 +2679,22 @@ async function handleZakonczTicketCommand(interaction) {
     return;
   }
 
+  // Dodaj uprawnienia dla ról limitów
+  const limitRoles = [
+    "1449448705563557918", // limit 20
+    "1449448702925209651", // limit 50
+    "1449448686156255333", // limit 100
+    "1449448860517798061"  // limit 200
+  ];
+
+  for (const roleId of limitRoles) {
+      await interaction.channel.permissionOverwrites.edit(roleId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true
+      }).catch(() => null);
+    }
+
   // Wyślij wiadomość na kanale ticketu
   const embed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
