@@ -1922,7 +1922,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
       .setColor(COLOR_BLUE)
       .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
       .setDescription(
-        reportLines.join('\n\n') + '\n\n' +
+        reportLines.join('\n') + '\n\n' +
         `> \`📱\` **Przelew na numer:** 880 260 392\n` +
         `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n` +
         `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`
@@ -2025,15 +2025,20 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   // Znajdź użytkownika w raporcie po embedzie
   const existingEmbed = reportMessage.embeds[0];
   const description = existingEmbed.description;
-  const userLine = description.split('\n').find(line => line.includes(`<@${userId}>`));
   
-  if (!userLine) {
+  // Sprawdź czy użytkownik jest w weeklySales zamiast szukać w embedzie
+  if (!weeklySales.has(userId)) {
     await interaction.reply({
       content: "❌ Ten użytkownik nie ma rozliczeń w raporcie tygodniowym!",
       ephemeral: true
     });
     return;
   }
+  
+  // Pobierz nazwę użytkownika do sprawdzenia w embedzie
+  const user = client.users.cache.get(userId);
+  const userName = user ? user.username : `Użytkownik${userId}`;
+  const userLine = description.split('\n').find(line => line.includes(userName));
 
   // Zaktualizuj status płatności - zmień emoji z ❌ na ✅ dla tej osoby
   if (!paymentStatus.has(userId)) {
@@ -2063,7 +2068,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     .setColor(COLOR_BLUE)
     .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
     .setDescription(
-      reportLines.join('\n\n') + '\n\n' +
+      reportLines.join('\n') + '\n\n' +
       `> \`📱\` **Przelew na numer:** 880 260 392\n` +
       `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n` +
       `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`
