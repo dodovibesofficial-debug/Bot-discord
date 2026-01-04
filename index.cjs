@@ -3239,7 +3239,7 @@ async function ticketClaimCommon(interaction, channelId) {
       console.error("Nie znaleziono kategorii TICKETY PRZEJĘTE (1457446529395593338)");
     }
 
-    // Ustaw uprawnienia tylko dla osoby przejmującej
+    // Ustaw uprawnienia tylko dla osoby przejmującej + usuń limity kategorii
     await ch.permissionOverwrites.set([
       {
         id: claimerId,
@@ -3250,6 +3250,25 @@ async function ticketClaimCommon(interaction, channelId) {
         deny: [PermissionFlagsBits.ViewChannel] // @everyone nie widzi gdy ktoś przejmie
       }
     ]);
+
+    // Usuń limity kategorii dla kanału
+    const limitCategories = [
+      "1449448705563557918", // limit 20
+      "1449448702925209651", // limit 50
+      "1449448686156255333", // limit 100
+      "1449448860517798061"  // limit 200
+    ];
+
+    for (const categoryId of limitCategories) {
+      const category = await client.channels.fetch(categoryId).catch(() => null);
+      if (category && category.type === ChannelType.GuildCategory) {
+        await category.permissionOverwrites.edit(ch.id, {
+          ViewChannel: false,
+          SendMessages: false,
+          ReadMessageHistory: false
+        }).catch(() => null);
+      }
+    }
 
     // Jeśli właściciel ticketu istnieje, zabierz mu dostęp
     if (ticketData && ticketData.userId) {
@@ -4384,7 +4403,7 @@ async function handleModalSubmit(interaction) {
       permissionOverwrites: [
         {
           id: interaction.guild.id,
-          allow: [], // @everyone ma / (neutral permissions)
+          deny: [PermissionsBitField.Flags.ViewChannel], // @everyone nie widzi ticketów
         },
         {
           id: interaction.user.id,
