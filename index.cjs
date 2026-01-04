@@ -1816,6 +1816,15 @@ async function handleSlashCommand(interaction) {
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
+  // Sprawdź czy komenda jest używana na właściwym kanale
+  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
+    await interaction.reply({
+      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
+      ephemeral: true
+    });
+    return;
+  }
+
   const kwota = interaction.options.getInteger("kwota");
   const userId = interaction.user.id;
 
@@ -1850,6 +1859,9 @@ async function handleRozliczenieCommand(interaction) {
 
   await interaction.reply({ embeds: [embed] });
   console.log(`Użytkownik ${userId} dodał rozliczenie: ${kwota} zł`);
+  
+  // Odśwież wiadomość ROZLICZENIA TYGODNIOWE po dodaniu rozliczenia
+  setTimeout(sendRozliczeniaMessage, 1000);
 }
 
 // Handler dla komendy /rozliczeniezakoncz
@@ -6749,9 +6761,25 @@ async function checkWeeklyReset() {
 client.on('messageCreate', async (message) => {
   // Ignoruj wiadomości od botów
   if (message.author.bot) return;
-
+  
   // Sprawdź czy wiadomość jest na kanale rozliczeń
   if (message.channelId === ROZLICZENIA_CHANNEL_ID) {
+    // Jeśli to nie jest komenda rozliczenia, usuń wiadomość
+    if (!message.content.startsWith('/rozliczenie')) {
+      try {
+        await message.delete();
+        await message.author.send({
+          content: `❌ Na kanale <#${ROZLICZENIA_CHANNEL_ID}> można używać tylko komend rozliczeń!\n\n` +
+                   `Dostępne komendy:\n` +
+                   `• \`/rozliczenie [kwota]\` - dodaj sprzedaż\n` +
+                   `• Inne komendy rozliczeń (dla właściciela)`
+        });
+      } catch (err) {
+        console.error("Błąd usuwania wiadomości z kanału rozliczeń:", err);
+      }
+      return;
+    }
+    
     // Odśwież wiadomość ROZLICZENIA TYGODNIOWE
     setTimeout(sendRozliczeniaMessage, 1000); // Małe opóźnienie dla pewności
   }
