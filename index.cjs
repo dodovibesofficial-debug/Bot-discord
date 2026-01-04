@@ -1904,7 +1904,10 @@ async function handleRozliczenieZakonczCommand(interaction) {
     for (const [userId, data] of weeklySales) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
       // Zawsze ❌ przy generowaniu raportu
-      reportLines.push(`❌ 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł`);
+      // Pobierz nazwę użytkownika zamiast pingować
+      const user = client.users.cache.get(userId);
+      const userName = user ? user.username : `Użytkownik${userId}`;
+      reportLines.push(`❌ ${userName} Do zapłaty ${prowizja}zł`);
       totalSales += data.amount;
       
       // Zapisz messageId do paymentStatus z paid: false
@@ -2049,7 +2052,10 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
     const userStatus = paymentStatus.get(uid);
     const paidStatus = userStatus && userStatus.paid ? "✅" : "❌";
-    reportLines.push(`${paidStatus} 👤 <@${uid}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł`);
+    // Pobierz nazwę użytkownika zamiast pingować
+    const user = client.users.cache.get(uid);
+    const userName = user ? user.username : `Użytkownik${uid}`;
+    reportLines.push(`${paidStatus} ${userName} Do zapłaty ${prowizja}zł`);
     totalSales += data.amount;
   }
 
