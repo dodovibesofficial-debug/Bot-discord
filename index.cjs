@@ -1896,25 +1896,42 @@ async function handleRozliczenieZakonczCommand(interaction) {
       return;
     }
 
-    // Zbuduj raport jako zwykły tekst
+    // Zbuduj raport jako embed
     let totalSales = 0;
-    let report = "\`📊\` **ROZLICZENIA TYGODNIOWE**\n\n";
+    let reportLines = [];
 
     for (const [userId, data] of weeklySales) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
       const status = paymentStatus.get(userId);
       const paidStatus = status && status.paid ? "✅" : "❌";
-      report += `${paidStatus} 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł\n`;
+      reportLines.push(`${paidStatus} 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł`);
       totalSales += data.amount;
     }
 
     const totalProwizja = totalSales * ROZLICZENIA_PROWIZJA;
 
-    report += `\n> \`📱\` **Przelew na numer:** 880 260 392\n`;
-    report += `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n`;
-    report += `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`;
+    const reportEmbed = new EmbedBuilder()
+      .setColor(0x00ff00)
+      .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
+      .setDescription(
+        reportLines.join('\n\n') + '\n\n' +
+        `> \`📱\` **Przelew na numer:** 880 260 392\n` +
+        `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n` +
+        `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`
+      )
+      .setTimestamp()
+      .setFooter({ text: "Raport tygodniowy" });
 
-    const sentMessage = await logsChannel.send(report);
+    const sentMessage = await logsChannel.send({ embeds: [reportEmbed] });
+
+    // Zapisz messageId do paymentStatus dla wszystkich użytkowników
+    for (const [userId, data] of weeklySales) {
+      if (!paymentStatus.has(userId)) {
+        paymentStatus.set(userId, { paid: false, messageId: sentMessage.id });
+      } else {
+        paymentStatus.get(userId).messageId = sentMessage.id;
+      }
+    }
 
     // Zapisz dane przed resetem dla embeda
     const liczbaOsob = weeklySales.size;
@@ -1972,12 +1989,15 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
 
   // Sprawdź czy istnieje wiadomość z raportem tygodniowym
   let reportExists = false;
+  let reportMessage = null;
   try {
     const messages = await logsChannel.messages.fetch({ limit: 10 });
-    reportExists = messages.some(msg => 
-      msg.content.includes("ROZLICZENIA TYGODNIOWE") && 
+    reportMessage = messages.find(msg => 
+      msg.embeds.length > 0 &&
+      msg.embeds[0].title?.includes("ROZLICZENIA TYGODNIOWE") && 
       msg.author.id === client.user.id
     );
+    reportExists = !!reportMessage;
   } catch (err) {
     console.error("Błąd sprawdzania raportu:", err);
   }
@@ -1994,42 +2014,54 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   const targetUser = interaction.options.getUser("uzytkownik");
   const userId = targetUser.id;
 
-  // Zaktualizuj status płatności - nie sprawdzaj czy ma rozliczenia, tylko zmień emoji
+  // Znajdź użytkownika w raporcie po embedzie
+  const existingEmbed = reportMessage.embeds[0];
+  const description = existingEmbed.description;
+  const userLine = description.split('\n').find(line => line.includes(`<@${userId}>`));
+  
+  if (!userLine) {
+    await interaction.reply({
+      content: "❌ Ten użytkownik nie ma rozliczeń w raporcie tygodniowym!",
+      ephemeral: true
+    });
+    return;
+  }
+
+  // Zaktualizuj status płatności
   if (!paymentStatus.has(userId)) {
-    paymentStatus.set(userId, { paid: true, messageId: null });
+    paymentStatus.set(userId, { paid: true, messageId: reportMessage.id });
   } else {
     paymentStatus.get(userId).paid = true;
+    paymentStatus.get(userId).messageId = reportMessage.id;
   }
 
-  // Znajdź i edytuj wiadomość z raportem
-  const status = paymentStatus.get(userId);
-  if (status && status.messageId) {
-    try {
-      const message = await logsChannel.messages.fetch(status.messageId);
-      
-      // Zbuduj nowy raport jako zwykły tekst
-      let totalSales = 0;
-      let report = "\`📊\` **ROZLICZENIA TYGODNIOWE**\n\n";
+  // Zbuduj nowy raport jako embed
+  let totalSales = 0;
+  let reportLines = [];
 
-      for (const [uid, data] of weeklySales) {
-        const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
-        const userStatus = paymentStatus.get(uid);
-        const paidStatus = userStatus && userStatus.paid ? "✅" : "❌";
-        report += `${paidStatus} 👤 <@${uid}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł\n`;
-        totalSales += data.amount;
-      }
-
-      report += `\n> \`📱\` **Przelew na numer:** 880 260 392\n`;
-      report += `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n`;
-      report += `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`;
-
-      await message.edit(report);
-    } catch (err) {
-      console.error("Błąd edytowania wiadomości:", err);
-    }
+  for (const [uid, data] of weeklySales) {
+    const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
+    const userStatus = paymentStatus.get(uid);
+    const paidStatus = userStatus && userStatus.paid ? "✅" : "❌";
+    reportLines.push(`${paidStatus} 👤 <@${uid}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł`);
+    totalSales += data.amount;
   }
 
-  const embed = new EmbedBuilder()
+  const reportEmbed = new EmbedBuilder()
+    .setColor(0x00ff00)
+    .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
+    .setDescription(
+      reportLines.join('\n\n') + '\n\n' +
+      `> \`📱\` **Przelew na numer:** 880 260 392\n` +
+      `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n` +
+      `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`
+    )
+    .setTimestamp()
+    .setFooter({ text: "Raport tygodniowy" });
+
+  await reportMessage.edit({ embeds: [reportEmbed] });
+
+  const responseEmbed = new EmbedBuilder()
     .setColor(0x00ff00)
     .setTitle("✅ Płatność oznaczona")
     .setDescription(
@@ -2039,7 +2071,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     )
     .setTimestamp();
 
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  await interaction.reply({ embeds: [responseEmbed], ephemeral: true });
   console.log(`Właściciel oznaczył płatność dla użytkownika ${userId}`);
 }
 
@@ -6770,14 +6802,18 @@ async function sendRozliczeniaMessage() {
     const channel = await client.channels.fetch(ROZLICZENIA_CHANNEL_ID);
     if (!channel) return;
 
-    // Sprawdź czy istnieje wiadomość bota do usunięcia (wszystkie wiadomości bota)
+    // Sprawdź czy istnieje wiadomość informacyjna bota do usunięcia
     const messages = await channel.messages.fetch({ limit: 50 });
-    const botMessages = messages.filter(msg => msg.author.id === client.user.id);
+    const botMessage = messages.find(msg =>
+      msg.author.id === client.user.id &&
+      msg.embeds.length > 0 &&
+      msg.embeds[0].title?.includes("ROZLICZENIA TYGODNIOWE")
+    );
 
-    // Usuń wszystkie wiadomości bota
-    for (const botMessage of botMessages.values()) {
+    // Jeśli wiadomość istnieje, usuń ją
+    if (botMessage) {
       await botMessage.delete();
-      console.log("Usunięto wiadomość bota z kanału rozliczeń");
+      console.log("Usunięto istniejącą wiadomość informacyjną ROZLICZENIA TYGODNIOWE");
     }
 
     // Wyślij nową wiadomość
@@ -6791,7 +6827,7 @@ async function sendRozliczeniaMessage() {
       .setTimestamp();
 
     await channel.send({ embeds: [embed] });
-    console.log("Wysłano wiadomość ROZLICZENIA TYGODNIOWE");
+    console.log("Wysłano wiadomość informacyjną ROZLICZENIA TYGODNIOWE");
   } catch (err) {
     console.error("Błąd wysyłania wiadomości ROZLICZENIA TYGODNIOWE:", err);
   }
