@@ -600,7 +600,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczenie")
     .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko admin/sprzedawca (1350786945944391733)
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -639,26 +638,6 @@ const commands = [
       option
         .setName("klient")
         .setDescription("Klient którego ticket kończysz")
-        .setRequired(true)
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName("kwota")
-        .setDescription("Kwota transakcji w złotych")
-        .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(999999)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("co")
-        .setDescription("Co zostało sprzedane/kupione/wręczone")
-        .setRequired(true)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("serwer")
-        .setDescription("Na jakim serwerze odbyła się transakcja")
         .setRequired(true)
     )
     .toJSON(),
@@ -2067,7 +2046,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     return;
   }
 
-  // Zaktualizuj status płatności
+  // Zaktualizuj status płatności - zmień emoji z ❌ na ✅
   if (!paymentStatus.has(userId)) {
     paymentStatus.set(userId, { paid: true, messageId: reportMessage.id });
   } else {
@@ -2647,57 +2626,16 @@ async function handleOpinieKanalCommand(interaction) {
 }
 
 async function handleZakonczTicketCommand(interaction) {
-  // Sprawdź czy to jest ticket
-  if (!isTicketChannel(interaction.channel)) {
-    await interaction.reply({
-      content: "❌ Ta komenda może być użyta tylko na kanale ticketu!",
-      ephemeral: true
-    });
-    return;
-  }
-
-  // Sprawdź czy użytkownik to sprzedawca
+  // Sprawdź czy użytkownik to sprzedawca lub właściciel
   if (!isAdminOrSeller(interaction.member)) {
     await interaction.reply({
-      content: "❌ Tylko sprzedawca może użyć tej komendy!",
+      content: "❌ Tylko sprzedawca lub właściciel może użyć tej komendy!",
       ephemeral: true
     });
     return;
   }
 
   const klient = interaction.options.getUser("klient");
-  const kwota = interaction.options.getInteger("kwota");
-  const co = interaction.options.getString("co");
-  const serwer = interaction.options.getString("serwer");
-
-  // Sprawdź czy kanał to zakup/sprzedaż/odbiór/nagrody/zaproszenia
-  const channelName = interaction.channel.name.toLowerCase();
-  const allowedChannels = ['zakup', 'sprzedaż', 'odbiór', 'nagrody', 'zaproszenia'];
-  
-  // Sprawdź czy nazwa kanału zawiera słowa kluczowe, ale nie jest w nazwie samej kategorii
-  if (!allowedChannels.some(allowed => channelName.includes(allowed))) {
-    await interaction.reply({
-      content: "❌ Ta komenda może być użyta tylko na kanale ticketu zakup/sprzedaż/odbiór/nagrody/zaproszenia!",
-      ephemeral: true
-    });
-    return;
-  }
-
-  // Dodaj uprawnienia dla ról limitów
-  const limitRoles = [
-    "1449448705563557918", // limit 20
-    "1449448702925209651", // limit 50
-    "1449448686156255333", // limit 100
-    "1449448860517798061"  // limit 200
-  ];
-
-  for (const roleId of limitRoles) {
-    await interaction.channel.permissionOverwrites.edit(roleId, {
-      ViewChannel: true,
-      SendMessages: true,
-      ReadMessageHistory: true
-    }).catch(() => null);
-  }
 
   // Wyślij wiadomość na kanale ticketu
   const embed = new EmbedBuilder()
