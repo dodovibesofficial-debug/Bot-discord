@@ -6633,10 +6633,223 @@ setInterval(sendRozliczeniaMessage, 12 * 60 * 60 * 1000);
 setTimeout(sendRozliczeniaMessage, 5000);
 
 // ---------------------------------------------------
+// FULL MONITORING MODE - System statusów i alertów
+// ---------------------------------------------------
+
+const fetch = require("node-fetch");
+
+let startTime = Date.now();
+let lastPingCheck = Date.now();
+let pingHistory = [];
+let errorCount = 0;
+let lastErrorTime = null;
+
+// Funkcja formatowania uptime
+function formatUptime(ms) {
+  const sec = Math.floor(ms / 1000);
+  const min = Math.floor(sec / 60);
+  const hrs = Math.floor(min / 60);
+  const days = Math.floor(hrs / 24);
+
+  return `${days}d ${hrs % 24}h ${min % 60}m ${sec % 60}s`;
+}
+
+// Funkcja wysyłania embeda na webhook
+async function sendMonitoringEmbed(title, description, color) {
+  const webhookUrl = process.env.UPTIME_WEBHOOK;
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        embeds: [{
+          title: title,
+          description: description,
+          color: color,
+          timestamp: new Date().toISOString(),
+          footer: {
+            text: "Majkel Bot Monitoring System",
+            icon_url: client.user?.displayAvatarURL()
+          }
+        }]
+      })
+    });
+  } catch (err) {
+    console.error("Błąd wysyłania monitoringu:", err);
+  }
+}
+
+// Funkcja sprawdzania statusu bota
+function getBotStatus() {
+  const ping = client.ws?.ping || 0;
+  const uptime = Date.now() - startTime;
+  
+  let status = "🟢 Stabilny";
+  let statusColor = 0x00ff00;
+  
+  if (ping > 400 || errorCount > 5) {
+    status = "🔴 Krytyczny";
+    statusColor = 0xff0000;
+  } else if (ping > 200 || errorCount > 2) {
+    status = "🟠 Ostrzeżenie";
+    statusColor = 0xffaa00;
+  }
+
+  return { status, statusColor, ping, uptime };
+}
+
+// 1. Heartbeat co 5 minut (bot żyje + ping + uptime)
+setInterval(async () => {
+  const webhookUrl = process.env.UPTIME_WEBHOOK;
+  if (!webhookUrl) return;
+
+  const ping = client.ws?.ping || 0;
+  const uptime = formatUptime(Date.now() - startTime);
+  const { status, statusColor } = getBotStatus();
+
+  // Zapisz ping do historii
+  pingHistory.push(ping);
+  if (pingHistory.length > 12) pingHistory.shift(); // 1 godzina historii
+
+  const avgPing = Math.round(pingHistory.reduce((a, b) => a + b, 0) / pingHistory.length);
+
+  const description = `⏱ **Uptime:** ${uptime}\n📡 **Ping:** ${ping}ms (średnio: ${avgPing}ms)\n🔢 **Błędy:** ${errorCount}\n📊 **Status:** ${status}`;
+
+  await sendMonitoringEmbed("💓 Heartbeat - Bot działa", description, statusColor);
+}, 5 * 60 * 1000); // co 5 minut
+
+// 2. Alert przy błędzie krytycznym (bot padnie)
+process.on("uncaughtException", async (err) => {
+  console.error("🔴 Błąd krytyczny:", err);
+  
+  errorCount++;
+  lastErrorTime = Date.now();
+
+  const description = `**Błąd krytyczny detected:**\n\`${err.message}\`\n\n**Stack:**\n\`${err.stack?.substring(0, 1000) || "Brak stack trace"}...\`\n\n**Czas:** ${new Date().toLocaleString("pl-PL")}`;
+
+  await sendMonitoringEmbed("🔴 BOT PADŁ - Błąd krytyczny", description, 0xff0000);
+
+  // Daj chwilę na wysłanie alertu
+  setTimeout(() => process.exit(1), 2000);
+});
+
+// 3. Alert przy zamknięciu procesu
+process.on("exit", async () => {
+  const uptime = formatUptime(Date.now() - startTime);
+  const description = `Bot został zamknięty (process.exit)\n⏱ **Czas działania:** ${uptime}\n📊 **Liczba błędów:** ${errorCount}`;
+
+  await sendMonitoringEmbed("🔴 Bot zamknięty", description, 0xff0000);
+});
+
+// 4. Monitor HTTP sprawdzający czy UptimeRobot pinguje
+setInterval(async () => {
+  const webhookUrl = process.env.UPTIME_WEBHOOK;
+  if (!webhookUrl) return;
+
+  try {
+    const startTime = Date.now();
+    const res = await fetch("https://bot-discord-hixl.onrender.com", { 
+      method: "GET"
+    });
+    const responseTime = Date.now() - startTime;
+
+    if (res.ok) {
+      const description = `🌐 **Monitor HTTP:** Aktywny\n📡 **Response time:** ${responseTime}ms\n📊 **Status:** HTTP ${res.status}`;
+      await sendMonitoringEmbed("🟢 Monitor HTTP - OK", description, 0x00ff00);
+    } else {
+      const description = `🟠 **Monitor HTTP:** Nieoczekiwana odpowiedź\n📊 **Status:** HTTP ${res.status}\n⏱ **Response time:** ${responseTime}ms`;
+      await sendMonitoringEmbed("🟠 Monitor HTTP - Ostrzeżenie", description, 0xffaa00);
+    }
+  } catch (err) {
+    const description = `🔴 **Monitor HTTP:** Brak odpowiedzi\n**Błąd:** ${err.message}\n**Czas:** ${new Date().toLocaleString("pl-PL")}`;
+    await sendMonitoringEmbed("🔴 Monitor HTTP - Błąd", description, 0xff0000);
+  }
+}, 10 * 60 * 1000); // co 10 minut
+
+// 5. Raport okresowy co 12 godzin
+setInterval(async () => {
+  const webhookUrl = process.env.UPTIME_WEBHOOK;
+  if (!webhookUrl) return;
+
+  const { status, statusColor, ping, uptime } = getBotStatus();
+  const uptimeFormatted = formatUptime(uptime);
+  const avgPing = pingHistory.length > 0 ? Math.round(pingHistory.reduce((a, b) => a + b, 0) / pingHistory.length) : 0;
+
+  const description = `📊 **RAPORT DZIAŁANIA BOTA**\n\n` +
+    `⏱ **Uptime:** ${uptimeFormatted}\n` +
+    `📡 **Ping aktualny:** ${ping}ms\n` +
+    `📈 **Ping średni:** ${avgPing}ms\n` +
+    `🌐 **Monitor HTTP:** Aktywny\n` +
+    `🔢 **Liczba błędów:** ${errorCount}\n` +
+    `📊 **Status:** ${status}\n` +
+    `🕐 **Raport wygenerowany:** ${new Date().toLocaleString("pl-PL")}`;
+
+  await sendMonitoringEmbed("📊 Raport okresowy - 12h", description, statusColor);
+}, 12 * 60 * 60 * 1000); // co 12 godzin
+
+// 6. Monitorowanie reconnectów Discord
+client.on("reconnecting", () => {
+  console.log("🔄 Bot próbuje się połączyć ponownie...");
+  errorCount++;
+});
+
+client.on("resume", () => {
+  const description = `🔄 **Bot wznowił połączenie**\n⏱ **Czas działania:** ${formatUptime(Date.now() - startTime)}\n📊 **Liczba błędów:** ${errorCount}`;
+  sendMonitoringEmbed("🟢 Połączenie wznowione", description, 0x00ff00);
+});
+
+// 7. Funkcja ręcznego sprawdzania statusu
+async function checkBotStatus() {
+  const { status, statusColor, ping, uptime } = getBotStatus();
+  const uptimeFormatted = formatUptime(uptime);
+  const avgPing = pingHistory.length > 0 ? Math.round(pingHistory.reduce((a, b) => a + b, 0) / pingHistory.length) : 0;
+
+  return {
+    status,
+    statusColor,
+    ping,
+    avgPing,
+    uptime: uptimeFormatted,
+    errorCount,
+    lastErrorTime,
+    guilds: client.guilds.cache.size,
+    users: client.users.cache.size,
+    channels: client.channels.cache.size
+  };
+}
+
+// 8. Komenda statusu (opcjonalnie - można dodać do slash commands)
+async function sendStatusReport(channel) {
+  const status = await checkBotStatus();
+  
+  const embed = new EmbedBuilder()
+    .setColor(status.statusColor)
+    .setTitle("📊 Status Bota - Majkel")
+    .setDescription(`**Status:** ${status.status}`)
+    .addFields(
+      { name: "⏱ Uptime", value: status.uptime, inline: true },
+      { name: "📡 Ping", value: `${status.ping}ms (avg: ${status.avgPing}ms)`, inline: true },
+      { name: "🔢 Błędy", value: status.errorCount.toString(), inline: true },
+      { name: "🌐 Serwery", value: status.guilds.toString(), inline: true },
+      { name: "👥 Użytkownicy", value: status.users.toString(), inline: true },
+      { name: "💬 Kanały", value: status.channels.toString(), inline: true }
+    )
+    .setTimestamp()
+    .setFooter({ text: "Majkel Bot Monitoring System" });
+
+  await channel.send({ embeds: [embed] });
+}
+
+console.log("🟢 FULL MONITORING MODE aktywowany - heartbeat co 5min, alerty błędów, monitor HTTP");
+
+// ---------------------------------------------------
 
 client
   .login(process.env.BOT_TOKEN)
   .catch((err) => console.error("Discord Login Error:", err));
+
 const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
