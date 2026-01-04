@@ -1894,7 +1894,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
     }
 
     let totalSales = 0;
-    let report = "📊 **ROZLICZENIA TYGODNIOWE**\n\n";
+    let report = "\`📊\` **ROZLICZENIA TYGODNIOWE**\n\n";
 
     for (const [userId, data] of weeklySales) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
@@ -6702,10 +6702,9 @@ async function sendRozliczeniaMessage() {
 
     const embed = new EmbedBuilder()
       .setColor(0xd4af37)
-      .setTitle("💱 ROZLICZENIA TYGODNIOWE")
+      .setTitle("\`💱\` ROZLICZENIA TYGODNIOWE")
       .setDescription(
-        "Jeżeli sprzedajecie coś na shopie, wysyłacie tutaj kwotę, za którą dokonaliście sprzedaży.\n" +
-        "Na koniec każdego tygodnia w niedzielę rano macie czas do godziny 20:00, aby rozliczyć się i zapłacić 10% od łącznej sumy sprzedaży z całego tygodnia."
+        "> \`ℹ️\` **Jeżeli sprzedajecie coś na shopie, wysyłacie tutaj kwotę, za którą dokonaliście sprzedaży. Na koniec każdego tygodnia w niedzielę rano macie czas do godziny 20:00, aby rozliczyć się i zapłacić 10% od łącznej sumy sprzedaży z __całego tygodnia.__**"
       )
       .setFooter({ text: "Użyj komendy /rozliczenie aby dodać sprzedaż" })
       .setTimestamp();
