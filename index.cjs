@@ -631,29 +631,6 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko właściciel
     .toJSON(),
   new SlashCommandBuilder()
-    .setName("zakonczticket")
-    .setDescription("Zakończ ticket z potwierdzeniem (tylko sprzedawca)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko admin/sprzedawca
-    .addUserOption((option) =>
-      option
-        .setName("klient")
-        .setDescription("Klient którego ticket kończysz")
-        .setRequired(true)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("co")
-        .setDescription("Co zostało sprzedane/kupione/wręczone")
-        .setRequired(true)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("serwer")
-        .setDescription("Na jakim serwerze odbyła się transakcja")
-        .setRequired(true)
-    )
-    .toJSON(),
-  new SlashCommandBuilder()
     .setName("rozliczenieustaw")
     .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -1787,9 +1764,6 @@ async function handleSlashCommand(interaction) {
     case "zamknij":
       await handleCloseTicketCommand(interaction);
       break;
-    case "zakonczticket":
-      await handleZakonczTicketCommand(interaction);
-      break;
     case "panelweryfikacja":
       await handlePanelWeryfikacjaCommand(interaction);
       break;
@@ -2070,6 +2044,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   let totalSales = 0;
   let reportLines = [];
 
+  // Przejdź przez wszystkich użytkowników w weeklySales, nie usuwaj nikogo
   for (const [uid, data] of weeklySales) {
     const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
     const userStatus = paymentStatus.get(uid);
@@ -2635,80 +2610,6 @@ async function handleOpinieKanalCommand(interaction) {
     ephemeral: true,
   });
   console.log(`Kanał opinii ustawiony na ${channel.id} dla serwera ${guildId}`);
-}
-
-async function handleZakonczTicketCommand(interaction) {
-  // Sprawdź czy użytkownik to sprzedawca lub właściciel
-  if (!isAdminOrSeller(interaction.member)) {
-    await interaction.reply({
-      content: "❌ Tylko sprzedawca lub właściciel może użyć tej komendy!",
-      ephemeral: true
-    });
-    return;
-  }
-
-  const klient = interaction.options.getUser("klient");
-  const co = interaction.options.getString("co");
-  const serwer = interaction.options.getString("serwer");
-
-  // Wyślij wiadomość na kanale ticketu
-  const embed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setTitle("✅ New Shop × LEGIT CHECK")
-    .setDescription(
-      `## \`❔\` **Jeżeli uważasz że tranzakcja przeszła pomyślnie i otrzymałeś swój zakup napisz tą wiadomość na kanale #1449840030947217529\n\n` +
-      `\`+rep\` @${interaction.user.username} (${interaction.user.username} ${co})\n\n` +
-      `**I jeżeli wyśle tego +repa na kanał ten to ticket się zamknie w ciągu 5 sekund a jeżeli nie napisze +repa to ticket zostaje na 5 minut i potem sam się usuwa**`
-    )
-    .setTimestamp()
-    .setFooter({ text: "NewShop 5k$-1zł🏷️-×┃procenty-sell" });
-
-  await interaction.channel.send({ embeds: [embed] });
-
-  // Odpowiedź użytkownikowi
-  await interaction.reply({
-    content: "✅ Wysłano potwierdzenie transakcji na ticket!",
-    ephemeral: true
-  });
-
-  // Ustaw timer na sprawdzenie +repa
-  setTimeout(async () => {
-    try {
-      const messages = await interaction.channel.messages.fetch({ limit: 10 });
-      const hasRep = messages.some(msg => 
-        msg.content.includes('+rep') && 
-        msg.content.toLowerCase().includes(interaction.user.username.toLowerCase())
-      );
-
-      if (hasRep) {
-        // Zamknij ticket po 5 sekundach
-        setTimeout(async () => {
-          try {
-            await interaction.channel.send("🎉 Transakcja potwierdzona! Zamykam ticket...");
-            setTimeout(() => {
-              interaction.channel.delete().catch(() => null);
-            }, 2000);
-          } catch (err) {
-            console.error("Błąd zamykania ticketu:", err);
-          }
-        }, 5000);
-      } else {
-        // Daj 5 minut na +rep
-        setTimeout(async () => {
-          try {
-            await interaction.channel.send("⏰ Czas minął! Nikt nie potwierdził transakcji (+rep). Usuwam ticket...");
-            setTimeout(() => {
-              interaction.channel.delete().catch(() => null);
-            }, 3000);
-          } catch (err) {
-            console.error("Błąd usuwania ticketu:", err);
-          }
-        }, 5 * 60 * 1000); // 5 minut
-      }
-    } catch (err) {
-      console.error("Błąd sprawdzania +repa:", err);
-    }
-  }, 30000); // Sprawdź po 30 sekundach
 }
 
 async function handlePanelWeryfikacjaCommand(interaction) {
