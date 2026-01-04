@@ -1782,7 +1782,7 @@ async function handleRozliczenieCommand(interaction) {
     .setColor(COLOR_BLUE)
     .setTitle("\`💱\` Rozliczenie dodane")
     .setDescription(
-      `> 👤 **Użytkownik:** <@${userId}>\n` +
+      `> 👤 **Użytkowni:** <@${userId}>\n` +
       `> \`✅\` × **Dodano sprzedaż:** ${kwota.toLocaleString("pl-PL")} zł\n` +
       `> \`📊\` × **Suma tygodniowa:** ${userData.amount.toLocaleString("pl-PL")} zł\n` +
       `> \`💸\` × **Prowizja do zapłaty (10%):** ${(userData.amount * ROZLICZENIA_PROWIZJA).toLocaleString("pl-PL")} zł\n`,
