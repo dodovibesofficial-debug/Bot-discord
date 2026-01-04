@@ -1,0 +1,36 @@
+~/workspace$ node bot.cjs
+Załadowano zapisany stan bota z pliku.
+Bot zalogowany jako NEW SHOP#8592
+Bot jest na 1 serwerach
+Rejestrowanie slash commands...
+Nie udało się wyczyszczić globalnych komend: 401: Unauthorized
+Nie udało się wyczyszczić komend na serwerze: Expected token to be set for this request, but none was present
+Błąd rejestracji komend: Error: Expected token to be set for this request, but none was present
+    at _REST.resolveRequest (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1381:15)
+    at _REST.queueRequest (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1341:46)
+    at _REST.request (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1307:33)
+    at _REST.put (/home/runner/workspace/node_modules/@discordjs/rest/dist/index.js:1290:17)
+    at registerCommands (/home/runner/workspace/bot.cjs:747:16)
+    at async Client.<anonymous> (/home/runner/workspace/bot.cjs:851:3)
+Ustawiono domyślny kanał opinii: 1449783959306375198
+Ustawiono domyślny kanał drop: 1449162603300393252
+Ustawiono domyślną rolę weryfikacji: 1425935544273338532 (> | 💲 klient)
+Ustawiono kategorię zakup-0-20 -> 1449526840942268526
+Ustawiono kategorię zakup-20-50 -> 1449526958508474409
+Ustawiono kategorię zakup-50-100 -> 1449451716129984595
+Ustawiono kategorię zakup-100-200 -> 1449452354201190485
+Ustawiono kategorię sprzedaz -> 1449455848043708426
+Ustawiono kategorię odbior-nagrody -> 1449455567641907351
+Ustawiono kategorię inne -> 1449527585271976131
+Ustawiono domyślny kanał opinii: 1449783959306375198
+Ustawiono domyślny kanał drop: 1449162603300393252
+Ustawiono domyślną rolę weryfikacji: 1425935544273338532 (> | 💲 klient)
+Ustawiono kategorię zakup-0-20 -> 1449526840942268526
+Ustawiono kategorię zakup-20-50 -> 1449526958508474409
+Ustawiono kategorię zakup-50-100 -> 1449451716129984595
+Ustawiono kategorię zakup-100-200 -> 1449452354201190485
+Ustawiono kategorię sprzedaz -> 1449455848043708426
+Ustawiono kategorię odbior-nagrody -> 1449455567641907351
+Ustawiono kategorię inne -> 1449527585271976131
+Odczytano liczbę repów z kanału: 0
+[invites] Zainicjalizowano invites cache dla 1350446732365926491

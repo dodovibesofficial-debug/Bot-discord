@@ -1,0 +1,41 @@
+}
+Zmieniono nazwę kanału na: ✅-×┃legit-rep➔13
+Globalne slash commands zarejestrowane!
+Ustawiono domyślny kanał opinii: 1449783959306375198
+Ustawiono domyślny kanał drop: 1449162603300393252
+Ustawiono domyślną rolę weryfikacji: 1425935544273338532 (> | 💲 klient)
+Ustawiono kategorię zakup-0-20 -> 1449526840942268526
+Ustawiono kategorię zakup-20-50 -> 1449526958508474409
+Ustawiono kategorię zakup-50-100 -> 1449451716129984595
+Ustawiono kategorię zakup-100-200 -> 1449452354201190485
+Ustawiono kategorię sprzedaz -> 1449455848043708426
+Ustawiono kategorię odbior-nagrody -> 1449455567641907351
+Ustawiono kategorię inne -> 1449527585271976131
+Ustawiono domyślny kanał opinii: 1449783959306375198
+Ustawiono domyślny kanał drop: 1449162603300393252
+Ustawiono domyślną rolę weryfikacji: 1425935544273338532 (> | 💲 klient)
+Ustawiono kategorię zakup-0-20 -> 1449526840942268526
+Ustawiono kategorię zakup-20-50 -> 1449526958508474409
+Ustawiono kategorię zakup-50-100 -> 1449451716129984595
+Ustawiono kategorię zakup-100-200 -> 1449452354201190485
+Ustawiono kategorię sprzedaz -> 1449455848043708426
+Ustawiono kategorię odbior-nagrody -> 1449455567641907351
+Ustawiono kategorię inne -> 1449527585271976131
+Odczytano liczbę repów z kanału: 13
+[invites] Zainicjalizowano invites cache dla 1350446732365926491
++rep otrzymany! Licznik: 14
+Planuję zmianę nazwy kanału na ✅-×┃legit-rep➔14 za 449099 ms
+Wysyłam embed dla kolczatekk
+Błąd wysyłania info embed (nowy): Error: ENOENT: no such file or directory, stat '/home/runner/workspace/attached_assets/standard_1765794552774.gif'
+    at async Object.stat (node:internal/fs/promises:1037:18)
+    at async resolveFile (/home/runner/workspace/node_modules/discord.js/src/util/DataResolver.js:100:19)
+    at async MessagePayload.resolveFile (/home/runner/workspace/node_modules/discord.js/src/structures/MessagePayload.js:308:35)
+    at async Promise.all (index 0)
+    at async MessagePayload.resolveFiles (/home/runner/workspace/node_modules/discord.js/src/structures/MessagePayload.js:273:18)
+    at async TextChannel.send (/home/runner/workspace/node_modules/discord.js/src/structures/interfaces/TextBasedChannel.js:194:29)
+    at async Client.<anonymous> (/home/runner/workspace/bot.cjs:3600:22) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/home/runner/workspace/attached_assets/standard_1765794552774.gif'
+}
