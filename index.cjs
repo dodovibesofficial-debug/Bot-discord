@@ -1011,6 +1011,25 @@ client.once(Events.ClientReady, async (c) => {
   console.log(`Bot zalogowany jako ${c.user.tag}`);
   console.log(`Bot jest na ${c.guilds.cache.size} serwerach`);
 
+    // --- Webhook startowy do Discorda ---
+  try {
+    const webhookUrl = process.env.UPTIME_WEBHOOK;
+    if (webhookUrl) {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: `🟢 Bot **${c.user.tag}** został uruchomiony i działa poprawnie.`
+        })
+      });
+      console.log("Wysłano webhook startowy.");
+    } else {
+      console.log("Brak UPTIME_WEBHOOK w zmiennych środowiskowych.");
+    }
+  } catch (err) {
+    console.error("Błąd wysyłania webhooka startowego:", err);
+  }
+
   // Ustaw status - gra w NewShop
   try {
     c.user.setActivity(`LegitRepy: ${legitRepCount} 🛒`, { type: 0 });
