@@ -630,6 +630,36 @@ const commands = [
     .setDescription("Pokaż szczegółowy status bota")
     .toJSON(),
   new SlashCommandBuilder()
+    .setName("zakonczticket")
+    .setDescription("Zakończ ticket z potwierdzeniem (tylko sprzedawca)")
+    .addUserOption((option) =>
+      option
+        .setName("klient")
+        .setDescription("Klient którego ticket kończysz")
+        .setRequired(true)
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName("kwota")
+        .setDescription("Kwota transakcji w złotych")
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(999999)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("co")
+        .setDescription("Co zostało sprzedane/kupione/wręczone")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("serwer")
+        .setDescription("Na jakim serwerze odbyła się transakcja")
+        .setRequired(true)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
     .setName("rozliczenieustaw")
     .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -1763,6 +1793,9 @@ async function handleSlashCommand(interaction) {
     case "zamknij":
       await handleCloseTicketCommand(interaction);
       break;
+    case "zakonczticket":
+      await handleZakonczTicketCommand(interaction);
+      break;
     case "panelweryfikacja":
       await handlePanelWeryfikacjaCommand(interaction);
       break;
@@ -1902,16 +1935,20 @@ async function handleRozliczenieZakonczCommand(interaction) {
 
     for (const [userId, data] of weeklySales) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
-      const status = paymentStatus.get(userId);
-      const paidStatus = status && status.paid ? "✅" : "❌";
-      reportLines.push(`${paidStatus} 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł`);
+      // Zawsze ❌ przy generowaniu raportu
+      reportLines.push(`❌ 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł`);
       totalSales += data.amount;
+      
+      // Zapisz messageId do paymentStatus z paid: false
+      if (!paymentStatus.has(userId)) {
+        paymentStatus.set(userId, { paid: false, messageId: null });
+      }
     }
 
     const totalProwizja = totalSales * ROZLICZENIA_PROWIZJA;
 
     const reportEmbed = new EmbedBuilder()
-      .setColor(0x00ff00)
+      .setColor(COLOR_BLUE)
       .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
       .setDescription(
         reportLines.join('\n\n') + '\n\n' +
@@ -1944,7 +1981,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
     console.log("Ręcznie zresetowano rozliczenia po /rozliczeniezakoncz");
 
     const embed = new EmbedBuilder()
-      .setColor(0x00ff00)
+      .setColor(COLOR_BLUE)
       .setTitle("✅ Podsumowanie wysłane i zresetowano")
       .setDescription(
         `> \`✅\` × **Wysłano podsumowanie** na kanał <#${ROZLICZENIA_LOGS_CHANNEL_ID}>\n` +
@@ -2048,7 +2085,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   }
 
   const reportEmbed = new EmbedBuilder()
-    .setColor(0x00ff00)
+    .setColor(COLOR_BLUE)
     .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
     .setDescription(
       reportLines.join('\n\n') + '\n\n' +
@@ -2062,7 +2099,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   await reportMessage.edit({ embeds: [reportEmbed] });
 
   const responseEmbed = new EmbedBuilder()
-    .setColor(0x00ff00)
+    .setColor(COLOR_BLUE)
     .setTitle("✅ Płatność oznaczona")
     .setDescription(
       `> \`✅\` × **Oznaczono płatność** dla <@${userId}>\n` +
@@ -2606,6 +2643,102 @@ async function handleOpinieKanalCommand(interaction) {
   console.log(`Kanał opinii ustawiony na ${channel.id} dla serwera ${guildId}`);
 }
 
+async function handleZakonczTicketCommand(interaction) {
+  // Sprawdź czy to jest ticket
+  if (!isTicketChannel(interaction.channel)) {
+    await interaction.reply({
+      content: "❌ Ta komenda może być użyta tylko na kanale ticketu!",
+      ephemeral: true
+    });
+    return;
+  }
+
+  // Sprawdź czy użytkownik to sprzedawca
+  if (!isAdminOrSeller(interaction.member)) {
+    await interaction.reply({
+      content: "❌ Tylko sprzedawca może użyć tej komendy!",
+      ephemeral: true
+    });
+    return;
+  }
+
+  const klient = interaction.options.getUser("klient");
+  const kwota = interaction.options.getInteger("kwota");
+  const co = interaction.options.getString("co");
+  const serwer = interaction.options.getString("serwer");
+
+  // Sprawdź czy kanał to zakup/sprzedaż/odbiór/nagrody/zaproszenia
+  const channelName = interaction.channel.name.toLowerCase();
+  const allowedChannels = ['zakup', 'sprzedaż', 'odbiór', 'nagrody', 'zaproszenia'];
+  
+  if (!allowedChannels.some(allowed => channelName.includes(allowed))) {
+    await interaction.reply({
+      content: "❌ Ta komenda może być użyta tylko na kanale zakup/sprzedaż/odbiór/nagrody/zaproszenia!",
+      ephemeral: true
+    });
+    return;
+  }
+
+  // Wyślij wiadomość na kanale ticketu
+  const embed = new EmbedBuilder()
+    .setColor(COLOR_BLUE)
+    .setTitle("✅ New Shop × LEGIT CHECK")
+    .setDescription(
+      `## \`❔\` **Jeżeli uważasz że tranzakcja przeszła pomyślnie i otrzymałeś swój zakup napisz tą wiadomość na kanale #1449840030947217529\n\n` +
+      `\`+rep\` @${interaction.user.username} (${interaction.user.username} to osoba która wpisała komende) sprzedał/kupił/wręczył nagrode za zaproszenia/wręczył nagrode za konkurs (${co} to ma dobierac automatycznie do kategori ticketa) (${kwota} to to jest to co wpisuje w komendzie co sprzedałeś / co wręczyłeś itd.) (${serwer} czyli to co w komendzie) \`\n\n` +
+      `**I jeżeli wyśle tego +repa na kanał ten to ticket się zamknie w ciągu 5 sekund a jeżeli nie napisze +repa to ticket zostaje na 5 minut i potem sam się usuwa**`
+    )
+    .setTimestamp()
+    .setFooter({ text: "NewShop 5k$-1zł🏷️-×┃procenty-sell" });
+
+  await interaction.channel.send({ embeds: [embed] });
+
+  // Odpowiedź użytkownikowi
+  await interaction.reply({
+    content: "✅ Wysłano potwierdzenie transakcji na ticket!",
+    ephemeral: true
+  });
+
+  // Ustaw timer na sprawdzenie +repa
+  setTimeout(async () => {
+    try {
+      const messages = await interaction.channel.messages.fetch({ limit: 10 });
+      const hasRep = messages.some(msg => 
+        msg.content.includes('+rep') && 
+        msg.content.toLowerCase().includes(interaction.user.username.toLowerCase())
+      );
+
+      if (hasRep) {
+        // Zamknij ticket po 5 sekundach
+        setTimeout(async () => {
+          try {
+            await interaction.channel.send("🎉 Transakcja potwierdzona! Zamykam ticket...");
+            setTimeout(() => {
+              interaction.channel.delete().catch(() => null);
+            }, 2000);
+          } catch (err) {
+            console.error("Błąd zamykania ticketu:", err);
+          }
+        }, 5000);
+      } else {
+        // Daj 5 minut na +rep
+        setTimeout(async () => {
+          try {
+            await interaction.channel.send("⏰ Czas minął! Nikt nie potwierdził transakcji (+rep). Usuwam ticket...");
+            setTimeout(() => {
+              interaction.channel.delete().catch(() => null);
+            }, 3000);
+          } catch (err) {
+            console.error("Błąd usuwania ticketu:", err);
+          }
+        }, 5 * 60 * 1000); // 5 minut
+      }
+    } catch (err) {
+      console.error("Błąd sprawdzania +repa:", err);
+    }
+  }, 30000); // Sprawdź po 30 sekundach
+}
+
 async function handlePanelWeryfikacjaCommand(interaction) {
   const guildId = interaction.guildId;
   if (!guildId) {
@@ -3114,7 +3247,7 @@ async function ticketClaimCommon(interaction, channelId) {
       },
       {
         id: interaction.guild.roles.everyone,
-        deny: [PermissionFlagsBits.ViewChannel]
+        deny: [PermissionFlagsBits.ViewChannel] // @everyone nie widzi gdy ktoś przejmie
       }
     ]);
 
@@ -3232,7 +3365,7 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
     await ch.permissionOverwrites.set([
       {
         id: interaction.guild.roles.everyone,
-        deny: [PermissionFlagsBits.ViewChannel]
+        allow: [] // @everyone ma / (neutral permissions) po odprzejmowaniu
       }
     ]);
 
@@ -4251,7 +4384,7 @@ async function handleModalSubmit(interaction) {
       permissionOverwrites: [
         {
           id: interaction.guild.id,
-          deny: [PermissionsBitField.Flags.ViewChannel],
+          allow: [], // @everyone ma / (neutral permissions)
         },
         {
           id: interaction.user.id,
