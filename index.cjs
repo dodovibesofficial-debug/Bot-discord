@@ -600,6 +600,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczenie")
     .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko admin/sprzedawca
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -628,10 +629,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName("statusbota")
     .setDescription("Pokaż szczegółowy status bota")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko właściciel
     .toJSON(),
   new SlashCommandBuilder()
     .setName("zakonczticket")
     .setDescription("Zakończ ticket z potwierdzeniem (tylko sprzedawca)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko admin/sprzedawca
     .addUserOption((option) =>
       option
         .setName("klient")
@@ -2671,9 +2674,10 @@ async function handleZakonczTicketCommand(interaction) {
   const channelName = interaction.channel.name.toLowerCase();
   const allowedChannels = ['zakup', 'sprzedaż', 'odbiór', 'nagrody', 'zaproszenia'];
   
+  // Sprawdź czy nazwa kanału zawiera słowa kluczowe, ale nie jest w nazwie samej kategorii
   if (!allowedChannels.some(allowed => channelName.includes(allowed))) {
     await interaction.reply({
-      content: "❌ Ta komenda może być użyta tylko na kanale zakup/sprzedaż/odbiór/nagrody/zaproszenia!",
+      content: "❌ Ta komenda może być użyta tylko na kanale ticketu zakup/sprzedaż/odbiór/nagrody/zaproszenia!",
       ephemeral: true
     });
     return;
