@@ -640,6 +640,18 @@ const commands = [
         .setDescription("Klient którego ticket kończysz")
         .setRequired(true)
     )
+    .addStringOption((option) =>
+      option
+        .setName("co")
+        .setDescription("Co zostało sprzedane/kupione/wręczone")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("serwer")
+        .setDescription("Na jakim serwerze odbyła się transakcja")
+        .setRequired(true)
+    )
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenieustaw")
@@ -2046,7 +2058,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     return;
   }
 
-  // Zaktualizuj status płatności - zmień emoji z ❌ na ✅
+  // Zaktualizuj status płatności - zmień emoji z ❌ na ✅ dla tej osoby
   if (!paymentStatus.has(userId)) {
     paymentStatus.set(userId, { paid: true, messageId: reportMessage.id });
   } else {
@@ -2054,7 +2066,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     paymentStatus.get(userId).messageId = reportMessage.id;
   }
 
-  // Zbuduj nowy raport jako embed
+  // Zbuduj nowy raport jako embed - zachowaj wszystkie osoby, zmień tylko emoji dla jednej
   let totalSales = 0;
   let reportLines = [];
 
@@ -2636,6 +2648,8 @@ async function handleZakonczTicketCommand(interaction) {
   }
 
   const klient = interaction.options.getUser("klient");
+  const co = interaction.options.getString("co");
+  const serwer = interaction.options.getString("serwer");
 
   // Wyślij wiadomość na kanale ticketu
   const embed = new EmbedBuilder()
@@ -2643,7 +2657,7 @@ async function handleZakonczTicketCommand(interaction) {
     .setTitle("✅ New Shop × LEGIT CHECK")
     .setDescription(
       `## \`❔\` **Jeżeli uważasz że tranzakcja przeszła pomyślnie i otrzymałeś swój zakup napisz tą wiadomość na kanale #1449840030947217529\n\n` +
-      `\`+rep\` @${interaction.user.username} (${interaction.user.username} odebrał nagrodę / kupił / sprzedał)\n\n` +
+      `\`+rep\` @${interaction.user.username} (${interaction.user.username} ${co})\n\n` +
       `**I jeżeli wyśle tego +repa na kanał ten to ticket się zamknie w ciągu 5 sekund a jeżeli nie napisze +repa to ticket zostaje na 5 minut i potem sam się usuwa**`
     )
     .setTimestamp()
