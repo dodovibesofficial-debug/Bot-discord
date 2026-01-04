@@ -1825,18 +1825,21 @@ async function handleRozliczenieCommand(interaction) {
     return;
   }
 
-  const kwota = interaction.options.getInteger("kwota");
-  const userId = interaction.user.id;
-
-  // Sprawdź rolę
+  // Sprawdź czy właściciel lub ma odpowiednią rolę
+  const isOwner = interaction.user.id === interaction.guild.ownerId;
   const requiredRoleId = "1350786945944391733";
-  if (!interaction.member.roles.cache.has(requiredRoleId)) {
+  const hasRole = interaction.member.roles.cache.has(requiredRoleId);
+  
+  if (!isOwner && !hasRole) {
     await interaction.reply({
-      content: "❌ Nie masz wymaganej roli do używania tej komendy!",
+      content: "❌ Tylko właściciel serwera lub użytkownicy z rolą sprzedawcy mogą użyć tej komendy!",
       ephemeral: true
     });
     return;
   }
+
+  const kwota = interaction.options.getInteger("kwota");
+  const userId = interaction.user.id;
 
   if (!weeklySales.has(userId)) {
     weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
@@ -1893,6 +1896,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
       return;
     }
 
+    // Zbuduj raport jako zwykły tekst
     let totalSales = 0;
     let report = "\`📊\` **ROZLICZENIA TYGODNIOWE**\n\n";
 
@@ -1900,7 +1904,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
       const status = paymentStatus.get(userId);
       const paidStatus = status && status.paid ? "✅" : "❌";
-      report += `> ${paidStatus} 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł\n`;
+      report += `${paidStatus} 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł\n`;
       totalSales += data.amount;
     }
 
@@ -1911,15 +1915,6 @@ async function handleRozliczenieZakonczCommand(interaction) {
     report += `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`;
 
     const sentMessage = await logsChannel.send(report);
-
-    // Zapisz ID wiadomości dla każdego użytkownika
-    for (const [userId] of weeklySales) {
-      if (!paymentStatus.has(userId)) {
-        paymentStatus.set(userId, { paid: false, messageId: sentMessage.id });
-      } else {
-        paymentStatus.get(userId).messageId = sentMessage.id;
-      }
-    }
 
     // Zapisz dane przed resetem dla embeda
     const liczbaOsob = weeklySales.size;
@@ -1965,18 +1960,41 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     return;
   }
 
-  const targetUser = interaction.options.getUser("uzytkownik");
-  const userId = targetUser.id;
-
-  if (!weeklySales.has(userId)) {
+  // Sprawdź czy tydzień został zakończony (czy istnieje raport)
+  const logsChannel = await client.channels.fetch(ROZLICZENIA_LOGS_CHANNEL_ID).catch(() => null);
+  if (!logsChannel) {
     await interaction.reply({
-      content: "❌ Ten użytkownik nie ma żadnych rozliczeń w tym tygodniu!",
+      content: "❌ Nie znaleziono kanału logów!",
       ephemeral: true
     });
     return;
   }
 
-  // Zaktualizuj status płatności
+  // Sprawdź czy istnieje wiadomość z raportem tygodniowym
+  let reportExists = false;
+  try {
+    const messages = await logsChannel.messages.fetch({ limit: 10 });
+    reportExists = messages.some(msg => 
+      msg.content.includes("ROZLICZENIA TYGODNIOWE") && 
+      msg.author.id === client.user.id
+    );
+  } catch (err) {
+    console.error("Błąd sprawdzania raportu:", err);
+  }
+
+  if (!reportExists) {
+    await interaction.reply({
+      content: "❌ Najpierw użyj komendy `/rozliczeniezakoncz` aby wygenerować raport tygodniowy!\n\n" +
+               "Możesz oznaczać płatności dopiero po zakończeniu tygodnia.",
+      ephemeral: true
+    });
+    return;
+  }
+
+  const targetUser = interaction.options.getUser("uzytkownik");
+  const userId = targetUser.id;
+
+  // Zaktualizuj status płatności - nie sprawdzaj czy ma rozliczenia, tylko zmień emoji
   if (!paymentStatus.has(userId)) {
     paymentStatus.set(userId, { paid: true, messageId: null });
   } else {
@@ -1987,18 +2005,17 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   const status = paymentStatus.get(userId);
   if (status && status.messageId) {
     try {
-      const logsChannel = await client.channels.fetch(ROZLICZENIA_LOGS_CHANNEL_ID);
       const message = await logsChannel.messages.fetch(status.messageId);
-
-      // Zbuduj nowy raport
+      
+      // Zbuduj nowy raport jako zwykły tekst
       let totalSales = 0;
-      let report = "📊 **ROZLICZENIA TYGODNIOWE**\n\n";
+      let report = "\`📊\` **ROZLICZENIA TYGODNIOWE**\n\n";
 
       for (const [uid, data] of weeklySales) {
         const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
         const userStatus = paymentStatus.get(uid);
         const paidStatus = userStatus && userStatus.paid ? "✅" : "❌";
-        report += `> ${paidStatus} 👤 <@${uid}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł\n`;
+        report += `${paidStatus} 👤 <@${uid}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Prowizja: ${prowizja.toLocaleString("pl-PL")} zł\n`;
         totalSales += data.amount;
       }
 
@@ -2017,7 +2034,7 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     .setTitle("✅ Płatność oznaczona")
     .setDescription(
       `> \`✅\` × **Oznaczono płatność** dla <@${userId}>\n` +
-      `> 💰 **Kwota prowizji:** ${(weeklySales.get(userId).amount * ROZLICZENIA_PROWIZJA).toLocaleString("pl-PL")} zł\n` +
+      `> 💰 **Kwota prowizji:** ${weeklySales.has(userId) ? (weeklySales.get(userId).amount * ROZLICZENIA_PROWIZJA).toLocaleString("pl-PL") : "0"} zł\n` +
       `> 🔄 **Status:** Zaktualizowano wiadomość z raportem`
     )
     .setTimestamp();
@@ -2028,6 +2045,15 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
 
 // Handler dla komendy /statusbota
 async function handleStatusBotaCommand(interaction) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "❌ Tylko właściciel serwera może użyć tej komendy!",
+      ephemeral: true
+    });
+    return;
+  }
+
   try {
     const status = await checkBotStatus();
     
@@ -3004,6 +3030,7 @@ async function ticketClaimCommon(interaction, channelId) {
     locked: false,
     userId: null,
     ticketMessageId: null,
+    originalCategoryId: null, // Zapisz oryginalną kategorię
   };
 
   if (ticketData.locked) {
@@ -3029,20 +3056,43 @@ async function ticketClaimCommon(interaction, channelId) {
   try {
     const claimerId = interaction.user.id;
 
-    await ch.permissionOverwrites.edit(claimerId, {
-      ViewChannel: true,
-      SendMessages: true,
-      ReadMessageHistory: true,
-    });
+    // Zapisz oryginalną kategorię przed przeniesieniem
+    if (!ticketData.originalCategoryId) {
+      ticketData.originalCategoryId = ch.parentId;
+    }
 
+    // Przenieś do kategorii TICKETY PRZEJĘTE
+    const przejetaKategoriaId = "1457446529395593338";
+    const przejetaKategoria = await client.channels.fetch(przejetaKategoriaId).catch(() => null);
+    
+    if (przejetaKategoria) {
+      await ch.setParent(przejetaKategoriaId).catch((err) => {
+        console.error("Błąd przenoszenia do kategorii TICKETY PRZEJĘTE:", err);
+      });
+      console.log(`Przeniesiono ticket ${channelId} do kategorii TICKETY PRZEJĘTE`);
+    } else {
+      console.error("Nie znaleziono kategorii TICKETY PRZEJĘTE (1457446529395593338)");
+    }
+
+    // Ustaw uprawnienia tylko dla osoby przejmującej
+    await ch.permissionOverwrites.set([
+      {
+        id: claimerId,
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory]
+      },
+      {
+        id: interaction.guild.roles.everyone,
+        deny: [PermissionFlagsBits.ViewChannel]
+      }
+    ]);
+
+    // Jeśli właściciel ticketu istnieje, zabierz mu dostęp
     if (ticketData && ticketData.userId) {
-      await ch.permissionOverwrites
-        .edit(ticketData.userId, {
-          ViewChannel: true,
-          SendMessages: true,
-          ReadMessageHistory: true,
-        })
-        .catch(() => null);
+      await ch.permissionOverwrites.edit(ticketData.userId, {
+        ViewChannel: false,
+        SendMessages: false,
+        ReadMessageHistory: false,
+      }).catch(() => null);
     }
 
     ticketData.claimedBy = claimerId;
@@ -3104,6 +3154,7 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
     claimedBy: null,
     userId: null,
     ticketMessageId: null,
+    originalCategoryId: null, // Dodaj oryginalną kategorię
   };
 
   const ch = await client.channels.fetch(channelId).catch(() => null);
@@ -3131,6 +3182,38 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
   try {
     const releaserId = interaction.user.id;
 
+    // Przywróć oryginalną kategorię jeśli istnieje
+    if (ticketData.originalCategoryId) {
+      const originalCategory = await client.channels.fetch(ticketData.originalCategoryId).catch(() => null);
+      
+      if (originalCategory) {
+        await ch.setParent(ticketData.originalCategoryId).catch((err) => {
+          console.error("Błąd przywracania oryginalnej kategorii:", err);
+        });
+        console.log(`Przywrócono ticket ${channelId} do oryginalnej kategorii ${ticketData.originalCategoryId}`);
+      } else {
+        console.error("Nie znaleziono oryginalnej kategorii:", ticketData.originalCategoryId);
+      }
+    }
+
+    // Przywróć standardowe uprawnienia
+    await ch.permissionOverwrites.set([
+      {
+        id: interaction.guild.roles.everyone,
+        deny: [PermissionFlagsBits.ViewChannel]
+      }
+    ]);
+
+    // Przywróć dostęp właścicielowi ticketu
+    if (ticketData && ticketData.userId) {
+      await ch.permissionOverwrites.edit(ticketData.userId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      }).catch(() => null);
+    }
+
+    // Usuń uprawnienia osoby przejmującej
     if (ticketData.claimedBy) {
       await ch.permissionOverwrites.delete(ticketData.claimedBy).catch(() => null);
     }
@@ -6687,19 +6770,17 @@ async function sendRozliczeniaMessage() {
     const channel = await client.channels.fetch(ROZLICZENIA_CHANNEL_ID);
     if (!channel) return;
 
-    // Sprawdź czy istnieje wiadomość bota do usunięcia
-    const messages = await channel.messages.fetch({ limit: 10 });
-    const botMessage = messages.find(msg =>
-      msg.author.id === client.user.id &&
-      msg.embeds.length > 0 &&
-      msg.embeds[0].title === "💱 ROZLICZENIA TYGODNIOWE"
-    );
+    // Sprawdź czy istnieje wiadomość bota do usunięcia (wszystkie wiadomości bota)
+    const messages = await channel.messages.fetch({ limit: 50 });
+    const botMessages = messages.filter(msg => msg.author.id === client.user.id);
 
-    // Usuń starą wiadomość jeśli istnieje
-    if (botMessage) {
-      await botMessage.delete().catch(err => console.log("Nie udało się usunąć starej wiadomości:", err));
+    // Usuń wszystkie wiadomości bota
+    for (const botMessage of botMessages.values()) {
+      await botMessage.delete();
+      console.log("Usunięto wiadomość bota z kanału rozliczeń");
     }
 
+    // Wyślij nową wiadomość
     const embed = new EmbedBuilder()
       .setColor(0xd4af37)
       .setTitle("\`💱\` ROZLICZENIA TYGODNIOWE")
@@ -6710,9 +6791,9 @@ async function sendRozliczeniaMessage() {
       .setTimestamp();
 
     await channel.send({ embeds: [embed] });
-    console.log("Wysłano wiadomość o rozliczeniach");
+    console.log("Wysłano wiadomość ROZLICZENIA TYGODNIOWE");
   } catch (err) {
-    console.error("Błąd wysyłania wiadomości o rozliczeniach:", err);
+    console.error("Błąd wysyłania wiadomości ROZLICZENIA TYGODNIOWE:", err);
   }
 }
 
