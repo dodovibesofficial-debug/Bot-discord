@@ -1965,44 +1965,12 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
     return;
   }
 
-  // Sprawdź czy tydzień został zakończony (czy istnieje raport)
-  const logsChannel = await client.channels.fetch(ROZLICZENIA_LOGS_CHANNEL_ID).catch(() => null);
-  if (!logsChannel) {
-    await interaction.reply({
-      content: "❌ Nie znaleziono kanału logów!",
-      ephemeral: true
-    });
-    return;
-  }
-
-  // Sprawdź czy istnieje wiadomość z raportem tygodniowym
-  let reportExists = false;
-  try {
-    const messages = await logsChannel.messages.fetch({ limit: 10 });
-    reportExists = messages.some(msg => 
-      msg.content.includes("ROZLICZENIA TYGODNIOWE") && 
-      msg.author.id === client.user.id
-    );
-  } catch (err) {
-    console.error("Błąd sprawdzania raportu:", err);
-  }
-
-  if (!reportExists) {
-    await interaction.reply({
-      content: "❌ Najpierw użyj komendy `/rozliczeniezakoncz` aby wygenerować raport tygodniowy!\n\n" +
-               "Możesz oznaczać płatności dopiero po zakończeniu tygodnia.",
-      ephemeral: true
-    });
-    return;
-  }
-
   const targetUser = interaction.options.getUser("uzytkownik");
   const userId = targetUser.id;
 
-  // Sprawdź czy użytkownik ma rozliczenia - jeśli nie, to nie można oznaczyć płatności
   if (!weeklySales.has(userId)) {
     await interaction.reply({
-      content: "❌ Ten użytkownik nie ma żadnych rozliczeń w tym tygodniu! Nie można oznaczyć płatności.",
+      content: "❌ Ten użytkownik nie ma żadnych rozliczeń w tym tygodniu!",
       ephemeral: true
     });
     return;
@@ -2019,11 +1987,12 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
   const status = paymentStatus.get(userId);
   if (status && status.messageId) {
     try {
+      const logsChannel = await client.channels.fetch(ROZLICZENIA_LOGS_CHANNEL_ID);
       const message = await logsChannel.messages.fetch(status.messageId);
-      
+
       // Zbuduj nowy raport
       let totalSales = 0;
-      let report = "\`📊\` **ROZLICZENIA TYGODNIOWE**\n\n";
+      let report = "📊 **ROZLICZENIA TYGODNIOWE**\n\n";
 
       for (const [uid, data] of weeklySales) {
         const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
