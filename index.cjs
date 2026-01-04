@@ -600,7 +600,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczenie")
     .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko admin/sprzedawca
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko admin/sprzedawca (1350786945944391733)
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -2705,7 +2705,7 @@ async function handleZakonczTicketCommand(interaction) {
     .setTitle("✅ New Shop × LEGIT CHECK")
     .setDescription(
       `## \`❔\` **Jeżeli uważasz że tranzakcja przeszła pomyślnie i otrzymałeś swój zakup napisz tą wiadomość na kanale #1449840030947217529\n\n` +
-      `\`+rep\` @${interaction.user.username} (${interaction.user.username} to osoba która wpisała komende) sprzedał/kupił/wręczył nagrode za zaproszenia/wręczył nagrode za konkurs (${co} to ma dobierac automatycznie do kategori ticketa) (${kwota} to to jest to co wpisuje w komendzie co sprzedałeś / co wręczyłeś itd.) (${serwer} czyli to co w komendzie) \`\n\n` +
+      `\`+rep\` @${interaction.user.username} (${interaction.user.username} odebrał nagrodę / kupił / sprzedał)\n\n` +
       `**I jeżeli wyśle tego +repa na kanał ten to ticket się zamknie w ciągu 5 sekund a jeżeli nie napisze +repa to ticket zostaje na 5 minut i potem sam się usuwa**`
     )
     .setTimestamp()
