@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bot-discord
+    env: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: node index.cjs
+    autoDeploy: true
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: PREFIX
+        sync: false
+      # Dodaj tu inne zmienne środowiskowe, jeśli używasz
