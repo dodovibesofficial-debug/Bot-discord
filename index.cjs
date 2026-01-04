@@ -626,6 +626,40 @@ const commands = [
     )
     .toJSON(),
   new SlashCommandBuilder()
+    .setName("statusbota")
+    .setDescription("Pokaż szczegółowy status bota")
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("rozliczenieustaw")
+    .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addUserOption((option) =>
+      option
+        .setName("uzytkownik")
+        .setDescription("Użytkownik")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("akcja")
+        .setDescription("Dodaj lub odejmij kwotę")
+        .setRequired(true)
+        .addChoices(
+          { name: "Dodaj", value: "dodaj" },
+          { name: "Odejmij", value: "odejmij" },
+          { name: "Ustaw", value: "ustaw" }
+        )
+    )
+    .addIntegerOption((option) =>
+      option
+        .setName("kwota")
+        .setDescription("Kwota do dodania/odejmowania/ustawienia")
+        .setRequired(true)
+        .setMinValue(1)
+        .setMaxValue(999999)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
     .setName("stworzkonkurs")
     .setDescription(
       "Utwórz konkurs z przyciskiem do udziału i losowaniem zwycięzców",
@@ -1765,6 +1799,12 @@ async function handleSlashCommand(interaction) {
     case "rozliczeniazaplacil":
       await handleRozliczenieZaplaconyCommand(interaction);
       break;
+    case "statusbota":
+      await handleStatusBotaCommand(interaction);
+      break;
+    case "rozliczenieustaw":
+      await handleRozliczenieUstawCommand(interaction);
+      break;
     case "zaproszeniastats":
       await handleZaprosieniaStatsCommand(interaction);
       break;
@@ -1972,6 +2012,100 @@ async function handleRozliczenieZaplaconyCommand(interaction) {
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
   console.log(`Właściciel oznaczył płatność dla użytkownika ${userId}`);
+}
+
+// Handler dla komendy /statusbota
+async function handleStatusBotaCommand(interaction) {
+  try {
+    const status = await checkBotStatus();
+    
+    const embed = new EmbedBuilder()
+      .setColor(status.statusColor)
+      .setTitle("📊 Status Bota")
+      .setDescription(`**Status:** ${status.status}`)
+      .addFields(
+        { name: "⏱ Uptime", value: status.uptime, inline: true },
+        { name: "📡 Ping", value: `${status.ping}ms (avg: ${status.avgPing}ms)`, inline: true },
+        { name: "🔢 Błędy", value: status.errorCount.toString(), inline: true },
+        { name: "🌐 Serwery", value: status.guilds.toString(), inline: true },
+        { name: "👥 Użytkownicy", value: status.users.toString(), inline: true },
+        { name: "💬 Kanały", value: status.channels.toString(), inline: true }
+      )
+      .setTimestamp()
+      .setFooter({ text: "Bot Monitoring System" });
+
+    await interaction.reply({ embeds: [embed] });
+  } catch (err) {
+    console.error("Błąd komendy /statusbota:", err);
+    await interaction.reply({
+      content: "❌ Wystąpił błąd podczas pobierania statusu bota!",
+      ephemeral: true
+    });
+  }
+}
+
+// Handler dla komendy /rozliczenieustaw
+async function handleRozliczenieUstawCommand(interaction) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "❌ Tylko właściciel serwera może użyć tej komendy!",
+      ephemeral: true
+    });
+    return;
+  }
+
+  const targetUser = interaction.options.getUser("uzytkownik");
+  const akcja = interaction.options.getString("akcja");
+  const kwota = interaction.options.getInteger("kwota");
+  const userId = targetUser.id;
+
+  // Inicjalizuj użytkownika jeśli nie istnieje
+  if (!weeklySales.has(userId)) {
+    weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
+  }
+
+  const userData = weeklySales.get(userId);
+  const staraKwota = userData.amount;
+  let nowaKwota = staraKwota;
+
+  switch (akcja) {
+    case "dodaj":
+      nowaKwota = staraKwota + kwota;
+      userData.amount = nowaKwota;
+      break;
+    case "odejmij":
+      nowaKwota = Math.max(0, staraKwota - kwota);
+      userData.amount = nowaKwota;
+      break;
+    case "ustaw":
+      nowaKwota = kwota;
+      userData.amount = nowaKwota;
+      break;
+  }
+
+  userData.lastUpdate = Date.now();
+
+  const prowizja = nowaKwota * ROZLICZENIA_PROWIZJA;
+  const zmiana = nowaKwota - staraKwota;
+  const znakZmiany = zmiana >= 0 ? "+" : "";
+
+  const embed = new EmbedBuilder()
+    .setColor(0x00ff00)
+    .setTitle("✅ Rozliczenie zaktualizowane")
+    .setDescription(
+      `> \`✅\` × **Zaktualizowano rozliczenie** dla <@${userId}>\n` +
+      `> 👤 **Użytkownik:** ${targetUser.username}\n` +
+      `> 🔄 **Akcja:** ${akcja.charAt(0).toUpperCase() + akcja.slice(1)}\n` +
+      `> 💰 **Kwota zmiany:** ${znakZmiany}${zmiana.toLocaleString("pl-PL")} zł\n` +
+      `> 📊 **Stara suma:** ${staraKwota.toLocaleString("pl-PL")} zł\n` +
+      `> 📈 **Nowa suma:** ${nowaKwota.toLocaleString("pl-PL")} zł\n` +
+      `> 💸 **Prowizja (10%):** ${prowizja.toLocaleString("pl-PL")} zł`
+    )
+    .setTimestamp();
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
+  console.log(`Właściciel zaktualizował rozliczenie dla ${userId}: ${akcja} ${kwota} zł`);
 }
 
 async function handleAdminPrzejmij(interaction) {
@@ -6667,7 +6801,7 @@ async function sendMonitoringEmbed(title, description, color) {
         color: color,
         timestamp: new Date().toISOString(),
         footer: {
-          text: "Majkel Bot Monitoring System",
+          text: "Bot Monitoring System",
           icon_url: client.user?.displayAvatarURL()
         }
       }]
@@ -6864,7 +6998,7 @@ async function sendStatusReport(channel) {
   
   const embed = new EmbedBuilder()
     .setColor(status.statusColor)
-    .setTitle("📊 Status Bota - Majkel")
+    .setTitle("📊 Status Bota")
     .setDescription(`**Status:** ${status.status}`)
     .addFields(
       { name: "⏱ Uptime", value: status.uptime, inline: true },
@@ -6875,7 +7009,7 @@ async function sendStatusReport(channel) {
       { name: "💬 Kanały", value: status.channels.toString(), inline: true }
     )
     .setTimestamp()
-    .setFooter({ text: "Majkel Bot Monitoring System" });
+    .setFooter({ text: "Bot Monitoring System" });
 
   await channel.send({ embeds: [embed] });
 }
