@@ -6032,7 +6032,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       "```\n" +
       "📩 New Shop × ZAPROSZENIA\n" +
       "```\n" +
-      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n\n` +
+      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n` +
       `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
       `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
       `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
@@ -6082,9 +6082,6 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
 
-    await interaction.editReply({
-      content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
-    });
   } catch (err) {
     console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
     try {
@@ -6719,8 +6716,8 @@ async function handleKonkursJoinModal(interaction, msgId) {
             "attached_assets",
             "standard (4).gif",
           );
-          const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_update.gif" });
-          embed.setImage("attachment://konkurs_update.gif");
+          const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+          embed.setImage("attachment://konkurs_start.gif");
           
           const joinButton = new ButtonBuilder()
             .setCustomId(`konkurs_join_${msgId}`)
@@ -6875,8 +6872,8 @@ async function endContestByMessageId(messageId) {
           "attached_assets",
           "standard (3).gif",
         );
-        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
-        finalEmbed.setImage("attachment://konkurs_end.gif");
+        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+        finalEmbed.setImage("attachment://konkurs_start.gif");
         await origMsg
           .edit({ embeds: [finalEmbed], components: [row], files: [attachment] })
           .catch(() => null);
@@ -6888,7 +6885,7 @@ async function endContestByMessageId(messageId) {
           // ignore
         }
         await origMsg
-          .edit({ embeds: [finalEmbed], components: [row], files: [attachment] })
+          .edit({ embeds: [finalEmbed], components: [row] })
           .catch(() => null);
       }
     }
