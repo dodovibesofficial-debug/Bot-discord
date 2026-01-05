@@ -6065,9 +6065,13 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     try {
       await interaction.editReply({ embeds: [embed] });
     } catch (e) {
-      await interaction.editReply({
-        content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
-      });
+      try {
+        await interaction.editReply({
+          content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
+        });
+      } catch (e2) {
+        // ignore
+      }
     }
   }
 }
