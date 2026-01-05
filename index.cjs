@@ -151,7 +151,18 @@ const INVITER_RATE_LIMIT_MAX = 10; // maksymalnie 10 zaproszeń w oknie (zmień 
 const inviteLeaves = new Map(); // guildId -> Map<inviterId, leftCount>
 // -----------------------------------------------------
 
-const STORE_FILE = path.join(__dirname, "legit_store.json");
+const STORE_FILE = process.env.STORE_FILE
+  ? path.resolve(process.env.STORE_FILE)
+  : path.join(__dirname, "legit_store.json");
+
+try {
+  const dir = path.dirname(STORE_FILE);
+  if (dir && !fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+} catch (e) {
+  console.warn("Nie udało się przygotować katalogu dla STORE_FILE:", e);
+}
 
 // -------- Persistent storage helpers (invites, tickets, legit-rep) --------
 function nestedObjectToMapOfMaps(source) {
@@ -2441,10 +2452,10 @@ async function handleDropCommand(interaction) {
   const chance = Math.random() * 100;
 
   let result;
-  // New probabilities: 2% for 10% discount, 10% for 5% discount
-  if (chance < 2) {
+  // Lower probabilities (smaller chance to win)
+  if (chance < 0.5) {
     result = { win: true, discount: 10 };
-  } else if (chance < 12) {
+  } else if (chance < 5) {
     result = { win: true, discount: 5 };
   } else {
     result = { win: false };
@@ -6730,32 +6741,6 @@ async function endContestByMessageId(messageId) {
         )
         .setTimestamp();
 
-      // Dodaj GIF na zakończenie konkursu
-      try {
-        const gifPath = path.join(
-          __dirname,
-          "attached_assets",
-          "standard (3).gif",
-        );
-        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
-        finalEmbed.setImage("attachment://konkurs_end.gif");
-        
-        const row = new ActionRowBuilder().addComponents(joinButton);
-        await origMsg.edit({ 
-          embeds: [finalEmbed], 
-          components: [row],
-          files: [attachment]
-        }).catch(() => null);
-      } catch (err) {
-        console.warn("Nie udało się załadować GIFa na zakończenie konkursu:", err);
-        // Fallback: edytuj bez GIFa
-        const row = new ActionRowBuilder().addComponents(joinButton);
-        await origMsg.edit({ 
-          embeds: [finalEmbed], 
-          components: [row]
-        }).catch(() => null);
-      }
-
       const personForm = getPersonForm(participants.length);
       let buttonLabel;
       if (participants.length === 1) {
@@ -6778,9 +6763,29 @@ async function endContestByMessageId(messageId) {
 
       const row = new ActionRowBuilder().addComponents(joinButton);
 
-      await origMsg
-        .edit({ embeds: [finalEmbed], components: [row] })
-        .catch(() => null);
+      // Dodaj GIF na zakończenie konkursu
+      try {
+        const gifPath = path.join(
+          __dirname,
+          "attached_assets",
+          "standard (3).gif",
+        );
+        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
+        finalEmbed.setImage("attachment://konkurs_end.gif");
+        await origMsg
+          .edit({ embeds: [finalEmbed], components: [row], files: [attachment] })
+          .catch(() => null);
+      } catch (err) {
+        console.warn("Nie udało się załadować GIFa na zakończenie konkursu:", err);
+        try {
+          finalEmbed.setImage(null);
+        } catch (e) {
+          // ignore
+        }
+        await origMsg
+          .edit({ embeds: [finalEmbed], components: [row] })
+          .catch(() => null);
+      }
     }
   } catch (err) {
     console.warn("Nie udało się zedytować wiadomości konkursu na końcu:", err);
@@ -7408,3 +7413,4 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
 app.listen(3000);
+
