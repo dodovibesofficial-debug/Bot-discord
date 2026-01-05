@@ -1470,6 +1470,41 @@ async function handleButtonInteraction(interaction) {
   const customId = interaction.customId;
   const botName = client.user?.username || "NEWSHOP";
 
+  // KONKURSY: obsługa przycisków konkursowych
+  if (customId.startsWith("konkurs_join_")) {
+    const msgId = customId.replace("konkurs_join_", "");
+    
+    const modal = new ModalBuilder()
+      .setCustomId(`konkurs_join_modal_${msgId}`)
+      .setTitle("Dołącz do konkursu");
+
+    const nickInput = new TextInputBuilder()
+      .setCustomId("konkurs_nick")
+      .setLabel("Podaj swój nick Minecraft")
+      .setStyle(TextInputStyle.Short)
+      .setRequired(false)
+      .setMaxLength(50)
+      .setPlaceholder("Na ten nick nadamy nagrode");
+
+    const row1 = new ActionRowBuilder().addComponents(nickInput);
+    modal.addComponents(row1);
+
+    await interaction.showModal(modal);
+    return;
+  }
+
+  if (customId.startsWith("konkurs_leave_")) {
+    const msgId = customId.replace("konkurs_leave_", "");
+    await handleKonkursLeave(interaction, msgId);
+    return;
+  }
+
+  if (customId.startsWith("konkurs_cancel_leave_")) {
+    const msgId = customId.replace("konkurs_cancel_leave_", "");
+    await handleKonkursCancelLeave(interaction, msgId);
+    return;
+  }
+
   // NEW: verification panel button
   if (customId.startsWith("verify_panel_")) {
     // very simple puzzles for preschool level: addition and multiplication with small numbers
@@ -6413,11 +6448,20 @@ async function handleDodajKonkursCommand(interaction) {
     .setPlaceholder("2")
     .setMaxLength(5);
 
+  const imageUrlInput = new TextInputBuilder()
+    .setCustomId("konkurs_image_url")
+    .setLabel("URL obrazka (opcjonalnie)")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(false)
+    .setPlaceholder("https://example.com/image.png")
+    .setMaxLength(500);
+
   modal.addComponents(
     new ActionRowBuilder().addComponents(prizeInput),
     new ActionRowBuilder().addComponents(timeInput),
     new ActionRowBuilder().addComponents(winnersInput),
     new ActionRowBuilder().addComponents(invitesReqInput),
+    new ActionRowBuilder().addComponents(imageUrlInput),
   );
 
   await interaction.showModal(modal);
@@ -6430,6 +6474,8 @@ async function handleKonkursCreateModal(interaction) {
     interaction.fields.getTextInputValue("konkurs_zwyciezcy") || "1";
   const invitesReqStr =
     interaction.fields.getTextInputValue("konkurs_wymagania_zaproszenia") || "";
+  const imageUrlStr =
+    interaction.fields.getTextInputValue("konkurs_image_url") || "";
 
   const timeMs = parseTimeString(timeStr);
   if (!timeMs) {
@@ -6471,6 +6517,11 @@ async function handleKonkursCreateModal(interaction) {
     .setDescription(description)
     .setTimestamp();
 
+  // Dodaj obrazek jeśli podano URL
+  if (imageUrlStr && imageUrlStr.trim()) {
+    embed.setImage(imageUrlStr.trim());
+  }
+
   // Startowy przycisk
   const joinBtn = new ButtonBuilder()
     .setCustomId(`konkurs_join_temp_${Date.now()}`)
@@ -6495,6 +6546,7 @@ async function handleKonkursCreateModal(interaction) {
       messageId: sent.id,
       createdBy: interaction.user.id,
       invitesRequired,
+      imageUrl: imageUrlStr.trim() || null,
     });
 
     contestParticipants.set(sent.id, new Map());
@@ -6713,6 +6765,11 @@ async function endContestByMessageId(messageId) {
           `🏆 • Wygrywają:\n${publicWinners}`,
         )
         .setTimestamp();
+
+      // Dodaj obrazek jeśli konkurs go miał
+      if (meta.imageUrl) {
+        finalEmbed.setImage(meta.imageUrl);
+      }
 
       const personForm = getPersonForm(participants.length);
       let buttonLabel;
