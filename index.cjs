@@ -5798,7 +5798,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const inviteWord = getInviteWord(currentInvites);
       try {
         await zapChannel.send(
-          `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 4mies)`,
+          `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`,
         );
       } catch (e) { }
     }
@@ -6031,7 +6031,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
       `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
       `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
-      `> \`⚠️\` × **Niespełniające kryteriów (< konto 4 mies.):** \`${fake}\`\n` +
+      `> \`⚠️\` × **Niespełniające kryteriów (< konto 1 mies.):** \`${fake}\`\n` +
       `> \`🎁\` × **Dodatkowe zaproszenia:** \`${bonus}\``,
     );
 
