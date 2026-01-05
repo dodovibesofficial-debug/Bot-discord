@@ -5631,9 +5631,9 @@ client.on(Events.GuildMemberAdd, async (member) => {
       console.error("Błąd podczas wykrywania invite:", e);
     }
 
-    // Simple fake-account detection (~1 month)
+    // Simple fake-account detection (~1.5 months)
     try {
-      const ACCOUNT_AGE_THRESHOLD_MS = 1 * 30 * 24 * 60 * 60 * 1000;
+      const ACCOUNT_AGE_THRESHOLD_MS = 45 * 24 * 60 * 60 * 1000;
       const accountAgeMs =
         Date.now() - (member.user.createdTimestamp || Date.now());
       isFakeAccount = accountAgeMs < ACCOUNT_AGE_THRESHOLD_MS;
@@ -5802,7 +5802,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const inviteWord = getInviteWord(currentInvites);
       try {
         await zapChannel.send(
-          `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`,
+          `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1.5mies)`,
         );
       } catch (e) { }
     }
@@ -6035,7 +6035,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
       `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
       `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
-      `> \`⚠️\` × **Niespełniające kryteriów (< konto 1 mies.):** \`${fake}\`\n` +
+      `> \`⚠️\` × **Niespełniające kryteriów (< konto 1.5 mies.):** \`${fake}\`\n` +
       `> \`🎁\` × **Dodatkowe zaproszenia:** \`${bonus}\``,
     );
 
