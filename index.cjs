@@ -9,7 +9,7 @@ const {
   PermissionFlagsBits,
   ChannelType,
   ActionRowBuilder,
-  StringSelectMenuBuilder, 
+  StringSelectMenuBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -235,6 +235,9 @@ function scheduleSavePersistentState() {
         inviteRewards: mapOfMapsToPlainObject(inviteRewards),
         inviteLeaves: mapOfMapsToPlainObject(inviteLeaves),
         inviteRewardsGiven: mapOfMapsToPlainObject(inviteRewardsGiven), // NEW
+        inviteTotalJoined: mapOfMapsToPlainObject(inviteTotalJoined),
+        inviteFakeAccounts: mapOfMapsToPlainObject(inviteFakeAccounts),
+        inviteBonusInvites: mapOfMapsToPlainObject(inviteBonusInvites),
         lastInviteInstruction: Object.fromEntries(lastInviteInstruction),
         contests: contestsObj,
         contestParticipants: participantsObj,
@@ -369,6 +372,30 @@ function loadPersistentState() {
           weeklySales.set(userId, salesData);
         }
       }
+    }
+
+    // Load invite total joined
+    if (data.inviteTotalJoined) {
+      const loaded = nestedObjectToMapOfMaps(data.inviteTotalJoined);
+      loaded.forEach((inner, guildId) => {
+        inviteTotalJoined.set(guildId, inner);
+      });
+    }
+
+    // Load invite fake accounts
+    if (data.inviteFakeAccounts) {
+      const loaded = nestedObjectToMapOfMaps(data.inviteFakeAccounts);
+      loaded.forEach((inner, guildId) => {
+        inviteFakeAccounts.set(guildId, inner);
+      });
+    }
+
+    // Load invite bonus invites
+    if (data.inviteBonusInvites) {
+      const loaded = nestedObjectToMapOfMaps(data.inviteBonusInvites);
+      loaded.forEach((inner, guildId) => {
+        inviteBonusInvites.set(guildId, inner);
+      });
     }
 
     console.log("Załadowano zapisany stan bota z pliku.");
