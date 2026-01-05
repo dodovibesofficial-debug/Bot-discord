@@ -239,6 +239,7 @@ function scheduleSavePersistentState() {
         contests: contestsObj,
         contestParticipants: participantsObj,
         fourMonthBlockList: fourMonthObj,
+        weeklySales: Object.fromEntries(weeklySales),
       };
 
       fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
@@ -357,6 +358,15 @@ function loadPersistentState() {
       for (const [msgId, arr] of Object.entries(data.contestParticipants)) {
         if (Array.isArray(arr)) {
           contestParticipants.set(msgId, new Set(arr));
+        }
+      }
+    }
+
+    // Load weekly sales
+    if (data.weeklySales && typeof data.weeklySales === "object") {
+      for (const [userId, salesData] of Object.entries(data.weeklySales)) {
+        if (salesData && typeof salesData === "object" && typeof salesData.amount === "number") {
+          weeklySales.set(userId, salesData);
         }
       }
     }
@@ -613,17 +623,6 @@ const commands = [
     .setName("rozliczeniezakoncz")
     .setDescription("Wyślij podsumowanie rozliczeń (tylko właściciel)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .toJSON(),
-  new SlashCommandBuilder()
-    .setName("rozliczeniazaplacil")
-    .setDescription("Oznacz że ktoś zapłacił prowizję (tylko właściciel)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addUserOption((option) =>
-      option
-        .setName("uzytkownik")
-        .setDescription("Użytkownik który zapłacił")
-        .setRequired(true)
-    )
     .toJSON(),
   new SlashCommandBuilder()
     .setName("statusbota")
@@ -1832,9 +1831,6 @@ async function handleSlashCommand(interaction) {
     case "rozliczeniezakoncz":
       await handleRozliczenieZakonczCommand(interaction);
       break;
-    case "rozliczeniazaplacil":
-      await handleRozliczenieZaplaconyCommand(interaction);
-      break;
     case "statusbota":
       await handleStatusBotaCommand(interaction);
       break;
@@ -1884,6 +1880,9 @@ async function handleRozliczenieCommand(interaction) {
   const userData = weeklySales.get(userId);
   userData.amount += kwota;
   userData.lastUpdate = Date.now();
+  
+  // Zapisz stan po dodaniu rozliczenia
+  scheduleSavePersistentState();
 
   const embed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
@@ -1938,17 +1937,11 @@ async function handleRozliczenieZakonczCommand(interaction) {
 
     for (const [userId, data] of weeklySales) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
-      // Zawsze ❌ przy generowaniu raportu
       // Pobierz nazwę użytkownika zamiast pingować
       const user = client.users.cache.get(userId);
       const userName = user ? user.username : `Użytkownik${userId}`;
-      reportLines.push(`❌ ${userName} Do zapłaty ${prowizja}zł`);
+      reportLines.push(`${userName} Do zapłaty ${prowizja}zł`);
       totalSales += data.amount;
-      
-      // Zapisz messageId do paymentStatus z paid: false
-      if (!paymentStatus.has(userId)) {
-        paymentStatus.set(userId, { paid: false, messageId: null });
-      }
     }
 
     const totalProwizja = totalSales * ROZLICZENIA_PROWIZJA;
@@ -1967,15 +1960,6 @@ async function handleRozliczenieZakonczCommand(interaction) {
 
     const sentMessage = await logsChannel.send({ embeds: [reportEmbed] });
 
-    // Zapisz messageId do paymentStatus dla wszystkich użytkowników
-    for (const [userId, data] of weeklySales) {
-      if (!paymentStatus.has(userId)) {
-        paymentStatus.set(userId, { paid: false, messageId: sentMessage.id });
-      } else {
-        paymentStatus.get(userId).messageId = sentMessage.id;
-      }
-    }
-
     // Zapisz dane przed resetem dla embeda
     const liczbaOsob = weeklySales.size;
     const totalSalesValue = totalSales;
@@ -1983,7 +1967,6 @@ async function handleRozliczenieZakonczCommand(interaction) {
 
     // Resetuj dane po wysłaniu raportu
     weeklySales.clear();
-    paymentStatus.clear();
     console.log("Ręcznie zresetowano rozliczenia po /rozliczeniezakoncz");
 
     const embed = new EmbedBuilder()
@@ -2007,124 +1990,6 @@ async function handleRozliczenieZakonczCommand(interaction) {
       ephemeral: true
     });
   }
-}
-
-// Handler dla komendy /rozliczeniazaplacil
-async function handleRozliczenieZaplaconyCommand(interaction) {
-  // Sprawdź czy właściciel
-  if (interaction.user.id !== interaction.guild.ownerId) {
-    await interaction.reply({
-      content: "❌ Tylko właściciel serwera może użyć tej komendy!",
-      ephemeral: true
-    });
-    return;
-  }
-
-  // Sprawdź czy tydzień został zakończony (czy istnieje raport)
-  const logsChannel = await client.channels.fetch(ROZLICZENIA_LOGS_CHANNEL_ID).catch(() => null);
-  if (!logsChannel) {
-    await interaction.reply({
-      content: "❌ Nie znaleziono kanału logów!",
-      ephemeral: true
-    });
-    return;
-  }
-
-  // Sprawdź czy istnieje wiadomość z raportem tygodniowym
-  let reportExists = false;
-  let reportMessage = null;
-  try {
-    const messages = await logsChannel.messages.fetch({ limit: 10 });
-    reportMessage = messages.find(msg => 
-      msg.embeds.length > 0 &&
-      msg.embeds[0].title?.includes("ROZLICZENIA TYGODNIOWE") && 
-      msg.author.id === client.user.id
-    );
-    reportExists = !!reportMessage;
-  } catch (err) {
-    console.error("Błąd sprawdzania raportu:", err);
-  }
-
-  if (!reportExists) {
-    await interaction.reply({
-      content: "❌ Najpierw użyj komendy `/rozliczeniezakoncz` aby wygenerować raport tygodniowy!\n\n" +
-               "Możesz oznaczać płatności dopiero po zakończeniu tygodnia.",
-      ephemeral: true
-    });
-    return;
-  }
-
-  const targetUser = interaction.options.getUser("uzytkownik");
-  const userId = targetUser.id;
-
-  // Znajdź użytkownika w raporcie po embedzie
-  const existingEmbed = reportMessage.embeds[0];
-  const description = existingEmbed.description;
-  
-  // Sprawdź czy użytkownik jest w weeklySales zamiast szukać w embedzie
-  if (!weeklySales.has(userId)) {
-    await interaction.reply({
-      content: "❌ Ten użytkownik nie ma rozliczeń w raporcie tygodniowym!",
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Pobierz nazwę użytkownika do sprawdzenia w embedzie
-  const user = client.users.cache.get(userId);
-  const userName = user ? user.username : `Użytkownik${userId}`;
-  const userLine = description.split('\n').find(line => line.includes(userName));
-
-  // Zaktualizuj status płatności - zmień emoji z ❌ na ✅ dla tej osoby
-  if (!paymentStatus.has(userId)) {
-    paymentStatus.set(userId, { paid: true, messageId: reportMessage.id });
-  } else {
-    paymentStatus.get(userId).paid = true;
-    paymentStatus.get(userId).messageId = reportMessage.id;
-  }
-
-  // Zbuduj nowy raport jako embed - zachowaj wszystkie osoby, zmień tylko emoji dla jednej
-  let totalSales = 0;
-  let reportLines = [];
-
-  // Przejdź przez wszystkich użytkowników w weeklySales, nie usuwaj nikogo
-  for (const [uid, data] of weeklySales) {
-    const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
-    const userStatus = paymentStatus.get(uid);
-    const paidStatus = userStatus && userStatus.paid ? "✅" : "❌";
-    // Pobierz nazwę użytkownika zamiast pingować
-    const user = client.users.cache.get(uid);
-    const userName = user ? user.username : `Użytkownik${uid}`;
-    reportLines.push(`${paidStatus} ${userName} Do zapłaty ${prowizja}zł`);
-    totalSales += data.amount;
-  }
-
-  const reportEmbed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setTitle("\`📊\` ROZLICZENIA TYGODNIOWE")
-    .setDescription(
-      reportLines.join('\n') + '\n\n' +
-      `> \`📱\` **Przelew na numer:** 880 260 392\n` +
-      `> \`⏳\` **Termin płatności:** do 20:00 dnia dzisiejszego\n` +
-      `> \`🚫\` **Od teraz do czasu zapłaty nie macie dostępu do ticketów**`
-    )
-    .setTimestamp()
-    .setFooter({ text: "Raport tygodniowy" });
-
-  await reportMessage.edit({ embeds: [reportEmbed] });
-
-  const responseEmbed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setTitle("✅ Płatność oznaczona")
-    .setDescription(
-      `> \`✅\` × **Oznaczono płatność** dla <@${userId}>\n` +
-      `> 💰 **Kwota prowizji:** ${weeklySales.has(userId) ? (weeklySales.get(userId).amount * ROZLICZENIA_PROWIZJA).toLocaleString("pl-PL") : "0"} zł\n` +
-      `> 🔄 **Status:** Zaktualizowano wiadomość z raportem`
-    )
-    .setTimestamp();
-
-  await interaction.reply({ embeds: [responseEmbed], ephemeral: true });
-  console.log(`Właściciel oznaczył płatność dla użytkownika ${userId}`);
 }
 
 // Handler dla komendy /statusbota
@@ -2188,29 +2053,23 @@ async function handleRozliczenieUstawCommand(interaction) {
   }
 
   const userData = weeklySales.get(userId);
-  const staraKwota = userData.amount;
-  let nowaKwota = staraKwota;
 
-  switch (akcja) {
-    case "dodaj":
-      nowaKwota = staraKwota + kwota;
-      userData.amount = nowaKwota;
-      break;
-    case "odejmij":
-      nowaKwota = Math.max(0, staraKwota - kwota);
-      userData.amount = nowaKwota;
-      break;
-    case "ustaw":
-      nowaKwota = kwota;
-      userData.amount = nowaKwota;
-      break;
+  if (akcja === "dodaj") {
+    userData.amount += kwota;
+  } else if (akcja === "odejmij") {
+    userData.amount = Math.max(0, userData.amount - kwota);
+  } else if (akcja === "ustaw") {
+    userData.amount = kwota;
   }
 
   userData.lastUpdate = Date.now();
+  
+  // Zapisz stan po zmianie rozliczenia
+  scheduleSavePersistentState();
 
-  const prowizja = nowaKwota * ROZLICZENIA_PROWIZJA;
-  const zmiana = nowaKwota - staraKwota;
-  const znakZmiany = zmiana >= 0 ? "+" : "";
+  const prowizja = userData.amount * ROZLICZENIA_PROWIZJA;
+  const zmiana = kwota;
+  const znakZmiany = akcja === "dodaj" ? "+" : akcja === "odejmij" ? "-" : "";
 
   const embed = new EmbedBuilder()
     .setColor(0x00ff00)
@@ -2220,9 +2079,8 @@ async function handleRozliczenieUstawCommand(interaction) {
       `> 👤 **Użytkownik:** ${targetUser.username}\n` +
       `> 🔄 **Akcja:** ${akcja.charAt(0).toUpperCase() + akcja.slice(1)}\n` +
       `> 💰 **Kwota zmiany:** ${znakZmiany}${zmiana.toLocaleString("pl-PL")} zł\n` +
-      `> 📊 **Stara suma:** ${staraKwota.toLocaleString("pl-PL")} zł\n` +
-      `> 📈 **Nowa suma:** ${nowaKwota.toLocaleString("pl-PL")} zł\n` +
-      `> 💸 **Prowizja (10%):** ${prowizja.toLocaleString("pl-PL")} zł`
+      `> 📈 **Nowa suma:** ${userData.amount.toLocaleString("pl-PL")} zł\n` +
+      `> 💸 **Prowizja do zapłaty:** ${prowizja.toLocaleString("pl-PL")} zł`
     )
     .setTimestamp();
 
@@ -7010,9 +6868,6 @@ const ROZLICZENIA_PROWIZJA = 0.10; // 10%
 // Mapa na sumy sprzedaży w tygodniu
 const weeklySales = new Map(); // userId -> { amount, lastUpdate }
 
-// Mapa na statusy płatności
-const paymentStatus = new Map(); // userId -> { paid: boolean, messageId: string }
-
 // Funkcja do wysyłania wiadomości o rozliczeniach
 async function sendRozliczeniaMessage() {
   try {
@@ -7082,7 +6937,6 @@ async function checkWeeklyReset() {
 
       // Reset mapy
       weeklySales.clear();
-      paymentStatus.clear();
       console.log("Zresetowano cotygodniowe rozliczenia");
     } catch (err) {
       console.error("Błąd resetowania rozliczeń:", err);
