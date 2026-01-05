@@ -6750,13 +6750,13 @@ async function endContestByMessageId(messageId) {
   }
 
   const podsumowanieEmbed = new EmbedBuilder()
-    .setTitle(`${meta.title} — Konkurs zakończony 🎉`)
-    .setColor(0x8b5cf6)
+    .setColor(COLOR_BLUE)
     .setDescription(
-      `Liczba zwycięzców: ${winnersCount}\n` +
-      `Liczba uczestników: ${participants.length}\n` +
-      `Nagroda: ${meta.prize}\n\n` +
-      `🏆 • **Wygrywają:**\n${winnersDetails}`,
+       "```\n" +
+      "🎉 Konkurs zakończony 🎉\n" +
+       "```\n" +
+      `**🎁 • Nagroda:** ${meta.prize}\n\n` +
+      `**🏆 • Zwycięzcy:**\n${winnersDetails}`,
     )
     .setTimestamp();
 
@@ -6779,12 +6779,13 @@ async function endContestByMessageId(messageId) {
           : "Brak zwycięzców";
 
       const finalEmbed = new EmbedBuilder()
-        .setTitle("🎉 Wyniki konkursu!")
-        .setColor(0xffd700)
+        .setColor(COLOR_BLUE)
         .setDescription(
-          `Liczba zwycięzców: ${winnersCount}\n` +
-          `Nagroda: ${meta.prize}\n\n` +
-          `🏆 • Wygrywają:\n${publicWinners}`,
+       "```\n" +
+      "🎉 Konkurs zakończony 🎉\n" +
+       "```\n" +
+      `**🎁 • Nagroda:** ${meta.prize}\n\n` +
+      `**🏆 • Zwycięzcy:**\n${winnersDetails}`,
         )
         .setTimestamp();
 
@@ -6915,7 +6916,7 @@ async function handleKonkursLeave(interaction, msgId) {
   }
 
   await interaction.update({
-    content: `✅ Opuściłeś konkurs. Aktualnych uczestników: ${participantsCount}`,
+    content: `✅ Opuściłeś konkurs.`,
     components: [],
   });
 }
