@@ -6522,61 +6522,74 @@ async function handleKonkursCreateModal(interaction) {
     embed.setImage(imageUrlStr.trim());
   }
 
-  // Startowy przycisk
-  const joinBtn = new ButtonBuilder()
-    .setCustomId(`konkurs_join_temp_${Date.now()}`)
+  // Dodaj GIF przy tworzeniu konkursu
+  try {
+    const gifPath = path.join(
+      __dirname,
+      "attached_assets",
+      "standard (4).gif",
+    );
+    const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+    embed.setImage("attachment://konkurs_start.gif");
+    
+    const row = new ActionRowBuilder().addComponents(joinBtn);
+    const sent = await targetChannel.send({ 
+      embeds: [embed], 
+      components: [row],
+      files: [attachment]
+    });
+  } catch (err) {
+    console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
+    // Fallback: wyślij bez GIFa
+    const row = new ActionRowBuilder().addComponents(joinBtn);
+    var sent = await targetChannel.send({ 
+      embeds: [embed], 
+      components: [row]
+    });
+  }
+
+  contests.set(sent.id, {
+    channelId: targetChannel.id,
+    endsAt,
+    winnersCount,
+    title: prize,
+    prize,
+    messageId: sent.id,
+    createdBy: interaction.user.id,
+    invitesRequired,
+    imageUrl: imageUrlStr.trim() || null,
+  });
+
+  contestParticipants.set(sent.id, new Map());
+  scheduleSavePersistentState();
+
+  // ustawiamy poprawny id na przycisku już po wysłaniu
+  const properCustomId = `konkurs_join_${sent.id}`;
+  const joinButtonCorrect = new ButtonBuilder()
+    .setCustomId(properCustomId)
     .setLabel("Weź udział (0)")
     .setStyle(ButtonStyle.Secondary)
     .setDisabled(false);
 
-  const row = new ActionRowBuilder().addComponents(joinBtn);
+  const newRow = new ActionRowBuilder().addComponents(joinButtonCorrect);
+  await sent.edit({ components: [newRow] }).catch(() => null);
 
-  try {
-    const sent = await targetChannel.send({
-      embeds: [embed],
-      components: [row],
-    });
+  setTimeout(() => {
+    endContestByMessageId(sent.id).catch((e) => console.error(e));
+  }, timeMs);
 
-    contests.set(sent.id, {
-      channelId: targetChannel.id,
-      endsAt,
-      winnersCount,
-      title: prize,
-      prize,
-      messageId: sent.id,
-      createdBy: interaction.user.id,
-      invitesRequired,
-      imageUrl: imageUrlStr.trim() || null,
-    });
-
-    contestParticipants.set(sent.id, new Map());
-    scheduleSavePersistentState();
-
-    // ustawiamy poprawny id na przycisku już po wysłaniu
-    const properCustomId = `konkurs_join_${sent.id}`;
-    const joinButtonCorrect = new ButtonBuilder()
-      .setCustomId(properCustomId)
-      .setLabel("Weź udział (0)")
-      .setStyle(ButtonStyle.Secondary)
-      .setDisabled(false);
-
-    const newRow = new ActionRowBuilder().addComponents(joinButtonCorrect);
-    await sent.edit({ components: [newRow] }).catch(() => null);
-
-    setTimeout(() => {
-      endContestByMessageId(sent.id).catch((e) => console.error(e));
-    }, timeMs);
-
-    await interaction.editReply({
-      content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
-    });
-  } catch (err) {
+  await interaction.editReply({
+    content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
+  });
+} catch (err) {
     console.error("Błąd tworzenia konkursu:", err);
     try {
       await interaction.editReply({
         content: "❌ Nie udało się utworzyć konkursu.",
       });
-    } catch (e) { }
+    } catch (e) {
+      console.error("Nie udało się wysłać editReply po błędzie:", e);
+    }
   }
 }
 
@@ -6769,6 +6782,32 @@ async function endContestByMessageId(messageId) {
       // Dodaj obrazek jeśli konkurs go miał
       if (meta.imageUrl) {
         finalEmbed.setImage(meta.imageUrl);
+      }
+
+      // Dodaj GIF na zakończenie konkursu
+      try {
+        const gifPath = path.join(
+          __dirname,
+          "attached_assets",
+          "standard (3).gif",
+        );
+        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
+        finalEmbed.setImage("attachment://konkurs_end.gif");
+        
+        const row = new ActionRowBuilder().addComponents(joinButton);
+        await origMsg.edit({ 
+          embeds: [finalEmbed], 
+          components: [row],
+          files: [attachment]
+        }).catch(() => null);
+      } catch (err) {
+        console.warn("Nie udało się załadować GIFa na zakończenie konkursu:", err);
+        // Fallback: edytuj bez GIFa
+        const row = new ActionRowBuilder().addComponents(joinButton);
+        await origMsg.edit({ 
+          embeds: [finalEmbed], 
+          components: [row]
+        }).catch(() => null);
       }
 
       const personForm = getPersonForm(participants.length);
