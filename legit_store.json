@@ -5,7 +5,7 @@
   },
   "inviteCounts": {
     "1350446732365926491": {
-      "1305200545979437129": 3,
+      "1305200545979437129": 0,
       "1419035877425811510": 1
     }
   },
@@ -43,5 +43,6 @@
   "weeklySales": {},
   "inviteTotalJoined": {},
   "inviteFakeAccounts": {},
-  "inviteBonusInvites": {}
+  "inviteBonusInvites": {},
+  "ticketOwners": {}
 }
