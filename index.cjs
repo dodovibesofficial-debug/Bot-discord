@@ -6448,20 +6448,11 @@ async function handleDodajKonkursCommand(interaction) {
     .setPlaceholder("2")
     .setMaxLength(5);
 
-  const imageUrlInput = new TextInputBuilder()
-    .setCustomId("konkurs_image_url")
-    .setLabel("URL obrazka (opcjonalnie)")
-    .setStyle(TextInputStyle.Short)
-    .setRequired(false)
-    .setPlaceholder("https://example.com/image.png")
-    .setMaxLength(500);
-
   modal.addComponents(
     new ActionRowBuilder().addComponents(prizeInput),
     new ActionRowBuilder().addComponents(timeInput),
     new ActionRowBuilder().addComponents(winnersInput),
     new ActionRowBuilder().addComponents(invitesReqInput),
-    new ActionRowBuilder().addComponents(imageUrlInput),
   );
 
   await interaction.showModal(modal);
@@ -6474,8 +6465,6 @@ async function handleKonkursCreateModal(interaction) {
     interaction.fields.getTextInputValue("konkurs_zwyciezcy") || "1";
   const invitesReqStr =
     interaction.fields.getTextInputValue("konkurs_wymagania_zaproszenia") || "";
-  const imageUrlStr =
-    interaction.fields.getTextInputValue("konkurs_image_url") || "";
 
   const timeMs = parseTimeString(timeStr);
   if (!timeMs) {
@@ -6517,11 +6506,6 @@ async function handleKonkursCreateModal(interaction) {
     .setDescription(description)
     .setTimestamp();
 
-  // Dodaj obrazek jeśli podano URL
-  if (imageUrlStr && imageUrlStr.trim()) {
-    embed.setImage(imageUrlStr.trim());
-  }
-
   // Dodaj GIF przy tworzeniu konkursu
   try {
     const gifPath = path.join(
@@ -6557,7 +6541,6 @@ async function handleKonkursCreateModal(interaction) {
     messageId: sent.id,
     createdBy: interaction.user.id,
     invitesRequired,
-    imageUrl: imageUrlStr.trim() || null,
   });
 
   contestParticipants.set(sent.id, new Map());
@@ -6779,11 +6762,6 @@ async function endContestByMessageId(messageId) {
           `🏆 • Wygrywają:\n${publicWinners}`,
         )
         .setTimestamp();
-
-      // Dodaj obrazek jeśli konkurs go miał
-      if (meta.imageUrl) {
-        finalEmbed.setImage(meta.imageUrl);
-      }
 
       // Dodaj GIF na zakończenie konkursu
       try {
