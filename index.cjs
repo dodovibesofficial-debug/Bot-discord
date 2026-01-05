@@ -3257,7 +3257,15 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
       }
     }
 
-    // Właściciel ticketu zachowuje dostęp - nie trzeba nic zmieniać
+    // Przywróć dostęp właścicielowi ticketu - zawsze musi widzieć
+    if (ticketData && ticketData.userId) {
+      await ch.permissionOverwrites.edit(ticketData.userId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      }).catch(() => null);
+    }
+
     // Usuń uprawnienia osoby przejmującej
     if (ticketData.claimedBy) {
       await ch.permissionOverwrites.delete(ticketData.claimedBy).catch(() => null);
@@ -5662,9 +5670,20 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const currentInvites = gMap.get(inviterId) || 0;
       const inviteWord = getInviteWord(currentInvites);
 
+      // Sprawdź czy konto ma mniej niż 4 miesiące
+      const fakeMap = inviteFakeAccounts.get(member.guild.id) || new Map();
+      const isFake = isFakeAccount || (fakeMap.get(inviterId) > 0);
+
+      let messageContent;
+      if (isFake) {
+        messageContent = `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 4mies)`;
+      } else {
+        messageContent = `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
+      }
+
       await zapChannel
         .send({
-          content: `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`,
+          content: messageContent,
         })
         .catch(() => null);
     }
