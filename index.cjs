@@ -6578,10 +6578,11 @@ async function handleKonkursCreateModal(interaction) {
     endContestByMessageId(sent.id).catch((e) => console.error(e));
   }, timeMs);
 
-  await interaction.editReply({
-    content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
-  });
-} catch (err) {
+  try {
+    await interaction.editReply({
+      content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
+    });
+  } catch (err) {
     console.error("Błąd tworzenia konkursu:", err);
     try {
       await interaction.editReply({
