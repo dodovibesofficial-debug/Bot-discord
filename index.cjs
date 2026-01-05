@@ -36,7 +36,7 @@ const client = new Client({
 */
 const activeCodes = new Map();
 const opinieChannels = new Map();
-const ticketCounter = new Map(); 
+const ticketCounter = new Map();
 const fourMonthBlockList = new Map(); // guildId -> Set(userId)
 const ticketCategories = new Map();
 const dropChannels = new Map(); // <-- mapa kanałów gdzie można używać /drop
@@ -164,6 +164,14 @@ try {
   console.warn("Nie udało się przygotować katalogu dla STORE_FILE:", e);
 }
 
+try {
+  const exists = fs.existsSync(STORE_FILE);
+  const size = exists ? fs.statSync(STORE_FILE).size : 0;
+  console.log(`[state] STORE_FILE=${STORE_FILE} exists=${exists} size=${size}`);
+} catch (e) {
+  console.warn("[state] Nie udało się odczytać informacji o STORE_FILE:", e);
+}
+
 // -------- Persistent storage helpers (invites, tickets, legit-rep) --------
 function nestedObjectToMapOfMaps(source) {
   const top = new Map();
@@ -259,6 +267,12 @@ function flushPersistentStateSync() {
   try {
     const data = buildPersistentStateData();
     fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
+    try {
+      const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
+      console.log(`[state] flush ok -> ${STORE_FILE} size=${size}`);
+    } catch (e) {
+      // ignore
+    }
   } catch (err) {
     console.error("Nie udało się zapisać stanu bota (flush):", err);
   }
@@ -274,6 +288,14 @@ function scheduleSavePersistentState() {
       fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
         if (err) {
           console.error("Nie udało się zapisać stanu bota:", err);
+          console.error(`[state] save failed -> ${STORE_FILE}`);
+          return;
+        }
+        try {
+          const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
+          console.log(`[state] save ok -> ${STORE_FILE} size=${size}`);
+        } catch (e) {
+          // ignore
         }
       });
     } catch (err) {
@@ -432,6 +454,19 @@ function loadPersistentState() {
       });
     }
 
+    try {
+      let fakeGuilds = 0;
+      let fakeEntries = 0;
+      for (const [gId, inner] of inviteFakeAccounts.entries()) {
+        fakeGuilds++;
+        if (inner && typeof inner.size === "number") fakeEntries += inner.size;
+      }
+      console.log(
+        `[state] load ok <- ${STORE_FILE} inviteFakeAccounts guilds=${fakeGuilds} entries=${fakeEntries}`,
+      );
+    } catch (e) {
+      // ignore
+    }
     console.log("Załadowano zapisany stan bota z pliku.");
   } catch (err) {
     console.error("Nie udało się odczytać stanu bota z pliku:", err);
@@ -7413,4 +7448,3 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
 app.listen(3000);
-
