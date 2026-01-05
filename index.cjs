@@ -5981,55 +5981,61 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   // Defer to avoid timeout and allow multiple replies
   await interaction.deferReply({ ephemeral: false }).catch(() => null);
 
-  const preferChannel = interaction.guild.channels.cache.get(
-    SPRAWDZ_ZAPROSZENIA_CHANNEL_ID,
-  );
+const preferChannel = interaction.guild.channels.cache.get(
+  SPRAWDZ_ZAPROSZENIA_CHANNEL_ID,
+);
 
-  const guildId = interaction.guild.id;
-  if (!inviteCounts.has(guildId)) inviteCounts.set(guildId, new Map());
-  if (!inviteRewards.has(guildId)) inviteRewards.set(guildId, new Map());
-  if (!inviteRewardsGiven.has(guildId))
-    inviteRewardsGiven.set(guildId, new Map());
-  if (!inviteLeaves.has(guildId)) inviteLeaves.set(guildId, new Map());
-  if (!inviteTotalJoined.has(guildId))
-    inviteTotalJoined.set(guildId, new Map());
-  if (!inviteFakeAccounts.has(guildId))
-    inviteFakeAccounts.set(guildId, new Map());
-  if (!inviteBonusInvites.has(guildId))
-    inviteBonusInvites.set(guildId, new Map());
+const guildId = interaction.guild.id;
 
-  const gMap = inviteCounts.get(guildId);
-  const totalMap = inviteTotalJoined.get(guildId);
-  const fakeMap = inviteFakeAccounts.get(guildId);
-  const lMap = inviteLeaves.get(guildId);
-  const bonusMap = inviteBonusInvites.get(guildId);
+// 🔒 PIERWSZA ODPOWIEDŹ – EPHEMERAL (TYLKO DLA AUTORA KOMENDY)
+await interaction.reply({
+  content: "⏳ Sprawdzam twoje zaproszenia...",
+  ephemeral: true,
+});
 
-  const userId = interaction.user.id;
-  const validInvites = gMap.get(userId) || 0;
-  const left = lMap.get(userId) || 0;
-  const fake = fakeMap.get(userId) || 0;
-  const bonus = bonusMap.get(userId) || 0;
+if (!inviteCounts.has(guildId)) inviteCounts.set(guildId, new Map());
+if (!inviteRewards.has(guildId)) inviteRewards.set(guildId, new Map());
+if (!inviteRewardsGiven.has(guildId))
+  inviteRewardsGiven.set(guildId, new Map());
+if (!inviteLeaves.has(guildId)) inviteLeaves.set(guildId, new Map());
+if (!inviteTotalJoined.has(guildId))
+  inviteTotalJoined.set(guildId, new Map());
+if (!inviteFakeAccounts.has(guildId))
+  inviteFakeAccounts.set(guildId, new Map());
+if (!inviteBonusInvites.has(guildId))
+  inviteBonusInvites.set(guildId, new Map());
 
-  // Display total invites including bonus
-  const displayedInvites = validInvites + bonus;
-  const inviteWord = getInviteWord(displayedInvites);
+const gMap = inviteCounts.get(guildId);
+const totalMap = inviteTotalJoined.get(guildId);
+const fakeMap = inviteFakeAccounts.get(guildId);
+const lMap = inviteLeaves.get(guildId);
+const bonusMap = inviteBonusInvites.get(guildId);
 
-  // ile brakuje do następnej nagrody (np. 5)
-  let missingToReward =
-    INVITE_REWARD_THRESHOLD - (displayedInvites % INVITE_REWARD_THRESHOLD);
-  // jeśli mamy dokładnie 0 (brak zaproszeń) -> missing = threshold (np. 5)
-  // jeśli mamy dokładnie próg (np. 5,10,...) i displayedInvites !== 0 -> pokazujemy 0
-  if (
-    displayedInvites !== 0 &&
-    displayedInvites % INVITE_REWARD_THRESHOLD === 0
-  ) {
-    missingToReward = 0;
-  }
+const userId = interaction.user.id;
+const validInvites = gMap.get(userId) || 0;
+const left = lMap.get(userId) || 0;
+const fake = fakeMap.get(userId) || 0;
+const bonus = bonusMap.get(userId) || 0;
 
-  const embed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setDescription(
-      "```\n" +
+// Display total invites including bonus
+const displayedInvites = validInvites + bonus;
+const inviteWord = getInviteWord(displayedInvites);
+
+// ile brakuje do następnej nagrody
+let missingToReward =
+  INVITE_REWARD_THRESHOLD - (displayedInvites % INVITE_REWARD_THRESHOLD);
+
+if (
+  displayedInvites !== 0 &&
+  displayedInvites % INVITE_REWARD_THRESHOLD === 0
+) {
+  missingToReward = 0;
+}
+
+const embed = new EmbedBuilder()
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```\n" +
       "📩 New Shop × ZAPROSZENIA\n" +
       "```\n" +
       `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n\n` +
@@ -6038,68 +6044,57 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
       `> \`⚠️\` × **Niespełniające kryteriów (< konto 1 mies.):** \`${fake}\`\n` +
       `> \`🎁\` × **Dodatkowe zaproszenia:** \`${bonus}\``,
-    );
+  );
 
+try {
+  // publikacja PUBLICZNA w kanale
+  const targetChannel = preferChannel ? preferChannel : interaction.channel;
+  await targetChannel.send({ embeds: [embed] });
+
+  // odświeżenie instrukcji
   try {
-    // Publikuj publicznie w kanale
-    const targetChannel = preferChannel ? preferChannel : interaction.channel;
-    await targetChannel.send({ embeds: [embed] });
-
-    // refresh the persistent instruction message
-    try {
-      const zapCh = targetChannel;
-      if (zapCh && zapCh.id) {
-        const prevId = lastInviteInstruction.get(zapCh.id);
-        if (prevId) {
-          try {
-            const prevMsg = await zapCh.messages
-              .fetch(prevId)
-              .catch(() => null);
-            if (prevMsg && prevMsg.deletable) {
-              await prevMsg.delete().catch(() => null);
-            }
-          } catch (e) {
-            // ignore
-          }
-          lastInviteInstruction.delete(zapCh.id);
+    const zapCh = targetChannel;
+    if (zapCh && zapCh.id) {
+      const prevId = lastInviteInstruction.get(zapCh.id);
+      if (prevId) {
+        const prevMsg = await zapCh.messages
+          .fetch(prevId)
+          .catch(() => null);
+        if (prevMsg && prevMsg.deletable) {
+          await prevMsg.delete().catch(() => null);
         }
-
-        const instructionInviteEmbed = new EmbedBuilder()
-          .setColor(0xffffff)
-          .setDescription(
-            "\`📩\` Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!",
-          );
-
-        try {
-          const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
-          lastInviteInstruction.set(zapCh.id, sent.id);
-          scheduleSavePersistentState();
-        } catch (e) {
-          // ignore
-        }
+        lastInviteInstruction.delete(zapCh.id);
       }
-    } catch (e) {
-      console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
-    }
 
+      const instructionInviteEmbed = new EmbedBuilder()
+        .setColor(0xffffff)
+        .setDescription(
+          "`📩` Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!",
+        );
+
+      const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
+      lastInviteInstruction.set(zapCh.id, sent.id);
+      scheduleSavePersistentState();
+    }
+  } catch (e) {
+    console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
+  }
+
+  // 🔒 EDYCJA WIADOMOŚCI – NADAL EPHEMERAL
+  await interaction.editReply({
+    content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
+  });
+} catch (err) {
+  console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
+  try {
     await interaction.editReply({
-      content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
+      content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
     });
-  } catch (err) {
-    console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
-    try {
-      await interaction.editReply({ embeds: [embed] });
-    } catch (e) {
-      try {
-        await interaction.editReply({
-          content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
-        });
-      } catch (e2) {
-        // ignore
-      }
-    }
+  } catch (e) {
+    // ignore
   }
 }
+
 
 // ---------------------------------------------------
 // Nowa komenda: /zaproszeniastats
