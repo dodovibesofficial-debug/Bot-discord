@@ -5637,6 +5637,10 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const accountAgeMs =
         Date.now() - (member.user.createdTimestamp || Date.now());
       isFakeAccount = accountAgeMs < ACCOUNT_AGE_THRESHOLD_MS;
+      
+      // Debug: loguj wiek konta
+      const accountAgeDays = Math.floor(accountAgeMs / (24 * 60 * 60 * 1000));
+      console.log(`[invite] Konto ${member.user.tag} (${member.id}) ma ${accountAgeDays} dni. Fake: ${isFakeAccount}`);
     } catch (e) {
       isFakeAccount = false;
     }
@@ -5691,8 +5695,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const prevTotal = totalMap.get(inviterId) || 0;
       totalMap.set(inviterId, prevTotal + 1);
 
-      // Jeśli konto spełnia kryterium 4 miesięcy i join był zaliczony (nie zrate-limitowany) -> doliczamy do prawdziwych
-      if (countThisInvite && !isFakeAccount) {
+      // ZAWSZE liczymy zaproszenia z kont < 1 miesiąca
+      if (!isFakeAccount) {
         const prev = gMap.get(inviterId) || 0;
         gMap.set(inviterId, prev + 1);
       }
@@ -6828,6 +6832,19 @@ async function endContestByMessageId(messageId) {
         )
         .setTimestamp();
 
+      // Dodaj GIF przy zakończeniu konkursu
+      try {
+        const gifPath = path.join(
+          __dirname,
+          "attached_assets",
+          "standard (3).gif",
+        );
+        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
+        finalEmbed.setImage("attachment://konkurs_end.gif");
+      } catch (err) {
+        console.warn("Nie udało się załadować GIFa przy zakończeniu konkursu:", err);
+      }
+
       const personForm = getPersonForm(participants.length);
       let buttonLabel;
       if (participants.length === 1) {
@@ -6870,7 +6887,7 @@ async function endContestByMessageId(messageId) {
           // ignore
         }
         await origMsg
-          .edit({ embeds: [finalEmbed], components: [row] })
+          .edit({ embeds: [finalEmbed], components: [row], files: [attachment] })
           .catch(() => null);
       }
     }
