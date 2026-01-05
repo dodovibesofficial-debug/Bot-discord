@@ -36,7 +36,7 @@ const client = new Client({
 */
 const activeCodes = new Map();
 const opinieChannels = new Map();
-const ticketCounter = new Map();
+const ticketCounter = new Map(); 
 const fourMonthBlockList = new Map(); // guildId -> Set(userId)
 const ticketCategories = new Map();
 const dropChannels = new Map(); // <-- mapa kanałów gdzie można używać /drop
