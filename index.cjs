@@ -6707,16 +6707,40 @@ async function handleKonkursJoinModal(interaction, msgId) {
         const embed = origMsg.embeds[0]?.toJSON() || {};
         embed.description = updatedDescription;
 
-        const joinButton = new ButtonBuilder()
-          .setCustomId(`konkurs_join_${msgId}`)
-          .setLabel(`Weź udział (${participantsCount})`)
-          .setStyle(ButtonStyle.Secondary)
-          .setDisabled(false);
-        const row = new ActionRowBuilder().addComponents(joinButton);
+        // Dodaj GIF przy aktualizacji konkursu
+        try {
+          const gifPath = path.join(
+            __dirname,
+            "attached_assets",
+            "standard (4).gif",
+          );
+          const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_update.gif" });
+          embed.setImage("attachment://konkurs_update.gif");
+          
+          const joinButton = new ButtonBuilder()
+            .setCustomId(`konkurs_join_${msgId}`)
+            .setLabel(`Weź udział (${participantsCount})`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(false);
+          const row = new ActionRowBuilder().addComponents(joinButton);
 
-        await origMsg
-          .edit({ embeds: [embed], components: [row] })
-          .catch(() => null);
+          await origMsg
+            .edit({ embeds: [embed], components: [row], files: [attachment] })
+            .catch(() => null);
+        } catch (err) {
+          console.warn("Nie udało się załadować GIFa przy aktualizacji konkursu:", err);
+          // Fallback: wyślij bez GIFa
+          const joinButton = new ButtonBuilder()
+            .setCustomId(`konkurs_join_${msgId}`)
+            .setLabel(`Weź udział (${participantsCount})`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(false);
+          const row = new ActionRowBuilder().addComponents(joinButton);
+
+          await origMsg
+            .edit({ embeds: [embed], components: [row] })
+            .catch(() => null);
+        }
       }
     }
   } catch (e) {
