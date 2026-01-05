@@ -6032,7 +6032,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       "```\n" +
       "📩 New Shop × ZAPROSZENIA\n" +
       "```\n" +
-      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n` +
+      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n\n` +
       `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
       `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
       `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
@@ -6082,6 +6082,9 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
 
+    await interaction.editReply({
+      content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
+    });
   } catch (err) {
     console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
     try {
