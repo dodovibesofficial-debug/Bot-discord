@@ -259,6 +259,7 @@ function buildPersistentStateData() {
     contestParticipants: participantsObj,
     fourMonthBlockList: fourMonthObj,
     weeklySales: Object.fromEntries(weeklySales),
+    activeCodes: Object.fromEntries(activeCodes),
   };
 
   return data;
@@ -427,6 +428,15 @@ function loadPersistentState() {
       for (const [userId, salesData] of Object.entries(data.weeklySales)) {
         if (salesData && typeof salesData === "object" && typeof salesData.amount === "number") {
           weeklySales.set(userId, salesData);
+        }
+      }
+    }
+
+    // Load active codes
+    if (data.activeCodes && typeof data.activeCodes === "object") {
+      for (const [code, codeData] of Object.entries(data.activeCodes)) {
+        if (codeData && typeof codeData === "object") {
+          activeCodes.set(code, codeData);
         }
       }
     }
@@ -2377,8 +2387,13 @@ async function handleSendMessageCommand(interaction) {
 
     // Prepare files from attachments:
     const files = [];
+    let imageAttachment = null;
     for (const att of msg.attachments.values()) {
-      files.push(att.url);
+      if (att.contentType && att.contentType.startsWith('image/')) {
+        imageAttachment = att.url;
+      } else {
+        files.push(att.url);
+      }
     }
 
     // Build embed with blue color to send as the message (user requested)
@@ -2386,6 +2401,11 @@ async function handleSendMessageCommand(interaction) {
       .setColor(COLOR_BLUE)
       .setDescription(content || "`(brak treści)`")
       .setTimestamp();
+    
+    // Add image to embed if present
+    if (imageAttachment) {
+      sendEmbed.setImage(imageAttachment);
+    }
 
     // Forward embeds if the user pasted/embeded some
     const userEmbeds = msg.embeds?.length
@@ -5611,9 +5631,9 @@ client.on(Events.GuildMemberAdd, async (member) => {
       console.error("Błąd podczas wykrywania invite:", e);
     }
 
-    // Simple fake-account detection (~4 months)
+    // Simple fake-account detection (~1 month)
     try {
-      const ACCOUNT_AGE_THRESHOLD_MS = 4 * 30 * 24 * 60 * 60 * 1000;
+      const ACCOUNT_AGE_THRESHOLD_MS = 1 * 30 * 24 * 60 * 60 * 1000;
       const accountAgeMs =
         Date.now() - (member.user.createdTimestamp || Date.now());
       isFakeAccount = accountAgeMs < ACCOUNT_AGE_THRESHOLD_MS;
@@ -6360,17 +6380,8 @@ function parseTimeString(timeStr) {
 
 // --- Pomocnicze: formatowanie pozostałego czasu ---
 function formatTimeDelta(ms) {
-  let s = Math.floor(ms / 1000);
-  let d = Math.floor(s / 86400);
-  s -= d * 86400;
-  let h = Math.floor(s / 3600);
-  s -= h * 3600;
-  let m = Math.floor(s / 60);
-  s -= m * 60;
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${s}s`;
-  return `${s}s`;
+  const timestamp = Math.floor((Date.now() + ms) / 1000);
+  return `<t:${timestamp}:R>`;
 }
 
 // --- Pomocnicze: poprawna forma liczby osób ---
@@ -6746,7 +6757,7 @@ async function endContestByMessageId(messageId) {
     winnersDetails = winners
       .map(
         ([userId, nick], i) =>
-          `\`${i + 1}.\` <@${userId}> — **Nick:** \`${nick || "nie podano"}\``,
+          `\`${i + 1}.\` <@${userId}> (MC: ${nick || "brak"})`,
       )
       .join("\n");
   } else {
@@ -6785,11 +6796,11 @@ async function endContestByMessageId(messageId) {
       const finalEmbed = new EmbedBuilder()
         .setColor(COLOR_BLUE)
         .setDescription(
-       "```\n" +
-      "🎉 Konkurs zakończony 🎉\n" +
-       "```\n" +
-      `**🎁 • Nagroda:** ${meta.prize}\n\n` +
-      `**🏆 • Zwycięzcy:**\n${winnersDetails}`,
+           "```\n" +
+          "🎉 Konkurs zakończony 🎉\n" +
+           "```\n" +
+          `**🎁 • Nagroda:** ${meta.prize}\n\n` +
+          `**🏆 • Zwycięzcy:**\n${publicWinners}`,
         )
         .setTimestamp();
 
@@ -6890,9 +6901,8 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `Liczba zwycięzców: ${contest.winnersCount}\n` +
+          `🏆Liczba zwycięzców: ${contest.winnersCount}\n` +
           `Czas do końca konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `Liczba uczestników: ${participantsCount}\n` +
           `Nagroda: ${contest.prize}`;
 
         if (contest.invitesRequired > 0) {
