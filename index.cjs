@@ -12,7 +12,7 @@ const {
   StringSelectMenuBuilder,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle, 
+  TextInputStyle,
   PermissionsBitField,
   ButtonBuilder,
   ButtonStyle,
@@ -151,9 +151,10 @@ const INVITER_RATE_LIMIT_MAX = 10; // maksymalnie 10 zaproszeń w oknie (zmień 
 const inviteLeaves = new Map(); // guildId -> Map<inviterId, leftCount>
 // -----------------------------------------------------
 
+// Prefer Persistent Disk on Render, fallback to local file
 const STORE_FILE = process.env.STORE_FILE
   ? path.resolve(process.env.STORE_FILE)
-  : path.join(__dirname, "legit_store.json");
+  : (fs.existsSync("/opt/render/project") ? "/opt/render/project/data/legit_store.json" : path.join(__dirname, "legit_store.json"));
 
 try {
   const dir = path.dirname(STORE_FILE);
@@ -5095,12 +5096,16 @@ async function handleOpinionCommand(interaction) {
       content: "✅ Twoja opinia została opublikowana.",
       ephemeral: true,
     });
-  } catch (error) {
-    console.error("Błąd publikacji opinii:", error);
-    await interaction.reply({
-      content: "❌ Wystąpił błąd podczas publikacji opinii.",
-      ephemeral: true,
-    });
+  } catch (err) {
+    console.error("Błąd publikacji opinii:", err);
+    try {
+      await interaction.reply({
+        content: "❌ Wystąpił błąd podczas publikacji opinii.",
+        ephemeral: true,
+      });
+    } catch (e) {
+      // ignore
+    }
   }
 }
 // ---------------------------------------------------
@@ -5130,6 +5135,9 @@ async function handleWyczyscKanalCommand(interaction) {
     return;
   }
 
+  // Defer to avoid timeout and allow multiple replies
+  await interaction.deferReply({ ephemeral: true }).catch(() => null);
+
   // permissions check (member)
   const member = interaction.member;
   const hasManage =
@@ -5141,11 +5149,14 @@ async function handleWyczyscKanalCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.Administrator));
 
   if (!hasManage) {
-    await interaction.reply({
-      content:
-        "❌ Nie masz uprawnień do zarządzania wiadomościami (MANAGE_MESSAGES).",
-      ephemeral: true,
-    });
+    try {
+      await interaction.editReply({
+        content:
+          "❌ Nie masz uprawnień do zarządzania wiadomościami (MANAGE_MESSAGES).",
+      });
+    } catch (e) {
+      // ignore
+    }
     return;
   }
 
@@ -5161,11 +5172,14 @@ async function handleWyczyscKanalCommand(interaction) {
   ) {
     // simpler: require GuildText
     if (channel.type !== ChannelType.GuildText) {
-      await interaction.reply({
-        content:
-          "❌ Ta komenda działa tylko na zwykłych kanałach tekstowych (nie w prywatnych wiadomościach).",
-        ephemeral: true,
-      });
+      try {
+        await interaction.editReply({
+          content:
+            "❌ Ta komenda działa tylko na zwykłych kanałach tekstowych (nie w prywatnych wiadomościach).",
+        });
+      } catch (e) {
+        // ignore
+      }
       return;
     }
   }
@@ -5177,10 +5191,13 @@ async function handleWyczyscKanalCommand(interaction) {
     if (mode === "ilosc") {
       // validate amount
       if (amount <= 0 || amount > 100) {
-        await interaction.reply({
-          content: "❌ Podaj poprawną ilość wiadomości do usunięcia (1-100).",
-          ephemeral: true,
-        });
+        try {
+          await interaction.editReply({
+            content: "❌ Podaj poprawną ilość wiadomości do usunięcia (1-100).",
+          });
+        } catch (e) {
+          // ignore
+        }
         return;
       }
 
@@ -5188,19 +5205,25 @@ async function handleWyczyscKanalCommand(interaction) {
       const deleted = await channel.bulkDelete(amount, true);
       const deletedCount = deleted.size || 0;
 
-      await interaction.reply({
-        content: `✅ Usunięto ${deletedCount} wiadomości z tego kanału.`,
-        ephemeral: true,
-      });
+      try {
+        await interaction.editReply({
+          content: `✅ Usunięto ${deletedCount} wiadomości z tego kanału.`,
+        });
+      } catch (e) {
+        // ignore
+      }
       return;
     }
 
     if (mode === "wszystko") {
-      await interaction.reply({
-        content:
-          "🧹 Rozpoczynam czyszczenie kanału. To może potrwać (usuwam wszystkie nie-przypięte wiadomości)...",
-        ephemeral: true,
-      });
+      try {
+        await interaction.editReply({
+          content:
+            "🧹 Rozpoczynam czyszczenie kanału. To może potrwać (usuwam wszystkie nie-przypięte wiadomości)...",
+        });
+      } catch (e) {
+        // ignore
+      }
 
       let totalDeleted = 0;
       // loop fetching up to 100 messages and deleting them until none left (or stuck)
@@ -5268,16 +5291,18 @@ async function handleWyczyscKanalCommand(interaction) {
       return;
     }
 
-    await interaction.reply({
-      content: "❌ Nieznany tryb. Wybierz 'wszystko' lub 'ilosc'.",
-      ephemeral: true,
-    });
+    try {
+      await interaction.editReply({
+        content: "❌ Nieznany tryb. Wybierz 'wszystko' lub 'ilosc'.",
+      });
+    } catch (e) {
+      // ignore
+    }
   } catch (error) {
     console.error("Błąd wyczyszczenia kanału:", error);
     try {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Wystąpił błąd podczas czyszczenia kanału.",
-        ephemeral: true,
       });
     } catch (e) {
       // ignore
@@ -5715,8 +5740,6 @@ client.on(Events.GuildMemberAdd, async (member) => {
               .setTimestamp();
 
             await user.send({ embeds: [dmEmbed] });
-
-
           } catch (e) {
             console.error("Błąd wysyłania DM z nagrodą:", e);
             // Fallback: wyślij na kanał zaproszeń
@@ -5753,23 +5776,11 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const gMap = inviteCounts.get(member.guild.id) || new Map();
       const currentInvites = gMap.get(inviterId) || 0;
       const inviteWord = getInviteWord(currentInvites);
-
-      // Sprawdź czy konto ma mniej niż 4 miesiące
-      const fakeMap = inviteFakeAccounts.get(member.guild.id) || new Map();
-      const isFake = isFakeAccount || (fakeMap.get(inviterId) > 0);
-
-      let messageContent;
-      if (isFake) {
-        messageContent = `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 4mies)`;
-      } else {
-        messageContent = `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
-      }
-
-      await zapChannel
-        .send({
-          content: messageContent,
-        })
-        .catch(() => null);
+      try {
+        await zapChannel.send(
+          `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 4mies)`,
+        );
+      } catch (e) { }
     }
 
     // Send welcome embed (no inviter details here)
@@ -5942,6 +5953,9 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   }
   sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
 
+  // Defer to avoid timeout and allow multiple replies
+  await interaction.deferReply({ ephemeral: false }).catch(() => null);
+
   const preferChannel = interaction.guild.channels.cache.get(
     SPRAWDZ_ZAPROSZENIA_CHANNEL_ID,
   );
@@ -6043,18 +6057,16 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
 
-    await interaction.reply({
+    await interaction.editReply({
       content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
-      ephemeral: true,
     });
   } catch (err) {
     console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
     try {
-      await interaction.reply({ embeds: [embed] });
+      await interaction.editReply({ embeds: [embed] });
     } catch (e) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
-        ephemeral: true,
       });
     }
   }
