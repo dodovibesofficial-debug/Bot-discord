@@ -231,6 +231,7 @@ function scheduleSavePersistentState() {
       const data = {
         legitRepCount,
         ticketCounter: Object.fromEntries(ticketCounter),
+        ticketOwners: Object.fromEntries(ticketOwners),
         inviteCounts: mapOfMapsToPlainObject(inviteCounts),
         inviteRewards: mapOfMapsToPlainObject(inviteRewards),
         inviteLeaves: mapOfMapsToPlainObject(inviteLeaves),
@@ -272,6 +273,14 @@ function loadPersistentState() {
       for (const [guildId, value] of Object.entries(data.ticketCounter)) {
         if (typeof value === "number") {
           ticketCounter.set(guildId, value);
+        }
+      }
+    }
+
+    if (data.ticketOwners && typeof data.ticketOwners === "object") {
+      for (const [channelId, ticketData] of Object.entries(data.ticketOwners)) {
+        if (ticketData && typeof ticketData === "object") {
+          ticketOwners.set(channelId, ticketData);
         }
       }
     }
@@ -3043,8 +3052,8 @@ async function ticketClaimCommon(interaction, channelId) {
       console.error("Nie znaleziono kategorii TICKETY PRZEJĘTE (1457446529395593338)");
     }
 
-    // Ustaw uprawnienia tylko dla osoby przejmującej + usuń limity kategorii
-    await ch.permissionOverwrites.set([
+    // Ustaw uprawnienia dla osoby przejmującej + właściciela ticketu
+    const permissionOverwrites = [
       {
         id: claimerId,
         allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory]
@@ -3053,7 +3062,17 @@ async function ticketClaimCommon(interaction, channelId) {
         id: interaction.guild.roles.everyone,
         deny: [PermissionFlagsBits.ViewChannel] // @everyone nie widzi gdy ktoś przejmie
       }
-    ]);
+    ];
+
+    // Dodaj właściciela ticketu do uprawnień
+    if (ticketData && ticketData.userId) {
+      permissionOverwrites.push({
+        id: ticketData.userId,
+        allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory]
+      });
+    }
+
+    await ch.permissionOverwrites.set(permissionOverwrites);
 
     // Usuń limity kategorii dla kanału
     const limitCategories = [
@@ -3074,14 +3093,8 @@ async function ticketClaimCommon(interaction, channelId) {
       }
     }
 
-    // Jeśli właściciel ticketu istnieje, zabierz mu dostęp
-    if (ticketData && ticketData.userId) {
-      await ch.permissionOverwrites.edit(ticketData.userId, {
-        ViewChannel: false,
-        SendMessages: false,
-        ReadMessageHistory: false,
-      }).catch(() => null);
-    }
+    // Właściciel ticketu już ma dostęp - nie trzeba nic zmieniać
+    // Usuń limity kategorii dla kanału
 
     ticketData.claimedBy = claimerId;
     ticketOwners.set(channelId, ticketData);
@@ -3244,15 +3257,7 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
       }
     }
 
-    // Przywróć dostęp właścicielowi ticketu
-    if (ticketData && ticketData.userId) {
-      await ch.permissionOverwrites.edit(ticketData.userId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true,
-      }).catch(() => null);
-    }
-
+    // Właściciel ticketu zachowuje dostęp - nie trzeba nic zmieniać
     // Usuń uprawnienia osoby przejmującej
     if (ticketData.claimedBy) {
       await ch.permissionOverwrites.delete(ticketData.claimedBy).catch(() => null);
