@@ -183,69 +183,83 @@ function mapOfMapsToPlainObject(topMap) {
 }
 
 let saveStateTimeout = null;
+function buildPersistentStateData() {
+  // Convert contests to plain object
+  const contestsObj = {};
+  for (const [msgId, meta] of contests.entries()) {
+    // ensure meta is serializable (avoid functions)
+    contestsObj[msgId] = {
+      ...(meta || {}),
+      endsAt: meta && meta.endsAt ? meta.endsAt : null,
+    };
+  }
+
+  // Convert contest participants to plain object
+  const participantsObj = {};
+  for (const [msgId, setOrMap] of contestParticipants.entries()) {
+    // contestParticipants may store Set or Map — normalize to array of userIds
+    if (setOrMap instanceof Set) {
+      participantsObj[msgId] = Array.from(setOrMap);
+    } else if (
+      setOrMap &&
+      typeof setOrMap === "object" &&
+      typeof setOrMap.forEach === "function"
+    ) {
+      // if it's a Map(userId -> meta) convert to array of userIds
+      participantsObj[msgId] = Array.from(setOrMap.keys());
+    } else {
+      participantsObj[msgId] = [];
+    }
+  }
+
+  // optional: serialize fourMonthBlockList if you've added it
+  const fourMonthObj = {};
+  if (
+    typeof fourMonthBlockList !== "undefined" &&
+    fourMonthBlockList instanceof Map
+  ) {
+    for (const [gId, setOfUsers] of fourMonthBlockList.entries()) {
+      fourMonthObj[gId] = Array.from(setOfUsers || []);
+    }
+  }
+
+  const data = {
+    legitRepCount,
+    ticketCounter: Object.fromEntries(ticketCounter),
+    ticketOwners: Object.fromEntries(ticketOwners),
+    inviteCounts: mapOfMapsToPlainObject(inviteCounts),
+    inviteRewards: mapOfMapsToPlainObject(inviteRewards),
+    inviteLeaves: mapOfMapsToPlainObject(inviteLeaves),
+    inviteRewardsGiven: mapOfMapsToPlainObject(inviteRewardsGiven),
+    inviteTotalJoined: mapOfMapsToPlainObject(inviteTotalJoined),
+    inviteFakeAccounts: mapOfMapsToPlainObject(inviteFakeAccounts),
+    inviteBonusInvites: mapOfMapsToPlainObject(inviteBonusInvites),
+    lastInviteInstruction: Object.fromEntries(lastInviteInstruction),
+    contests: contestsObj,
+    contestParticipants: participantsObj,
+    fourMonthBlockList: fourMonthObj,
+    weeklySales: Object.fromEntries(weeklySales),
+  };
+
+  return data;
+}
+
+function flushPersistentStateSync() {
+  try {
+    const data = buildPersistentStateData();
+    fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error("Nie udało się zapisać stanu bota (flush):", err);
+  }
+}
+
 function scheduleSavePersistentState() {
   // debounce writes to avoid spamming disk
   if (saveStateTimeout) return;
   saveStateTimeout = setTimeout(() => {
     saveStateTimeout = null;
     try {
-      // Convert contests to plain object
-      const contestsObj = {};
-      for (const [msgId, meta] of contests.entries()) {
-        // ensure meta is serializable (avoid functions)
-        contestsObj[msgId] = {
-          ...(meta || {}),
-          endsAt: meta && meta.endsAt ? meta.endsAt : null,
-        };
-      }
-
-      // Convert contest participants to plain object
-      const participantsObj = {};
-      for (const [msgId, setOrMap] of contestParticipants.entries()) {
-        // contestParticipants may store Set or Map — normalize to array of userIds
-        if (setOrMap instanceof Set) {
-          participantsObj[msgId] = Array.from(setOrMap);
-        } else if (
-          setOrMap &&
-          typeof setOrMap === "object" &&
-          typeof setOrMap.forEach === "function"
-        ) {
-          // if it's a Map(userId -> meta) convert to array of userIds
-          participantsObj[msgId] = Array.from(setOrMap.keys());
-        } else {
-          participantsObj[msgId] = [];
-        }
-      }
-
-      // optional: serialize fourMonthBlockList if you've added it
-      const fourMonthObj = {};
-      if (
-        typeof fourMonthBlockList !== "undefined" &&
-        fourMonthBlockList instanceof Map
-      ) {
-        for (const [gId, setOfUsers] of fourMonthBlockList.entries()) {
-          fourMonthObj[gId] = Array.from(setOfUsers || []);
-        }
-      }
-
-      const data = {
-        legitRepCount,
-        ticketCounter: Object.fromEntries(ticketCounter),
-        ticketOwners: Object.fromEntries(ticketOwners),
-        inviteCounts: mapOfMapsToPlainObject(inviteCounts),
-        inviteRewards: mapOfMapsToPlainObject(inviteRewards),
-        inviteLeaves: mapOfMapsToPlainObject(inviteLeaves),
-        inviteRewardsGiven: mapOfMapsToPlainObject(inviteRewardsGiven), // NEW
-        inviteTotalJoined: mapOfMapsToPlainObject(inviteTotalJoined),
-        inviteFakeAccounts: mapOfMapsToPlainObject(inviteFakeAccounts),
-        inviteBonusInvites: mapOfMapsToPlainObject(inviteBonusInvites),
-        lastInviteInstruction: Object.fromEntries(lastInviteInstruction),
-        contests: contestsObj,
-        contestParticipants: participantsObj,
-        fourMonthBlockList: fourMonthObj,
-        weeklySales: Object.fromEntries(weeklySales),
-      };
-
+      const data = buildPersistentStateData();
       fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
         if (err) {
           console.error("Nie udało się zapisać stanu bota:", err);
@@ -432,6 +446,30 @@ function getNextTicketNumber(guildId) {
 
 // Load persisted state once on startup (after maps are defined)
 loadPersistentState();
+
+// Flush debounced state on shutdown so counters don't reset on restart
+process.once("SIGINT", () => {
+  try {
+    if (saveStateTimeout) {
+      clearTimeout(saveStateTimeout);
+      saveStateTimeout = null;
+    }
+    flushPersistentStateSync();
+  } finally {
+    process.exit(0);
+  }
+});
+process.once("SIGTERM", () => {
+  try {
+    if (saveStateTimeout) {
+      clearTimeout(saveStateTimeout);
+      saveStateTimeout = null;
+    }
+    flushPersistentStateSync();
+  } finally {
+    process.exit(0);
+  }
+});
 
 // Defaults provided by user (kept mainly for categories / names)
 const DEFAULT_GUILD_ID = "1350446732365926491";
