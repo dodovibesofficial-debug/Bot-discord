@@ -5947,7 +5947,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       "```\n" +
       "📩 New Shop × ZAPROSZENIA\n" +
       "```\n" +
-      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n` +
+      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n\n` +
       `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
       `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
       `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
@@ -6453,6 +6453,15 @@ async function handleKonkursCreateModal(interaction) {
     .setDescription(description)
     .setTimestamp();
 
+  // Placeholder button (will be replaced with proper customId after message is sent)
+  const joinBtn = new ButtonBuilder()
+    .setCustomId("konkurs_join_pending")
+    .setLabel("Weź udział (0)")
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(false);
+
+  let sent = null;
+
   // Dodaj GIF przy tworzeniu konkursu
   try {
     const gifPath = path.join(
@@ -6464,7 +6473,7 @@ async function handleKonkursCreateModal(interaction) {
     embed.setImage("attachment://konkurs_start.gif");
     
     const row = new ActionRowBuilder().addComponents(joinBtn);
-    const sent = await targetChannel.send({ 
+    sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
       files: [attachment]
@@ -6473,10 +6482,21 @@ async function handleKonkursCreateModal(interaction) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
     // Fallback: wyślij bez GIFa
     const row = new ActionRowBuilder().addComponents(joinBtn);
-    var sent = await targetChannel.send({ 
+    sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row]
     });
+  }
+
+  if (!sent) {
+    try {
+      await interaction.editReply({
+        content: "❌ Nie udało się utworzyć konkursu (nie wysłano wiadomości w kanał).",
+      });
+    } catch (e) {
+      // ignore
+    }
+    return;
   }
 
   contests.set(sent.id, {
