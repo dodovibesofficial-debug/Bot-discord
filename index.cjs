@@ -9,7 +9,7 @@ const {
   PermissionFlagsBits,
   ChannelType,
   ActionRowBuilder,
-  StringSelectMenuBuilder,
+  StringSelectMenuBuilder, 
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
