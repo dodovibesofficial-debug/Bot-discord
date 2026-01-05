@@ -6878,29 +6878,83 @@ async function archiveTicketOnClose(ticketChannel, closedById, ticketMeta) {
     const fetched = await ticketChannel.messages
       .fetch({ limit: 100 })
       .catch(() => null);
-    const messages = fetched
-      ? Array.from(fetched.values()).sort(
-        (a, b) => a.createdTimestamp - b.createdTimestamp,
+    const messages = fetched ? Array.from(fetched.values()) : [];
+
+    let beforeId = fetched && fetched.size ? fetched.last().id : null;
+    while (beforeId) {
+      const batch = await ticketChannel.messages
+        .fetch({ limit: 100, before: beforeId })
+        .catch(() => null);
+      if (!batch || batch.size === 0) break;
+      messages.push(...Array.from(batch.values()));
+      beforeId = batch.size ? batch.last().id : null;
+      if (batch.size < 100) break;
+    }
+
+    messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+
+    const openerId = ticketMeta?.userId || null;
+    const claimedById = ticketMeta?.claimedBy || null;
+
+    const participantsSet = new Set();
+    for (const m of messages) {
+      if (m && m.author && m.author.id) participantsSet.add(m.author.id);
+    }
+    const participants = Array.from(participantsSet);
+    const participantsPreview = participants.slice(0, 20);
+    const participantsText = participantsPreview.length
+      ? `${participantsPreview.map((id) => `<@${id}>`).join(" ")}${participants.length > participantsPreview.length ? ` (+${participants.length - participantsPreview.length})` : ""}`
+      : "brak";
+
+    const embed = new EmbedBuilder()
+      .setTitle("🎟️ Ticket zamknięty")
+      .setColor(COLOR_BLUE)
+      .setDescription(
+        `> \`🆔\` × Kanał: **${ticketChannel.name}** (\`${ticketChannel.id}\`)\n` +
+          `> \`👤\` × Właściciel: ${openerId ? `<@${openerId}> (\`${openerId}\`)` : "unknown"}\n` +
+          `> \`🧑‍💼\` × Przejęty przez: ${claimedById ? `<@${claimedById}> (\`${claimedById}\`)` : "brak"}\n` +
+          `> \`🔒\` × Zamknął: <@${closedById}> (\`${closedById}\`)\n` +
+          `> \`💬\` × Wiadomości: **${messages.length}**\n` +
+          `> \`👥\` × Uczestnicy: ${participantsText}`,
       )
-      : [];
+      .setTimestamp();
 
     // Build transcript
     const lines = messages.map((m) => {
       const time = new Date(m.createdTimestamp).toLocaleString("pl-PL");
-      const author = `${m.author.tag}`;
+      const authorTag = m.author ? m.author.tag : "unknown";
+      const authorId = m.author ? m.author.id : "unknown";
       const content = m.content ? m.content : "";
-      const attachments =
+      const attachmentUrls =
         m.attachments && m.attachments.size
-          ? ` [ATTACHMENTS: ${m.attachments.map((a) => a.url).join(", ")}]`
+          ? Array.from(m.attachments.values())
+            .map((a) => a.url)
+            .join(", ")
           : "";
-      return `${time}\n${author}\n${content}${attachments}`;
+      const attachments = attachmentUrls ? `\n[ATTACHMENTS: ${attachmentUrls}]` : "";
+      return `${time}\n${authorTag} (${authorId})\n${content}${attachments}`;
     });
 
-    const transcriptText =
-      `Ticket: ${ticketChannel.name}\nChannel ID: ${ticketChannel.id}\nClosed by: ${closedById}\nOpened by: ${ticketMeta?.userId || "unknown"}\n\n--- MESSAGES ---\n\n` +
+    let transcriptText =
+      `Ticket: ${ticketChannel.name}\n` +
+      `Channel ID: ${ticketChannel.id}\n` +
+      `Closed by: ${closedById}\n` +
+      `Opened by: ${openerId || "unknown"}\n` +
+      `Claimed by: ${claimedById || "brak"}\n` +
+      `Messages: ${messages.length}\n` +
+      `Participants: ${participants.join(", ") || "brak"}\n\n` +
+      `--- MESSAGES ---\n\n` +
       lines.join("\n\n");
 
-    const buffer = Buffer.from(transcriptText, "utf-8");
+    const maxBytes = 7_500_000;
+    let buffer = Buffer.from(transcriptText, "utf-8");
+    if (buffer.length > maxBytes) {
+      const ratio = maxBytes / buffer.length;
+      const cutIndex = Math.max(0, Math.floor(transcriptText.length * ratio) - 50);
+      transcriptText = `${transcriptText.slice(0, cutIndex)}\n\n[TRUNCATED]`;
+      buffer = Buffer.from(transcriptText, "utf-8");
+    }
+
     const fileName = `ticket-${ticketChannel.name.replace(/[^a-z0-9-_]/gi, "_")}-${Date.now()}.txt`;
     const attachment = new AttachmentBuilder(buffer, { name: fileName });
 
