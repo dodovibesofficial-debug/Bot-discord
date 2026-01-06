@@ -6758,7 +6758,7 @@ async function handleKonkursCreateModal(interaction) {
     sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
-      files: [attachment]  // ✅ Pierwsze wysłanie - musi mieć files
+      files: [attachment]
     });
   } catch (err) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
@@ -6896,12 +6896,13 @@ async function handleKonkursJoinModal(interaction, msgId) {
 
   const participantsCount = participantsMap.size;
 
+  // Aktualizuj wiadomość konkursu
   try {
     const ch = await client.channels.fetch(contest.channelId).catch(() => null);
     if (ch) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
-        // Edytujemy embed i przycisk, label "Weź udział (X)"
+        // Zaktualizuj opis
         let updatedDescription =
           `Liczba zwycięzców: ${contest.winnersCount}\n` +
           `Czas do końca konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
@@ -6913,10 +6914,11 @@ async function handleKonkursJoinModal(interaction, msgId) {
           updatedDescription += `\n\n⚠️ Wymagane: dodać ${contest.invitesRequired} ${inviteForm} na serwer`;
         }
 
-        const embed = origMsg.embeds[0]?.toJSON() || {};
-        embed.description = updatedDescription;
-        // GIF pozostaje bez zmian - nie ruszamy embed.image
+        // Pobierz istniejący embed i zaktualizuj TYLKO description
+        const existingEmbed = EmbedBuilder.from(origMsg.embeds[0]);
+        existingEmbed.setDescription(updatedDescription);
 
+        // Zaktualizuj przycisk
         const joinButton = new ButtonBuilder()
           .setCustomId(`konkurs_join_${msgId}`)
           .setLabel(`Weź udział (${participantsCount})`)
@@ -6924,8 +6926,11 @@ async function handleKonkursJoinModal(interaction, msgId) {
           .setDisabled(false);
         const row = new ActionRowBuilder().addComponents(joinButton);
 
-        // ✅ Edycja BEZ files - GIF jest już w embedzie
-        await origMsg.edit({ embeds: [embed], components: [row] }).catch(() => null);
+        // Edytuj wiadomość BEZ files - zostaw embed taki jaki jest (z GIFem)
+        await origMsg.edit({ 
+          embeds: [existingEmbed], 
+          components: [row] 
+        }).catch(() => null);
       }
     }
   } catch (e) {
