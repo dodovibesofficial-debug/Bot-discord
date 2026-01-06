@@ -1942,7 +1942,7 @@ async function handleSlashCommand(interaction) {
       await handleResetLCCommand(interaction);
       break;
     case "zresetujczasoczekiwania":
-      await handleZresetujCzasCommand(interaction);
+      await handleZresetujCzasOczekiwaniaCommand(interaction);
       break;
     case "przejmij":
       await handleAdminPrzejmij(interaction);
@@ -5947,6 +5947,38 @@ client.on(Events.GuildMemberRemove, async (member) => {
     console.error("Błąd przy obsłudze odejścia członka:", err);
   }
 });
+
+// ----------------- /zresetujczasoczekiwania command handler -----------------
+async function handleZresetujCzasOczekiwaniaCommand(interaction) {
+  const userId = interaction.user.id;
+  
+  // Sprawdzenie czy użytkownik jest właścicielem
+  if (userId !== "1305200545979437129") {
+    await interaction.reply({
+      content: `❌ Ta komenda jest dostępna tylko dla właściciela serwera!`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  try {
+    // Resetowanie cooldownów dla wszystkich komend
+    dropCooldowns.clear();
+    opinionCooldowns.clear();
+    sprawdzZaproszeniaCooldowns.clear();
+    
+    await interaction.reply({
+      content: `✅ Pomyślnie zresetowano czas oczekiwania dla wszystkich komend!`,
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error("Błąd podczas resetowania cooldownów:", error);
+    await interaction.reply({
+      content: `❌ Wystąpił błąd podczas resetowania czasu oczekiwania.`,
+      ephemeral: true,
+    });
+  }
+}
 
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
