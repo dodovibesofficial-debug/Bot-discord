@@ -1942,7 +1942,7 @@ async function handleSlashCommand(interaction) {
       await handleResetLCCommand(interaction);
       break;
     case "zresetujczasoczekiwania":
-      await handleZresetujCzasOczekiwaniaCommand(interaction);
+      await handleZresetujCzasCommand(interaction);
       break;
     case "przejmij":
       await handleAdminPrzejmij(interaction);
@@ -5803,9 +5803,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       try {
         const message = isFakeAccount 
           ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
-          : inviterId === "1305200545979437129"
-            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> (jest właścicielem więc nie dodaje zaproszenia.)`
-            : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
+          : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
         await zapChannel.send(message);
       } catch (e) { }
     }
@@ -5948,38 +5946,6 @@ client.on(Events.GuildMemberRemove, async (member) => {
   }
 });
 
-// ----------------- /zresetujczasoczekiwania command handler -----------------
-async function handleZresetujCzasOczekiwaniaCommand(interaction) {
-  const userId = interaction.user.id;
-  
-  // Sprawdzenie czy użytkownik jest właścicielem
-  if (userId !== "1305200545979437129") {
-    await interaction.reply({
-      content: `❌ Ta komenda jest dostępna tylko dla właściciela serwera!`,
-      ephemeral: true,
-    });
-    return;
-  }
-
-  try {
-    // Resetowanie cooldownów dla wszystkich komend
-    dropCooldowns.clear();
-    opinionCooldowns.clear();
-    sprawdzZaproszeniaCooldowns.clear();
-    
-    await interaction.reply({
-      content: `✅ Pomyślnie zresetowano czas oczekiwania dla wszystkich komend!`,
-      ephemeral: true,
-    });
-  } catch (error) {
-    console.error("Błąd podczas resetowania cooldownów:", error);
-    await interaction.reply({
-      content: `❌ Wystąpił błąd podczas resetowania czasu oczekiwania.`,
-      ephemeral: true,
-    });
-  }
-}
-
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
   if (!interaction.guild) {
@@ -6012,8 +5978,8 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   }
   sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
 
-  // Defer to avoid timeout - EPHEMERAL (tylko użytkownik widzi)
-  await interaction.deferReply({ ephemeral: true }).catch(() => null);
+  // Defer to avoid timeout and allow multiple replies
+  await interaction.deferReply({ ephemeral: false }).catch(() => null);
 
   // ===== SPRAWDZ-ZAPROSZENIA – PEŁNY SCRIPT =====
 
@@ -6071,7 +6037,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     // Kanał docelowy
     const targetChannel = preferChannel ? preferChannel : interaction.channel;
 
-    // Publikacja embeda PUBLICZNIE na kanał
+    // Publikacja embeda
     await targetChannel.send({ embeds: [embed] });
 
     // Odświeżanie instrukcji
@@ -6101,7 +6067,6 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
 
-    // Potwierdzenie TYLKO DLA UŻYTKOWNIKA (ephemeral)
     await interaction.editReply({
       content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
     });
@@ -6109,11 +6074,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   } catch (err) {
     console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
     try {
-      // W przypadku błędu wyślij embed jako ephemeral do użytkownika
-      await interaction.editReply({ 
-        content: "✅ Twoje zaproszenia:",
-        embeds: [embed] 
-      });
+      await interaction.editReply({ embeds: [embed] });
     } catch {
       await interaction.editReply({
         content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
@@ -7538,32 +7499,3 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
 app.listen(3000);
-
-// Required functions that were missing
-async function handleSelectMenu(interaction) {
-  // Implementation needed
-}
-
-async function handleModalSubmit(interaction) {
-  // Implementation needed  
-}
-
-async function handleButtonInteraction(interaction) {
-  // Implementation needed
-}
-
-async function handleSlashCommand(interaction) {
-  // Implementation needed
-}
-
-async function endContestByMessageId(messageId) {
-  // Implementation needed
-}
-
-async function sendRozliczeniaMessage() {
-  // Implementation needed
-}
-
-async function logTicketCreation(guild, channel, data) {
-  // Implementation needed
-}
