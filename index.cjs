@@ -5804,7 +5804,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
         const message = isFakeAccount 
           ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
           : inviterId === "1305200545979437129"
-            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> (jest właścicielem więc nie dodaje zaproszenia.)`
+            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> (zaproszony przez własciciela)`
             : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
         await zapChannel.send(message);
       } catch (e) { }
