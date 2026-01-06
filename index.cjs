@@ -5978,123 +5978,115 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   }
   sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
 
-  // Defer to avoid timeout and allow multiple replies
-  await interaction.deferReply({ ephemeral: false }).catch(() => null);
+  // Defer to avoid timeout - EPHEMERAL (tylko użytkownik widzi)
+  await interaction.deferReply({ ephemeral: true }).catch(() => null);
 
-const preferChannel = interaction.guild.channels.cache.get(
-  SPRAWDZ_ZAPROSZENIA_CHANNEL_ID,
-);
+  // ===== SPRAWDZ-ZAPROSZENIA – PEŁNY SCRIPT =====
 
-const guildId = interaction.guild.id;
+  const preferChannel = interaction.guild.channels.cache.get(SPRAWDZ_ZAPROSZENIA_CHANNEL_ID);
+  const guildId = interaction.guild.id;
 
-// 🔒 PIERWSZA ODPOWIEDŹ – EPHEMERAL (TYLKO DLA AUTORA KOMENDY)
-await interaction.reply({
-  content: "⏳ Sprawdzam twoje zaproszenia...",
-  ephemeral: true,
-});
+  // Inicjalizacja map
+  if (!inviteCounts.has(guildId)) inviteCounts.set(guildId, new Map());
+  if (!inviteRewards.has(guildId)) inviteRewards.set(guildId, new Map());
+  if (!inviteRewardsGiven.has(guildId)) inviteRewardsGiven.set(guildId, new Map());
+  if (!inviteLeaves.has(guildId)) inviteLeaves.set(guildId, new Map());
+  if (!inviteTotalJoined.has(guildId)) inviteTotalJoined.set(guildId, new Map());
+  if (!inviteFakeAccounts.has(guildId)) inviteFakeAccounts.set(guildId, new Map());
+  if (!inviteBonusInvites.has(guildId)) inviteBonusInvites.set(guildId, new Map());
 
-if (!inviteCounts.has(guildId)) inviteCounts.set(guildId, new Map());
-if (!inviteRewards.has(guildId)) inviteRewards.set(guildId, new Map());
-if (!inviteRewardsGiven.has(guildId))
-  inviteRewardsGiven.set(guildId, new Map());
-if (!inviteLeaves.has(guildId)) inviteLeaves.set(guildId, new Map());
-if (!inviteTotalJoined.has(guildId))
-  inviteTotalJoined.set(guildId, new Map());
-if (!inviteFakeAccounts.has(guildId))
-  inviteFakeAccounts.set(guildId, new Map());
-if (!inviteBonusInvites.has(guildId))
-  inviteBonusInvites.set(guildId, new Map());
+  // Mapy gildii
+  const gMap = inviteCounts.get(guildId);
+  const totalMap = inviteTotalJoined.get(guildId);
+  const fakeMap = inviteFakeAccounts.get(guildId);
+  const lMap = inviteLeaves.get(guildId);
+  const bonusMap = inviteBonusInvites.get(guildId);
 
-const gMap = inviteCounts.get(guildId);
-const totalMap = inviteTotalJoined.get(guildId);
-const fakeMap = inviteFakeAccounts.get(guildId);
-const lMap = inviteLeaves.get(guildId);
-const bonusMap = inviteBonusInvites.get(guildId);
+  // Dane użytkownika
+  const userId = interaction.user.id;
+  const validInvites = gMap.get(userId) || 0;
+  const left = lMap.get(userId) || 0;
+  const fake = fakeMap.get(userId) || 0;
+  const bonus = bonusMap.get(userId) || 0;
 
-const userId = interaction.user.id;
-const validInvites = gMap.get(userId) || 0;
-const left = lMap.get(userId) || 0;
-const fake = fakeMap.get(userId) || 0;
-const bonus = bonusMap.get(userId) || 0;
+  // Zaproszenia wyświetlane (z bonusem)
+  const displayedInvites = validInvites + bonus;
+  const inviteWord = getInviteWord(displayedInvites);
 
-// Display total invites including bonus
-const displayedInvites = validInvites + bonus;
-const inviteWord = getInviteWord(displayedInvites);
+  // Brakujące do nagrody
+  let missingToReward = INVITE_REWARD_THRESHOLD - (displayedInvites % INVITE_REWARD_THRESHOLD);
+  if (displayedInvites !== 0 && displayedInvites % INVITE_REWARD_THRESHOLD === 0) {
+    missingToReward = 0;
+  }
 
-// ile brakuje do następnej nagrody
-let missingToReward =
-  INVITE_REWARD_THRESHOLD - (displayedInvites % INVITE_REWARD_THRESHOLD);
+  // Embed
+  const embed = new EmbedBuilder()
+    .setColor(COLOR_BLUE)
+    .setDescription(
+      `\n` +
+      `📩 **New Shop × ZAPROSZENIA**\n\n` +
+      `> 👤 × <@${userId}> **posiada** **${displayedInvites} ${inviteWord}**!\n\n` +
+      `> 💸 × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** ${missingToReward}\n\n` +
+      `> 👥 × **Prawdziwe osoby które dołączyły:** ${displayedInvites}\n` +
+      `> 🚶 × **Osoby które opuściły serwer:** ${left}\n` +
+      `> ⚠️ × **Niespełniające kryteriów (< konto 1 mies.):** ${fake}\n` +
+      `> 🎁 × **Dodatkowe zaproszenia:** ${bonus}`
+    );
 
-if (
-  displayedInvites !== 0 &&
-  displayedInvites % INVITE_REWARD_THRESHOLD === 0
-) {
-  missingToReward = 0;
-}
-
-const embed = new EmbedBuilder()
-  .setColor(COLOR_BLUE)
-  .setDescription(
-    "```\n" +
-      "📩 New Shop × ZAPROSZENIA\n" +
-      "```\n" +
-      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n\n` +
-      `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
-      `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
-      `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
-      `> \`⚠️\` × **Niespełniające kryteriów (< konto 1 mies.):** \`${fake}\`\n` +
-      `> \`🎁\` × **Dodatkowe zaproszenia:** \`${bonus}\``,
-  );
-
-try {
-  // publikacja PUBLICZNA w kanale
-  const targetChannel = preferChannel ? preferChannel : interaction.channel;
-  await targetChannel.send({ embeds: [embed] });
-
-  // odświeżenie instrukcji
   try {
-    const zapCh = targetChannel;
-    if (zapCh && zapCh.id) {
-      const prevId = lastInviteInstruction.get(zapCh.id);
-      if (prevId) {
-        const prevMsg = await zapCh.messages
-          .fetch(prevId)
-          .catch(() => null);
-        if (prevMsg && prevMsg.deletable) {
-          await prevMsg.delete().catch(() => null);
+    // Kanał docelowy
+    const targetChannel = preferChannel ? preferChannel : interaction.channel;
+
+    // Publikacja embeda PUBLICZNIE na kanał
+    await targetChannel.send({ embeds: [embed] });
+
+    // Odświeżanie instrukcji
+    try {
+      const zapCh = targetChannel;
+      if (zapCh && zapCh.id) {
+        const prevId = lastInviteInstruction.get(zapCh.id);
+        if (prevId) {
+          const prevMsg = await zapCh.messages.fetch(prevId).catch(() => null);
+          if (prevMsg && prevMsg.deletable) {
+            await prevMsg.delete().catch(() => null);
+          }
+          lastInviteInstruction.delete(zapCh.id);
         }
-        lastInviteInstruction.delete(zapCh.id);
+
+        const instructionInviteEmbed = new EmbedBuilder()
+          .setColor(0xffffff)
+          .setDescription(
+            `📩 Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!`
+          );
+
+        const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
+        lastInviteInstruction.set(zapCh.id, sent.id);
+        scheduleSavePersistentState();
       }
-
-      const instructionInviteEmbed = new EmbedBuilder()
-        .setColor(0xffffff)
-        .setDescription(
-          "`📩` Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!",
-        );
-
-      const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
-      lastInviteInstruction.set(zapCh.id, sent.id);
-      scheduleSavePersistentState();
+    } catch (e) {
+      console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
-  } catch (e) {
-    console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
-  }
 
-  // 🔒 EDYCJA WIADOMOŚCI – NADAL EPHEMERAL
-  await interaction.editReply({
-    content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
-  });
-} catch (err) {
-  console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
-  try {
+    // Potwierdzenie TYLKO DLA UŻYTKOWNIKA (ephemeral)
     await interaction.editReply({
-      content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
+      content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
     });
-  } catch (e) {
-    // ignore
+
+  } catch (err) {
+    console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
+    try {
+      // W przypadku błędu wyślij embed jako ephemeral do użytkownika
+      await interaction.editReply({ 
+        content: "✅ Twoje zaproszenia:",
+        embeds: [embed] 
+      });
+    } catch {
+      await interaction.editReply({
+        content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
+      });
+    }
   }
 }
-
 
 // ---------------------------------------------------
 // Nowa komenda: /zaproszeniastats
@@ -7512,4 +7504,3 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
 app.listen(3000);
-});
