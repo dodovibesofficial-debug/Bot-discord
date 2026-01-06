@@ -6549,7 +6549,216 @@ async function handleKonkursCreateModal(interaction) {
     sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
-      files: [attachment]
+      files: [attachment]  // ✅ Pierwsze wysłanie - musi mieć files
+    });
+  } catch (err) {
+    console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
+    // Fallback: wyślij bez GIFa
+    const row = new ActionRowBuilder().addComponents(joinBtn);
+    sent = await targetChannel.send({ 
+      embeds: [embed], 
+      components: [row]
+    });
+  }
+
+  if (!sent) {
+    try {
+      await interaction.editReply({
+        content: "❌ Nie udało się utworzyć konkursu (nie wysłano wiadomości w kanał).",
+      });
+    } catch (e) {
+      // ignore
+    }
+    return;
+  }
+
+  contests.set(sent.id, {
+    channelId: targetChannel.id,
+    endsAt,
+    winnersCount,
+    title: prize,
+    prize,
+    messageId: sent.id,
+    createdBy: interaction.user.id,
+    invitesRequired,
+  });
+
+  contestParticipants.set(sent.id, new Map());
+  scheduleSavePersistentState();
+
+  // ustawiamy poprawny id na przycisku już po wysłaniu
+  const properCustomId = `konkurs_join_${sent.id}`;
+  const joinButtonCorrect = new ButtonBuilder()
+    .setCustomId(properCustomId)
+    .setLabel("Weź udział (0)")
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(false);
+
+  const newRow = new ActionRowBuilder().addComponents(joinButtonCorrect);
+  await sent.edit({ components: [newRow] }).catch(() => null);
+
+  setTimeout(() => {
+    endContestByMessageId(sent.id).catch((e) => console.error(e));
+  }, timeMs);
+
+  try {
+    await interaction.editReply({
+      content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
+    });
+  } catch (err) {
+    console.error("Błąd tworzenia konkursu:", err);
+    try {
+      await interaction.editReply({
+        content: "❌ Nie udało się utworzyć konkursu.",
+      });
+    } catch (e) {
+      console.error("Nie udało się wysłać editReply po błędzie:", e);
+    }
+  }
+}
+
+// ----------------- /dodajkonkurs handler (poprawiona wersja) -----------------
+async function handleDodajKonkursCommand(interaction) {
+  if (!interaction.guild) {
+    await interaction.reply({
+      content: "❌ Tylko na serwerze.",
+      ephemeral: true,
+    });
+    return;
+  }
+  // permission check
+  const member = interaction.member;
+  const isAdmin =
+    member &&
+    member.permissions &&
+    (member.permissions.has(PermissionFlagsBits.Administrator) ||
+      member.permissions.has(PermissionFlagsBits.ManageGuild));
+  if (!isAdmin) {
+    await interaction.reply({
+      content: "❌ Nie masz uprawnień administracyjnych.",
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // Modal: tylko nagroda (jako tytuł), czas, zwycięzcy i wymagane zaproszenia
+  const modal = new ModalBuilder()
+    .setCustomId("konkurs_create_modal")
+    .setTitle("Utwórz konkurs");
+
+  const prizeInput = new TextInputBuilder()
+    .setCustomId("konkurs_nagroda")
+    .setLabel("Nagroda (to będzie tytuł konkursu)")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setMaxLength(200);
+
+  const timeInput = new TextInputBuilder()
+    .setCustomId("konkurs_czas")
+    .setLabel("Czas trwania (np. 1h, 2d, 30m, 60s)")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(true)
+    .setPlaceholder("h = godzina, m = minuta, d = dzień, s = sekunda")
+    .setMaxLength(10);
+
+  const winnersInput = new TextInputBuilder()
+    .setCustomId("konkurs_zwyciezcy")
+    .setLabel("Liczba zwycięzców")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(false)
+    .setPlaceholder("1")
+    .setMaxLength(3);
+
+  const invitesReqInput = new TextInputBuilder()
+    .setCustomId("konkurs_wymagania_zaproszenia")
+    .setLabel("Wymagane zaproszenia (opcjonalnie)")
+    .setStyle(TextInputStyle.Short)
+    .setRequired(false)
+    .setPlaceholder("2")
+    .setMaxLength(5);
+
+  modal.addComponents(
+    new ActionRowBuilder().addComponents(prizeInput),
+    new ActionRowBuilder().addComponents(timeInput),
+    new ActionRowBuilder().addComponents(winnersInput),
+    new ActionRowBuilder().addComponents(invitesReqInput),
+  );
+
+  await interaction.showModal(modal);
+}
+
+async function handleKonkursCreateModal(interaction) {
+  const prize = interaction.fields.getTextInputValue("konkurs_nagroda");
+  const timeStr = interaction.fields.getTextInputValue("konkurs_czas");
+  const winnersStr =
+    interaction.fields.getTextInputValue("konkurs_zwyciezcy") || "1";
+  const invitesReqStr =
+    interaction.fields.getTextInputValue("konkurs_wymagania_zaproszenia") || "";
+
+  const timeMs = parseTimeString(timeStr);
+  if (!timeMs) {
+    await interaction.reply({
+      content:
+        "❌ Nieprawidłowy format czasu. Użyj np. `1h`, `2d`, `30m`, `60s`",
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const winnersCount = Math.max(1, parseInt(winnersStr, 10) || 1);
+  const invitesRequired = invitesReqStr.trim()
+    ? Math.max(0, parseInt(invitesReqStr.trim(), 10) || 0)
+    : 0;
+
+  let targetChannel = interaction.channel;
+  await interaction.deferReply({ ephemeral: true }).catch(() => { });
+
+  const endsAt = Date.now() + timeMs;
+  const ts = Math.floor(endsAt / 1000);
+
+  // Początkowy opis z wymaganiami zaproszeń jeśli są
+  let description =
+    `Liczba zwycięzców: ${winnersCount}\n` +
+    `Czas do końca konkursu: ${formatTimeDelta(timeMs)}\n` +
+    `Liczba uczestników: 0\n` +
+    `Nagroda: ${prize}`;
+
+  if (invitesRequired > 0) {
+    const inviteForm = getPersonForm(invitesRequired);
+    description += `\n\n⚠️ Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer`;
+  }
+
+  // Początkowy embed
+  const embed = new EmbedBuilder()
+    .setTitle(`${prize}`)
+    .setColor(0xffa500)
+    .setDescription(description)
+    .setTimestamp();
+
+  // Placeholder button (will be replaced with proper customId after message is sent)
+  const joinBtn = new ButtonBuilder()
+    .setCustomId("konkurs_join_pending")
+    .setLabel("Weź udział (0)")
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(false);
+
+  let sent = null;
+
+  // Dodaj GIF przy tworzeniu konkursu
+  try {
+    const gifPath = path.join(
+      __dirname,
+      "attached_assets",
+      "standard (4).gif",
+    );
+    const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+    embed.setImage("attachment://konkurs_start.gif");
+    
+    const row = new ActionRowBuilder().addComponents(joinBtn);
+    sent = await targetChannel.send({ 
+      embeds: [embed], 
+      components: [row],
+      files: [attachment]  // ✅ Pierwsze wysłanie - musi mieć files
     });
   } catch (err) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
@@ -6706,41 +6915,17 @@ async function handleKonkursJoinModal(interaction, msgId) {
 
         const embed = origMsg.embeds[0]?.toJSON() || {};
         embed.description = updatedDescription;
+        // GIF pozostaje bez zmian - nie ruszamy embed.image
 
-        // Dodaj GIF przy aktualizacji konkursu
-        try {
-          const gifPath = path.join(
-            __dirname,
-            "attached_assets",
-            "standard (4).gif",
-          );
-          const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
-          embed.setImage("attachment://konkurs_start.gif");
-          
-          const joinButton = new ButtonBuilder()
-            .setCustomId(`konkurs_join_${msgId}`)
-            .setLabel(`Weź udział (${participantsCount})`)
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(false);
-          const row = new ActionRowBuilder().addComponents(joinButton);
+        const joinButton = new ButtonBuilder()
+          .setCustomId(`konkurs_join_${msgId}`)
+          .setLabel(`Weź udział (${participantsCount})`)
+          .setStyle(ButtonStyle.Secondary)
+          .setDisabled(false);
+        const row = new ActionRowBuilder().addComponents(joinButton);
 
-          await origMsg
-            .edit({ embeds: [embed], components: [row], files: [attachment] })
-            .catch(() => null);
-        } catch (err) {
-          console.warn("Nie udało się załadować GIFa przy aktualizacji konkursu:", err);
-          // Fallback: wyślij bez GIFa
-          const joinButton = new ButtonBuilder()
-            .setCustomId(`konkurs_join_${msgId}`)
-            .setLabel(`Weź udział (${participantsCount})`)
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(false);
-          const row = new ActionRowBuilder().addComponents(joinButton);
-
-          await origMsg
-            .edit({ embeds: [embed], components: [row] })
-            .catch(() => null);
-        }
+        // ✅ Edycja BEZ files - GIF jest już w embedzie
+        await origMsg.edit({ embeds: [embed], components: [row] }).catch(() => null);
       }
     }
   } catch (e) {
