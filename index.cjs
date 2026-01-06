@@ -5803,7 +5803,9 @@ client.on(Events.GuildMemberAdd, async (member) => {
       try {
         const message = isFakeAccount 
           ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
-          : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
+          : inviterId === "1305200545979437129"
+            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> (jest właścicielem więc nie dodaje zaproszenia.)`
+            : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
         await zapChannel.send(message);
       } catch (e) { }
     }
@@ -7504,3 +7506,32 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
 app.listen(3000);
+
+// Required functions that were missing
+async function handleSelectMenu(interaction) {
+  // Implementation needed
+}
+
+async function handleModalSubmit(interaction) {
+  // Implementation needed  
+}
+
+async function handleButtonInteraction(interaction) {
+  // Implementation needed
+}
+
+async function handleSlashCommand(interaction) {
+  // Implementation needed
+}
+
+async function endContestByMessageId(messageId) {
+  // Implementation needed
+}
+
+async function sendRozliczeniaMessage() {
+  // Implementation needed
+}
+
+async function logTicketCreation(guild, channel, data) {
+  // Implementation needed
+}
