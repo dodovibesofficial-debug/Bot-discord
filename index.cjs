@@ -552,10 +552,6 @@ const commands = [
     .setDescription("Wylosuj zniżkę na zakupy w sklepie!")
     .toJSON(),
   new SlashCommandBuilder()
-    .setName("zresetujczasoczekiwania")
-    .setDescription("Resetuje czas oczekiwania dla wszystkich komend (tylko dla właściciela)")
-    .toJSON(),
-  new SlashCommandBuilder()
     .setName("panelkalkulator")
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -1915,9 +1911,6 @@ async function handleSlashCommand(interaction) {
     case "drop":
       await handleDropCommand(interaction);
       break;
-    case "zresetujczasoczekiwania":
-      await handleZresetujCzasOczekiwaniaCommand(interaction);
-      break;
     case "panelkalkulator":
       await handlePanelKalkulatorCommand(interaction);
       break;
@@ -2471,7 +2464,6 @@ async function handleSendMessageCommand(interaction) {
 async function handleDropCommand(interaction) {
   const user = interaction.user;
   const guildId = interaction.guildId;
-  const owner = isOwner(user.id);
 
   // Now require guild and configured drop channel
   if (!guildId) {
@@ -2483,31 +2475,33 @@ async function handleDropCommand(interaction) {
   }
 
   const dropChannelId = dropChannels.get(guildId);
-  
-  // Sprawdzanie kanału - tylko dla zwykłych użytkowników
-  if (!owner && (!dropChannelId || interaction.channelId !== dropChannelId)) {
+  if (!dropChannelId) {
     await interaction.reply({
-      content: dropChannelId 
-        ? `❌ Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`
-        : "❌ Kanał drop nie został ustawiony. Administrator może ustawić go manualnie lub utworzyć kanał o nazwie domyślnej.",
+      content:
+        "❌ Kanał drop nie został ustawiony. Administrator może ustawić go manualnie lub utworzyć kanał o nazwie domyślnej.",
       ephemeral: true,
     });
     return;
   }
 
-  // Enforce per-user cooldown for /drop (24h) - tylko dla zwykłych użytkowników
-  if (!owner) {
-    const lastDrop = dropCooldowns.get(user.id) || 0;
-    const now = Date.now();
-    if (now - lastDrop < DROP_COOLDOWN_MS) {
-      const remaining = DROP_COOLDOWN_MS - (now - lastDrop);
-      await interaction.reply({
-        content: `❌ Możesz użyć /drop ponownie za ${humanizeMs(remaining)}.`,
-        ephemeral: true,
-      });
-      return;
-    }
-    dropCooldowns.set(user.id, now);
+  if (interaction.channelId !== dropChannelId) {
+    await interaction.reply({
+      content: `❌ Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  // Enforce per-user cooldown for /drop (24h)
+  const lastDrop = dropCooldowns.get(user.id) || 0;
+  const now = Date.now();
+  if (now - lastDrop < DROP_COOLDOWN_MS) {
+    const remaining = DROP_COOLDOWN_MS - (now - lastDrop);
+    await interaction.reply({
+      content: `❌ Możesz użyć /drop ponownie za ${humanizeMs(remaining)}.`,
+      ephemeral: true,
+    });
+    return;
   }
 
   // reduce drop chances (smaller chance to win)
@@ -4932,9 +4926,6 @@ client.on(Events.MessageCreate, async (message) => {
 
 async function handleOpinionCommand(interaction) {
   const guildId = interaction.guildId;
-  const userId = interaction.user.id;
-  const owner = isOwner(userId);
-  
   if (!guildId || !interaction.guild) {
     await interaction.reply({
       content: "❌ Ta komenda działa tylko na serwerze!",
@@ -4943,29 +4934,15 @@ async function handleOpinionCommand(interaction) {
     return;
   }
 
-  const OPINIA_CHANNEL_ID = "1449783959306375198";
-  
-  // Sprawdzanie kanału - tylko dla zwykłych użytkowników
-  if (!owner && interaction.channelId !== OPINIA_CHANNEL_ID) {
+  // Enforce per-user cooldown for /opinia (30 minutes)
+  const lastUsed = opinionCooldowns.get(interaction.user.id) || 0;
+  if (Date.now() - lastUsed < OPINION_COOLDOWN_MS) {
+    const remaining = OPINION_COOLDOWN_MS - (Date.now() - lastUsed);
     await interaction.reply({
-      content: `❌ Użyj tej komendy na kanale <#${OPINIA_CHANNEL_ID}>.`,
+      content: `❌ Możesz użyć /opinia ponownie za ${humanizeMs(remaining)}.`,
       ephemeral: true,
     });
     return;
-  }
-
-  // Enforce per-user cooldown for /opinia (30 minutes) - tylko dla zwykłych użytkowników
-  if (!owner) {
-    const lastUsed = opinionCooldowns.get(userId) || 0;
-    if (Date.now() - lastUsed < OPINION_COOLDOWN_MS) {
-      const remaining = OPINION_COOLDOWN_MS - (Date.now() - lastUsed);
-      await interaction.reply({
-        content: `❌ Możesz użyć /opinia ponownie za ${humanizeMs(remaining)}.`,
-        ephemeral: true,
-      });
-      return;
-    }
-    opinionCooldowns.set(userId, Date.now());
   }
 
   const normalize = (s = "") =>
@@ -5826,9 +5803,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       try {
         const message = isFakeAccount 
           ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
-          : inviterId === "1305200545979437129"
-            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> (zaproszony przez własciciela)`
-            : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
+          : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
         await zapChannel.send(message);
       } catch (e) { }
     }
@@ -5971,43 +5946,6 @@ client.on(Events.GuildMemberRemove, async (member) => {
   }
 });
 
-// Funkcja sprawdzająca czy użytkownik jest właścicielem
-function isOwner(userId) {
-  return userId === "1305200545979437129";
-}
-
-// ----------------- /zresetujczasoczekiwania command handler -----------------
-async function handleZresetujCzasOczekiwaniaCommand(interaction) {
-  const userId = interaction.user.id;
-  
-  // Sprawdzenie czy użytkownik jest właścicielem
-  if (!isOwner(userId)) {
-    await interaction.reply({
-      content: `❌ Ta komenda jest dostępna tylko dla właściciela serwera!`,
-      ephemeral: true,
-    });
-    return;
-  }
-
-  try {
-    // Resetowanie cooldownów dla wszystkich komend
-    dropCooldowns.clear();
-    opinionCooldowns.clear();
-    sprawdzZaproszeniaCooldowns.clear();
-    
-    await interaction.reply({
-      content: `✅ Pomyślnie zresetowano czas oczekiwania dla wszystkich komend!`,
-      ephemeral: true,
-    });
-  } catch (error) {
-    console.error("Błąd podczas resetowania cooldownów:", error);
-    await interaction.reply({
-      content: `❌ Wystąpił błąd podczas resetowania czasu oczekiwania.`,
-      ephemeral: true,
-    });
-  }
-}
-
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
   if (!interaction.guild) {
@@ -6019,11 +5957,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   }
 
   const SPRAWDZ_ZAPROSZENIA_CHANNEL_ID = "1449159417445482566";
-  const userId = interaction.user.id;
-  const owner = isOwner(userId);
-
-  // Sprawdzanie kanału - tylko dla zwykłych użytkowników
-  if (!owner && interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
+  if (interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
     await interaction.reply({
       content: `❌ Użyj tej komendy na kanale <#${SPRAWDZ_ZAPROSZENIA_CHANNEL_ID}>.`,
       ephemeral: true,
@@ -6031,129 +5965,136 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     return;
   }
 
-  // cooldown 30s - tylko dla zwykłych użytkowników
-  if (!owner) {
-    const nowTs = Date.now();
-    const lastTs = sprawdzZaproszeniaCooldowns.get(userId) || 0;
-    if (nowTs - lastTs < 30_000) {
-      const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
-      await interaction.reply({
-        content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
-        ephemeral: true,
-      });
-      return;
-    }
-    sprawdzZaproszeniaCooldowns.set(userId, nowTs);
-  }
-
-  // Defer to avoid timeout - EPHEMERAL (tylko użytkownik widzi)
-  await interaction.deferReply({ ephemeral: true }).catch(() => null);
-
-  // ===== SPRAWDZ-ZAPROSZENIA – PEŁNY SCRIPT =====
-
-  const preferChannel = interaction.guild.channels.cache.get(SPRAWDZ_ZAPROSZENIA_CHANNEL_ID);
-  const guildId = interaction.guild.id;
-
-  // Inicjalizacja map
-  if (!inviteCounts.has(guildId)) inviteCounts.set(guildId, new Map());
-  if (!inviteRewards.has(guildId)) inviteRewards.set(guildId, new Map());
-  if (!inviteRewardsGiven.has(guildId)) inviteRewardsGiven.set(guildId, new Map());
-  if (!inviteLeaves.has(guildId)) inviteLeaves.set(guildId, new Map());
-  if (!inviteTotalJoined.has(guildId)) inviteTotalJoined.set(guildId, new Map());
-  if (!inviteFakeAccounts.has(guildId)) inviteFakeAccounts.set(guildId, new Map());
-  if (!inviteBonusInvites.has(guildId)) inviteBonusInvites.set(guildId, new Map());
-
-  // Mapy gildii
-  const gMap = inviteCounts.get(guildId);
-  const totalMap = inviteTotalJoined.get(guildId);
-  const fakeMap = inviteFakeAccounts.get(guildId);
-  const lMap = inviteLeaves.get(guildId);
-  const bonusMap = inviteBonusInvites.get(guildId);
-
-  // Dane użytkownika
-  const validInvites = gMap.get(userId) || 0;
-  const left = lMap.get(userId) || 0;
-  const fake = fakeMap.get(userId) || 0;
-  const bonus = bonusMap.get(userId) || 0;
-
-  // Zaproszenia wyświetlane (z bonusem)
-  const displayedInvites = validInvites + bonus;
-  const inviteWord = getInviteWord(displayedInvites);
-
-  // Brakujące do nagrody
-  let missingToReward = INVITE_REWARD_THRESHOLD - (displayedInvites % INVITE_REWARD_THRESHOLD);
-  if (displayedInvites !== 0 && displayedInvites % INVITE_REWARD_THRESHOLD === 0) {
-    missingToReward = 0;
-  }
-
-  // Embed
-  const embed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setDescription(
-      `\n` +
-      `📩 **New Shop × ZAPROSZENIA**\n\n` +
-      `> 👤 × <@${userId}> **posiada** **${displayedInvites} ${inviteWord}**!\n\n` +
-      `> 💸 × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** ${missingToReward}\n\n` +
-      `> 👥 × **Prawdziwe osoby które dołączyły:** ${displayedInvites}\n` +
-      `> 🚶 × **Osoby które opuściły serwer:** ${left}\n` +
-      `> ⚠️ × **Niespełniające kryteriów (< konto 1 mies.):** ${fake}\n` +
-      `> 🎁 × **Dodatkowe zaproszenia:** ${bonus}`
-    );
-
-  try {
-    // Kanał docelowy
-    const targetChannel = preferChannel ? preferChannel : interaction.channel;
-
-    // Publikacja embeda PUBLICZNIE na kanał
-    await targetChannel.send({ embeds: [embed] });
-
-    // Odświeżanie instrukcji
-    try {
-      const zapCh = targetChannel;
-      if (zapCh && zapCh.id) {
-        const prevId = lastInviteInstruction.get(zapCh.id);
-        if (prevId) {
-          const prevMsg = await zapCh.messages.fetch(prevId).catch(() => null);
-          if (prevMsg && prevMsg.deletable) {
-            await prevMsg.delete().catch(() => null);
-          }
-          lastInviteInstruction.delete(zapCh.id);
-        }
-
-        const instructionInviteEmbed = new EmbedBuilder()
-          .setColor(0xffffff)
-          .setDescription(
-            `📩 Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!`
-          );
-
-        const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
-        lastInviteInstruction.set(zapCh.id, sent.id);
-        scheduleSavePersistentState();
-      }
-    } catch (e) {
-      console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
-    }
-
-    // Potwierdzenie TYLKO DLA UŻYTKOWNIKA (ephemeral)
-    await interaction.editReply({
-      content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
+  // cooldown 30s
+  const nowTs = Date.now();
+  const lastTs = sprawdzZaproszeniaCooldowns.get(interaction.user.id) || 0;
+  if (nowTs - lastTs < 30_000) {
+    const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
+    await interaction.reply({
+      content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
+      ephemeral: true,
     });
+    return;
+  }
+  sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
 
-  } catch (err) {
-    console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
-    try {
-      // W przypadku błędu wyślij embed jako ephemeral do użytkownika
-      await interaction.editReply({ 
-        content: "✅ Twoje zaproszenia:",
-        embeds: [embed] 
-      });
-    } catch {
-      await interaction.editReply({
-        content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
-      });
+  // Defer to avoid timeout and allow multiple replies
+  await interaction.deferReply({ ephemeral: false }).catch(() => null);
+
+const preferChannel = interaction.guild.channels.cache.get(
+  SPRAWDZ_ZAPROSZENIA_CHANNEL_ID,
+);
+
+const guildId = interaction.guild.id;
+
+// 🔒 PIERWSZA ODPOWIEDŹ – EPHEMERAL (TYLKO DLA AUTORA KOMENDY)
+await interaction.reply({
+  content: "⏳ Sprawdzam twoje zaproszenia...",
+  ephemeral: true,
+});
+
+if (!inviteCounts.has(guildId)) inviteCounts.set(guildId, new Map());
+if (!inviteRewards.has(guildId)) inviteRewards.set(guildId, new Map());
+if (!inviteRewardsGiven.has(guildId))
+  inviteRewardsGiven.set(guildId, new Map());
+if (!inviteLeaves.has(guildId)) inviteLeaves.set(guildId, new Map());
+if (!inviteTotalJoined.has(guildId))
+  inviteTotalJoined.set(guildId, new Map());
+if (!inviteFakeAccounts.has(guildId))
+  inviteFakeAccounts.set(guildId, new Map());
+if (!inviteBonusInvites.has(guildId))
+  inviteBonusInvites.set(guildId, new Map());
+
+const gMap = inviteCounts.get(guildId);
+const totalMap = inviteTotalJoined.get(guildId);
+const fakeMap = inviteFakeAccounts.get(guildId);
+const lMap = inviteLeaves.get(guildId);
+const bonusMap = inviteBonusInvites.get(guildId);
+
+const userId = interaction.user.id;
+const validInvites = gMap.get(userId) || 0;
+const left = lMap.get(userId) || 0;
+const fake = fakeMap.get(userId) || 0;
+const bonus = bonusMap.get(userId) || 0;
+
+// Display total invites including bonus
+const displayedInvites = validInvites + bonus;
+const inviteWord = getInviteWord(displayedInvites);
+
+// ile brakuje do następnej nagrody
+let missingToReward =
+  INVITE_REWARD_THRESHOLD - (displayedInvites % INVITE_REWARD_THRESHOLD);
+
+if (
+  displayedInvites !== 0 &&
+  displayedInvites % INVITE_REWARD_THRESHOLD === 0
+) {
+  missingToReward = 0;
+}
+
+const embed = new EmbedBuilder()
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```\n" +
+      "📩 New Shop × ZAPROSZENIA\n" +
+      "```\n" +
+      `> \`👤\` × <@${userId}> **posiada** \`${displayedInvites}\` **${inviteWord}**!\n\n` +
+      `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
+      `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
+      `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
+      `> \`⚠️\` × **Niespełniające kryteriów (< konto 1 mies.):** \`${fake}\`\n` +
+      `> \`🎁\` × **Dodatkowe zaproszenia:** \`${bonus}\``,
+  );
+
+try {
+  // publikacja PUBLICZNA w kanale
+  const targetChannel = preferChannel ? preferChannel : interaction.channel;
+  await targetChannel.send({ embeds: [embed] });
+
+  // odświeżenie instrukcji
+  try {
+    const zapCh = targetChannel;
+    if (zapCh && zapCh.id) {
+      const prevId = lastInviteInstruction.get(zapCh.id);
+      if (prevId) {
+        const prevMsg = await zapCh.messages
+          .fetch(prevId)
+          .catch(() => null);
+        if (prevMsg && prevMsg.deletable) {
+          await prevMsg.delete().catch(() => null);
+        }
+        lastInviteInstruction.delete(zapCh.id);
+      }
+
+      const instructionInviteEmbed = new EmbedBuilder()
+        .setColor(0xffffff)
+        .setDescription(
+          "`📩` Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!",
+        );
+
+      const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
+      lastInviteInstruction.set(zapCh.id, sent.id);
+      scheduleSavePersistentState();
     }
+  } catch (e) {
+    console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
+  }
+
+  // 🔒 EDYCJA WIADOMOŚCI – NADAL EPHEMERAL
+  await interaction.editReply({
+    content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
+  });
+} catch (err) {
+  console.error("Błąd przy publikacji sprawdz-zaproszenia:", err);
+  try {
+    await interaction.editReply({
+      content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
+    });
+  } catch (e) {
+    // ignore
   }
 }
+
 
 // ---------------------------------------------------
 // Nowa komenda: /zaproszeniastats
@@ -7571,32 +7512,4 @@ const express = require('express');
 const app = express();
 app.get('/', (req, res) => res.send('Bot is alive'));
 app.listen(3000);
-
-// Required functions that were missing
-async function handleSelectMenu(interaction) {
-  // Implementation needed
-}
-
-async function handleModalSubmit(interaction) {
-  // Implementation needed  
-}
-
-async function handleButtonInteraction(interaction) {
-  // Implementation needed
-}
-
-async function handleSlashCommand(interaction) {
-  // Implementation needed
-}
-
-async function endContestByMessageId(messageId) {
-  // Implementation needed
-}
-
-async function sendRozliczeniaMessage() {
-  // Implementation needed
-}
-
-async function logTicketCreation(guild, channel, data) {
-  // Implementation needed
-}
+});
