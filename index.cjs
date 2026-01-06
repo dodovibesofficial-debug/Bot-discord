@@ -552,6 +552,10 @@ const commands = [
     .setDescription("Wylosuj zniżkę na zakupy w sklepie!")
     .toJSON(),
   new SlashCommandBuilder()
+    .setName("zresetujczasoczekiwania")
+    .setDescription("Resetuje czas oczekiwania dla wszystkich komend (tylko dla właściciela)")
+    .toJSON(),
+  new SlashCommandBuilder()
     .setName("panelkalkulator")
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -1911,6 +1915,9 @@ async function handleSlashCommand(interaction) {
     case "drop":
       await handleDropCommand(interaction);
       break;
+    case "zresetujczasoczekiwania":
+      await handleZresetujCzasOczekiwaniaCommand(interaction);
+      break;
     case "panelkalkulator":
       await handlePanelKalkulatorCommand(interaction);
       break;
@@ -2464,6 +2471,7 @@ async function handleSendMessageCommand(interaction) {
 async function handleDropCommand(interaction) {
   const user = interaction.user;
   const guildId = interaction.guildId;
+  const owner = isOwner(user.id);
 
   // Now require guild and configured drop channel
   if (!guildId) {
@@ -2475,33 +2483,31 @@ async function handleDropCommand(interaction) {
   }
 
   const dropChannelId = dropChannels.get(guildId);
-  if (!dropChannelId) {
+  
+  // Sprawdzanie kanału - tylko dla zwykłych użytkowników
+  if (!owner && (!dropChannelId || interaction.channelId !== dropChannelId)) {
     await interaction.reply({
-      content:
-        "❌ Kanał drop nie został ustawiony. Administrator może ustawić go manualnie lub utworzyć kanał o nazwie domyślnej.",
+      content: dropChannelId 
+        ? `❌ Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`
+        : "❌ Kanał drop nie został ustawiony. Administrator może ustawić go manualnie lub utworzyć kanał o nazwie domyślnej.",
       ephemeral: true,
     });
     return;
   }
 
-  if (interaction.channelId !== dropChannelId) {
-    await interaction.reply({
-      content: `❌ Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`,
-      ephemeral: true,
-    });
-    return;
-  }
-
-  // Enforce per-user cooldown for /drop (24h)
-  const lastDrop = dropCooldowns.get(user.id) || 0;
-  const now = Date.now();
-  if (now - lastDrop < DROP_COOLDOWN_MS) {
-    const remaining = DROP_COOLDOWN_MS - (now - lastDrop);
-    await interaction.reply({
-      content: `❌ Możesz użyć /drop ponownie za ${humanizeMs(remaining)}.`,
-      ephemeral: true,
-    });
-    return;
+  // Enforce per-user cooldown for /drop (24h) - tylko dla zwykłych użytkowników
+  if (!owner) {
+    const lastDrop = dropCooldowns.get(user.id) || 0;
+    const now = Date.now();
+    if (now - lastDrop < DROP_COOLDOWN_MS) {
+      const remaining = DROP_COOLDOWN_MS - (now - lastDrop);
+      await interaction.reply({
+        content: `❌ Możesz użyć /drop ponownie za ${humanizeMs(remaining)}.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    dropCooldowns.set(user.id, now);
   }
 
   // reduce drop chances (smaller chance to win)
@@ -4926,6 +4932,9 @@ client.on(Events.MessageCreate, async (message) => {
 
 async function handleOpinionCommand(interaction) {
   const guildId = interaction.guildId;
+  const userId = interaction.user.id;
+  const owner = isOwner(userId);
+  
   if (!guildId || !interaction.guild) {
     await interaction.reply({
       content: "❌ Ta komenda działa tylko na serwerze!",
@@ -4934,15 +4943,29 @@ async function handleOpinionCommand(interaction) {
     return;
   }
 
-  // Enforce per-user cooldown for /opinia (30 minutes)
-  const lastUsed = opinionCooldowns.get(interaction.user.id) || 0;
-  if (Date.now() - lastUsed < OPINION_COOLDOWN_MS) {
-    const remaining = OPINION_COOLDOWN_MS - (Date.now() - lastUsed);
+  const OPINIA_CHANNEL_ID = "1449783959306375198";
+  
+  // Sprawdzanie kanału - tylko dla zwykłych użytkowników
+  if (!owner && interaction.channelId !== OPINIA_CHANNEL_ID) {
     await interaction.reply({
-      content: `❌ Możesz użyć /opinia ponownie za ${humanizeMs(remaining)}.`,
+      content: `❌ Użyj tej komendy na kanale <#${OPINIA_CHANNEL_ID}>.`,
       ephemeral: true,
     });
     return;
+  }
+
+  // Enforce per-user cooldown for /opinia (30 minutes) - tylko dla zwykłych użytkowników
+  if (!owner) {
+    const lastUsed = opinionCooldowns.get(userId) || 0;
+    if (Date.now() - lastUsed < OPINION_COOLDOWN_MS) {
+      const remaining = OPINION_COOLDOWN_MS - (Date.now() - lastUsed);
+      await interaction.reply({
+        content: `❌ Możesz użyć /opinia ponownie za ${humanizeMs(remaining)}.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    opinionCooldowns.set(userId, Date.now());
   }
 
   const normalize = (s = "") =>
@@ -5948,6 +5971,43 @@ client.on(Events.GuildMemberRemove, async (member) => {
   }
 });
 
+// Funkcja sprawdzająca czy użytkownik jest właścicielem
+function isOwner(userId) {
+  return userId === "1305200545979437129";
+}
+
+// ----------------- /zresetujczasoczekiwania command handler -----------------
+async function handleZresetujCzasOczekiwaniaCommand(interaction) {
+  const userId = interaction.user.id;
+  
+  // Sprawdzenie czy użytkownik jest właścicielem
+  if (!isOwner(userId)) {
+    await interaction.reply({
+      content: `❌ Ta komenda jest dostępna tylko dla właściciela serwera!`,
+      ephemeral: true,
+    });
+    return;
+  }
+
+  try {
+    // Resetowanie cooldownów dla wszystkich komend
+    dropCooldowns.clear();
+    opinionCooldowns.clear();
+    sprawdzZaproszeniaCooldowns.clear();
+    
+    await interaction.reply({
+      content: `✅ Pomyślnie zresetowano czas oczekiwania dla wszystkich komend!`,
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error("Błąd podczas resetowania cooldownów:", error);
+    await interaction.reply({
+      content: `❌ Wystąpił błąd podczas resetowania czasu oczekiwania.`,
+      ephemeral: true,
+    });
+  }
+}
+
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
   if (!interaction.guild) {
@@ -5959,7 +6019,11 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   }
 
   const SPRAWDZ_ZAPROSZENIA_CHANNEL_ID = "1449159417445482566";
-  if (interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
+  const userId = interaction.user.id;
+  const owner = isOwner(userId);
+
+  // Sprawdzanie kanału - tylko dla zwykłych użytkowników
+  if (!owner && interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
     await interaction.reply({
       content: `❌ Użyj tej komendy na kanale <#${SPRAWDZ_ZAPROSZENIA_CHANNEL_ID}>.`,
       ephemeral: true,
@@ -5967,18 +6031,20 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     return;
   }
 
-  // cooldown 30s
-  const nowTs = Date.now();
-  const lastTs = sprawdzZaproszeniaCooldowns.get(interaction.user.id) || 0;
-  if (nowTs - lastTs < 30_000) {
-    const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
-    await interaction.reply({
-      content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
-      ephemeral: true,
-    });
-    return;
+  // cooldown 30s - tylko dla zwykłych użytkowników
+  if (!owner) {
+    const nowTs = Date.now();
+    const lastTs = sprawdzZaproszeniaCooldowns.get(userId) || 0;
+    if (nowTs - lastTs < 30_000) {
+      const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
+      await interaction.reply({
+        content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
+        ephemeral: true,
+      });
+      return;
+    }
+    sprawdzZaproszeniaCooldowns.set(userId, nowTs);
   }
-  sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
 
   // Defer to avoid timeout - EPHEMERAL (tylko użytkownik widzi)
   await interaction.deferReply({ ephemeral: true }).catch(() => null);
@@ -6005,7 +6071,6 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   const bonusMap = inviteBonusInvites.get(guildId);
 
   // Dane użytkownika
-  const userId = interaction.user.id;
   const validInvites = gMap.get(userId) || 0;
   const left = lMap.get(userId) || 0;
   const fake = fakeMap.get(userId) || 0;
