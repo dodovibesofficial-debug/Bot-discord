@@ -5669,6 +5669,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
     // If we detected an inviter (even if not counted due to rate-limit, inviterId may be present)
     let fakeMap = null;
+    const ownerId = "1305200545979437129";
 
     if (inviterId) {
       // Ensure all maps exist
@@ -5695,10 +5696,13 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const prevTotal = totalMap.get(inviterId) || 0;
       totalMap.set(inviterId, prevTotal + 1);
 
-      // ZAWSZE liczymy zaproszenia z kont < 1 miesiąca
-      if (!isFakeAccount) {
-        const prev = gMap.get(inviterId) || 0;
-        gMap.set(inviterId, prev + 1);
+      // Liczymy zaproszenia tylko jeśli nie jest właścicielem
+      if (inviterId !== ownerId) {
+        // ZAWSZE liczymy zaproszenia z kont < 1 miesiąca
+        if (!isFakeAccount) {
+          const prev = gMap.get(inviterId) || 0;
+          gMap.set(inviterId, prev + 1);
+        }
       }
 
       // --- Nagrody za zaproszenia ---
@@ -5800,10 +5804,19 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const gMap = inviteCounts.get(member.guild.id) || new Map();
       const currentInvites = gMap.get(inviterId) || 0;
       const inviteWord = getInviteWord(currentInvites);
+      const ownerId = "1305200545979437129";
+      
       try {
-        const message = isFakeAccount 
-          ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
-          : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
+        let message;
+        if (inviterId === ownerId) {
+          // Zaproszenie przez właściciela - nie liczymy zaproszeń
+          message = `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> (został zaproszony przez właściciela)`;
+        } else {
+          // Normalne zaproszenie
+          message = isFakeAccount 
+            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
+            : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
+        }
         await zapChannel.send(message);
       } catch (e) { }
     }
@@ -6026,7 +6039,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       `\n` +
       `📩 **New Shop × ZAPROSZENIA**\n\n` +
       `> 👤 × <@${userId}> **posiada** **${displayedInvites} ${inviteWord}**!\n\n` +
-      `> 💸 × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** ${missingToReward}\n\n` +
+      `> 💸 × **Brakuje ci zaproszeń do nagrody \`${INVITE_REWARD_TEXT}:** ${missingToReward}\n\n` +
       `> 👥 × **Prawdziwe osoby które dołączyły:** ${displayedInvites}\n` +
       `> 🚶 × **Osoby które opuściły serwer:** ${left}\n` +
       `> ⚠️ × **Niespełniające kryteriów (< konto 1 mies.):** ${fake}\n` +
