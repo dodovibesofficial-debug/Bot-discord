@@ -1761,8 +1761,11 @@ async function handleButtonInteraction(interaction) {
       ticketOwners.delete(chId);
 
       await interaction.reply({
-        content: "> \`ℹ️\` **Ticket zostanie zamknięty w ciągu 5 sekund...**",
-        ephemeral: true,
+        embeds: [
+          new EmbedBuilder()
+            .setColor(COLOR_BLUE)
+            .setDescription("> \`ℹ️\` **Ticket zostanie zamknięty w ciągu 5 sekund...**")
+        ]
       });
 
       // Archive & log immediately, then delete channel shortly after
@@ -2879,7 +2882,11 @@ async function handleCloseTicketCommand(interaction) {
     ticketOwners.delete(chId);
 
     await interaction.reply({
-      content: "> \`ℹ️\` **Ticket zostanie zamknięty w ciągu 5 sekund...**",
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR_BLUE)
+          .setDescription("> \`ℹ️\` **Ticket zostanie zamknięty w ciągu 5 sekund...**")
+      ]
     });
 
     try {
@@ -4229,7 +4236,7 @@ async function handleModalSubmit(interaction) {
           .setDescription(
             `### **ZAKUP ITY × ${ticketTypeLabel}**\n\n` +
             `### ・ \`👤\` × Informacje o kliencie:\n` +
-            `> \`➖\` **× Ping:** @everyone\n` +
+            `> \`➖\` **× Ping:** <@${user.id}>\n` +
             `> \`➖\` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
             `> \`➖\` × **ID:** \`${user.id}\`\n\n` +
             `### ・ \`📋\` × Informacje z formularza:\n` +
@@ -4264,7 +4271,7 @@ async function handleModalSubmit(interaction) {
         );
 
         const sentMsg = await channel.send({
-          content: `<@${user.id}>`,
+          content: `@everyone`,
           embeds: [embed],
           components: [buttonRow],
         });
@@ -4453,7 +4460,7 @@ async function handleModalSubmit(interaction) {
       .setDescription(
         `## \`🛒 NEW SHOP × ${ticketTypeLabel}\`\n\n` +
         `### ・ \`👤\` × Informacje o kliencie:\n` +
-        `> \`➖\` **× Ping:** @everyone\n` +
+        `> \`➖\` **× Ping:** <@${user.id}>\n` +
         `> \`➖\` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
         `> \`➖\` × **ID:** \`${user.id}\`\n` +
         `### ・ \`📋\` × Informacje z formularza:\n` +
@@ -4501,7 +4508,7 @@ async function handleModalSubmit(interaction) {
 
     // send message and capture it (so we can edit buttons later)
     const sentMsg = await channel.send({
-      content: `<@${user.id}>`,
+      content: `@everyone`,
       embeds: [embed],
       components: [buttonRow],
     });
