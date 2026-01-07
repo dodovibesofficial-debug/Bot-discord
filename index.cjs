@@ -5892,7 +5892,10 @@ client.on(Events.GuildMemberRemove, async (member) => {
     if (!inviteCounts.has(member.guild.id))
       inviteCounts.set(member.guild.id, new Map());
     const gMap = inviteCounts.get(member.guild.id);
-    if (counted) {
+    const ownerId = "1305200545979437129";
+    
+    // Odejmujemy zaproszenia tylko jeśli nie jest właścicielem
+    if (counted && inviterId !== ownerId) {
       const prev = gMap.get(inviterId) || 0;
       const newCount = Math.max(0, prev - 1);
       gMap.set(inviterId, newCount);
@@ -5944,10 +5947,18 @@ client.on(Events.GuildMemberRemove, async (member) => {
       // compute newCount for message (inviteCounts after possible decrement)
       const currentCount = gMap.get(inviterId) || 0;
       const inviteWord = getInviteWord(currentCount);
+      const ownerId = "1305200545979437129";
+      
       try {
-        await zapCh.send(
-          `> \`🚪\` × <@${member.id}> opuścił serwer. Był zaproszony przez <@${inviterId}> który ma teraz **${currentCount}** ${inviteWord}.`,
-        );
+        let message;
+        if (inviterId === ownerId) {
+          // Opuszczenie przez zaproszenie właściciela - nie odejmowaliśmy zaproszeń
+          message = `> \`🚪\` × <@${member.id}> opuścił serwer. (Był zaproszony przez właściciela)`;
+        } else {
+          // Normalne opuszczenie
+          message = `> \`🚪\` × <@${member.id}> opuścił serwer. Był zaproszony przez <@${inviterId}> który ma teraz **${currentCount}** ${inviteWord}.`;
+        }
+        await zapCh.send(message);
       } catch (e) { }
     }
 
