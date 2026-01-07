@@ -2962,9 +2962,9 @@ async function handleSelectMenu(interaction) {
 
       const nameInput = new TextInputBuilder()
         .setCustomId("new_ticket_name")
-        .setLabel("Nowa nazwa kanału (np. ticket-123)")
+        .setLabel("Nowa nazwa kanału (np. ticket-nick)")
         .setStyle(TextInputStyle.Short)
-        .setPlaceholder("ticket-123")
+        .setPlaceholder("ticket-nick")
         .setRequired(true)
         .setMinLength(3)
         .setMaxLength(90);
@@ -4200,7 +4200,7 @@ async function handleModalSubmit(interaction) {
         }
 
         const createOptions = {
-          name: `ticket-${ticketNumber}`,
+          name: `ticket-${user.username}`,
           type: ChannelType.GuildText,
           permissionOverwrites: [
             {
@@ -4372,7 +4372,7 @@ async function handleModalSubmit(interaction) {
 
     // create channel with or without parent
     const createOptions = {
-      name: `ticket-${ticketNumber}`,
+      name: `ticket-${user.username}`,
       type: ChannelType.GuildText,
       permissionOverwrites: [
         {
