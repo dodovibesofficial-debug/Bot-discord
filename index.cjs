@@ -3048,8 +3048,8 @@ async function showZakupModal(interaction) {
 
   const oczekiwanaWalutaInput = new TextInputBuilder()
     .setCustomId("oczekiwana_waluta")
-    .setLabel("Ile oczekujesz waluty serwerowej?")
-    .setPlaceholder("np. 400k$")
+    .setLabel("Co chciałbyś zakupić")
+    .setPlaceholder("np. Elytra")
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
