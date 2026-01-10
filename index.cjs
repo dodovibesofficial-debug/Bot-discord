@@ -21,6 +21,7 @@ const {
 } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
+const db = require("./database.js");
 
 const client = new Client({
   intents: [
@@ -507,7 +508,7 @@ function scheduleSavePersistentState(immediate = false) {
   }
 }
 
-function loadPersistentState() {
+async function loadPersistentState() {
   try {
     console.log("[state] Rozpoczynam wczytywanie stanu...");
     if (!fs.existsSync(STORE_FILE)) {
@@ -634,18 +635,15 @@ function loadPersistentState() {
       }
     }
 
-    // Load weekly sales
-    if (data.weeklySales && typeof data.weeklySales === "object") {
-      let loadedCount = 0;
-      for (const [userId, salesData] of Object.entries(data.weeklySales)) {
-        if (salesData && typeof salesData === "object" && typeof salesData.amount === "number") {
-          weeklySales.set(userId, salesData);
-          loadedCount++;
-        }
-      }
-      console.log(`[state] Wczytano weeklySales: ${loadedCount} użytkowników`);
-    } else {
-      console.log("[state] Brak danych weeklySales w pliku");
+    // Load weekly sales from Supabase
+    try {
+      const sales = await db.getWeeklySales();
+      sales.forEach(({ user_id, amount }) => {
+        weeklySales.set(user_id, { amount, lastUpdate: Date.now() });
+      });
+      console.log(`[Supabase] Wczytano weeklySales: ${sales.length} użytkowników`);
+    } catch (error) {
+      console.error("[Supabase] Błąd wczytywania weeklySales:", error);
     }
 
     // Load active codes
@@ -860,8 +858,11 @@ function getNextTicketNumber(guildId) {
 
 // Load persisted state once on startup (IMMEDIATELY after maps are defined)
 console.log("[state] Wywołuję loadPersistentState()...");
-loadPersistentState();
-console.log("[state] loadPersistentState() zakończone");
+loadPersistentState().then(() => {
+  console.log("[state] loadPersistentState() zakończone");
+}).catch(err => {
+  console.error("[state] Błąd loadPersistentState():", err);
+});
 
 // Flush debounced state on shutdown so counters don't reset on restart
 process.once("SIGINT", () => {
@@ -3145,8 +3146,8 @@ async function handleRozliczenieCommand(interaction) {
   userData.amount += kwota;
   userData.lastUpdate = Date.now();
   
-  // Zapisz stan po dodaniu rozliczenia
-  scheduleSavePersistentState();
+  // Zapisz weekly sales do Supabase
+  await db.saveWeeklySale(userId, userData.amount);
   console.log(`[rozliczenie] Użytkownik ${userId} dodał rozliczenie: ${kwota} zł, suma tygodniowa: ${userData.amount} zł`);
 
   const embed = new EmbedBuilder()
