@@ -77,7 +77,7 @@ const REP_CHANNEL_ID = "1449840030947217529";
 
 // cooldown (ms) per user between the bot posting the info embed
 const INFO_EMBED_COOLDOWN_MS = 5 * 1000; // default 5s — change to desired value
-
+ 
 // map used for throttling per-user
 const infoCooldowns = new Map(); // userId -> timestamp (ms)
 
