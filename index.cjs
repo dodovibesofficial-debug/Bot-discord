@@ -48,7 +48,7 @@ const inviteBonusInvites = new Map(); // guild -> userId -> dodatkowe zaproszeni
 const inviteRewardsGiven = new Map(); // NEW: guild -> userId -> ile nagród już przyznano
 
 // Helper: funkcja zwracająca poprawną formę słowa "zaproszenie"
-function getInviteWord(count) { 
+function getInviteWord(count) {
   if (count === 1) return "zaproszenie";
   if (count >= 2 && count <= 4) return "zaproszenia";
   return "zaproszeń";
@@ -158,6 +158,11 @@ const inviteLeaves = new Map(); // guildId -> Map<inviterId, leftCount>
 const STORE_FILE = process.env.STORE_FILE
   ? path.resolve(process.env.STORE_FILE)
   : (fs.existsSync("/opt/render/project") ? "/opt/render/project/data/legit_store.json" : path.join(__dirname, "legit_store.json"));
+
+// Force Render persistent disk path
+if (fs.existsSync("/opt/render/project")) {
+  process.env.STORE_FILE = "/opt/render/project/data/legit_store.json";
+}
 
 try {
   const dir = path.dirname(STORE_FILE);
@@ -631,11 +636,16 @@ function loadPersistentState() {
 
     // Load weekly sales
     if (data.weeklySales && typeof data.weeklySales === "object") {
+      let loadedCount = 0;
       for (const [userId, salesData] of Object.entries(data.weeklySales)) {
         if (salesData && typeof salesData === "object" && typeof salesData.amount === "number") {
           weeklySales.set(userId, salesData);
+          loadedCount++;
         }
       }
+      console.log(`[state] Wczytano weeklySales: ${loadedCount} użytkowników`);
+    } else {
+      console.log("[state] Brak danych weeklySales w pliku");
     }
 
     // Load active codes
@@ -3137,6 +3147,7 @@ async function handleRozliczenieCommand(interaction) {
   
   // Zapisz stan po dodaniu rozliczenia
   scheduleSavePersistentState();
+  console.log(`[rozliczenie] Użytkownik ${userId} dodał rozliczenie: ${kwota} zł, suma tygodniowa: ${userData.amount} zł`);
 
   const embed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
