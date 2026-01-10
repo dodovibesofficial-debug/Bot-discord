@@ -89,7 +89,7 @@ const REP_EMBED_BANNER_URL =
 const repLastInfoMessage = new Map(); // channelId -> messageId
 
 // legit rep counter
-let legitRepCount = 0;
+let legitRepCount = 15;
 let lastChannelRename = 0;
 const CHANNEL_RENAME_COOLDOWN = 10 * 60 * 1000; // 10 minutes (Discord limit)
 let pendingRename = false;
