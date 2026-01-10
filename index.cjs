@@ -638,7 +638,6 @@ const commands = [
         .setMinValue(0)
     )
     .toJSON(),
-];
   new SlashCommandBuilder()
     .setName("zamknij")
     .setDescription("Zamknij ticket")
