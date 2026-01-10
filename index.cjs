@@ -847,8 +847,10 @@ function getNextTicketNumber(guildId) {
   return next;
 }
 
-// Load persisted state once on startup (after maps are defined)
-// loadPersistentState(); // Przeniesione do ready event
+// Load persisted state once on startup (IMMEDIATELY after maps are defined)
+console.log("[state] Wywołuję loadPersistentState()...");
+loadPersistentState();
+console.log("[state] loadPersistentState() zakończone");
 
 // Flush debounced state on shutdown so counters don't reset on restart
 process.once("SIGINT", () => {
@@ -1523,9 +1525,7 @@ client.once(Events.ClientReady, async (c) => {
   console.log(`Bot zalogowany jako ${c.user.tag}`);
   console.log(`Bot jest na ${c.guilds.cache.size} serwerach`);
   
-  // Load persisted state BEFORE initializing guilds
-  loadPersistentState();
-  console.log("[state] Wczytano stan z pliku");
+  // loadPersistentState() już wywołane na początku pliku
 
   // --- Webhook startowy do Discorda ---
   try {
