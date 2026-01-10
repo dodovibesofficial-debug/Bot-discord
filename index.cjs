@@ -48,7 +48,7 @@ const inviteBonusInvites = new Map(); // guild -> userId -> dodatkowe zaproszeni
 const inviteRewardsGiven = new Map(); // NEW: guild -> userId -> ile nagród już przyznano
 
 // Helper: funkcja zwracająca poprawną formę słowa "zaproszenie"
-function getInviteWord(count) {
+function getInviteWord(count) { 
   if (count === 1) return "zaproszenie";
   if (count >= 2 && count <= 4) return "zaproszenia";
   return "zaproszeń";
