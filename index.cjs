@@ -2012,8 +2012,6 @@ async function handleSlashCommand(interaction) {
       break;
   }
 }
-  }
-}
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
