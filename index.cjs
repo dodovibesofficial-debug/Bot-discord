@@ -608,36 +608,6 @@ const commands = [
         .setRequired(false),
     )
     .toJSON(),
-   new SlashCommandBuilder()
-    .setName("stworzkonkurs")
-    .setDescription(
-      "Utwórz konkurs z przyciskiem do udziału i losowaniem zwycięzców",
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .toJSON(),
-  new SlashCommandBuilder()
-    .setName("repyustaw")
-    .setDescription("Zarządzaj licznikiem legitchecków (admin)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addStringOption((o) =>
-      o
-        .setName("akcja")
-        .setDescription("Wybierz akcję")
-        .setRequired(true)
-        .addChoices(
-          { name: "Dodaj", value: "dodaj" },
-          { name: "Odejmij", value: "odejmij" },
-          { name: "Ustaw", value: "ustaw" }
-        )
-    )
-    .addIntegerOption((o) =>
-      o
-        .setName("ilosc")
-        .setDescription("Ilość")
-        .setRequired(true)
-        .setMinValue(0)
-    )
-    .toJSON(),
   new SlashCommandBuilder()
     .setName("zamknij")
     .setDescription("Zamknij ticket")
@@ -2007,11 +1977,8 @@ async function handleSlashCommand(interaction) {
     case "stworzkonkurs":
       await handleDodajKonkursCommand(interaction);
       break;
-    case "repyustaw":
-      await handleRepyUstawCommand(interaction);
-      break;
   }
-}  // ✅ TYLKO JEDNO zamknięcie funkcji
+}
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
@@ -2199,7 +2166,6 @@ async function handleStatusBotaCommand(interaction) {
 }
 
 // Handler dla komendy /rozliczenieustaw
-
 async function handleRozliczenieUstawCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
@@ -2254,125 +2220,6 @@ async function handleRozliczenieUstawCommand(interaction) {
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
   console.log(`Właściciel zaktualizował rozliczenie dla ${userId}: ${akcja} ${kwota} zł`);
-}
-async function handleRepyUstawCommand(interaction) {
-  if (!interaction.guild) {
-    try {
-      await interaction.reply({
-        content: "❌ Ta komenda działa tylko na serwerze!",
-        ephemeral: true,
-      });
-    } catch (e) {
-      console.error("Nie udało się odpowiedzieć (brak guild):", e);
-    }
-    return;
-  }
-
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
-    try {
-      await interaction.reply({
-        content:
-          "❌ Nie masz uprawnień administracyjnych, aby zarządzać licznikiem.",
-        ephemeral: true,
-      });
-    } catch (e) {
-      console.error("Nie udało się odpowiedzieć o braku uprawnień:", e);
-    }
-    return;
-  }
-
-  const action = interaction.options.getString("akcja");
-  const amount = interaction.options.getInteger("ilosc");
-
-  try {
-    await interaction.deferReply({ ephemeral: true });
-  } catch (e) {
-    console.warn("Nie udało się deferReply:", e);
-  }
-
-  console.log(
-    `[repyustaw] Użytkownik ${interaction.user.tag} wykonuje: ${action} ${amount}`,
-  );
-
-  const prevCount = legitRepCount;
-
-  if (action === "dodaj") {
-    legitRepCount += amount;
-  } else if (action === "odejmij") {
-    legitRepCount = Math.max(0, legitRepCount - amount);
-  } else if (action === "ustaw") {
-    legitRepCount = Math.max(0, amount);
-  }
-
-  scheduleSavePersistentState();
-
-  try {
-    const channel = await client.channels
-      .fetch(REP_CHANNEL_ID)
-      .catch(() => null);
-    if (!channel) {
-      console.warn(
-        `[repyustaw] Nie znaleziono kanału ${REP_CHANNEL_ID}`,
-      );
-      await interaction.editReply({
-        content:
-          `✅ Licznik zmieniony: ${prevCount} → ${legitRepCount}\n` +
-          `Nie udało się znaleźć kanału.`,
-      });
-      return;
-    }
-
-    const now = Date.now();
-    const since = now - lastChannelRename;
-    const remaining = Math.max(0, CHANNEL_RENAME_COOLDOWN - since);
-
-    if (remaining === 0 && !pendingRename) {
-      try {
-        await channel.setName(`✅-×┃legit-rep➔${legitRepCount}`);
-        lastChannelRename = Date.now();
-        pendingRename = false;
-        console.log(`[repyustaw] Kanał zaktualizowany do ${legitRepCount}`);
-        await interaction.editReply({
-          content:
-            `✅ Licznik zmieniony: ${prevCount} → ${legitRepCount}\n` +
-            `Nazwa kanału zaktualizowana.`,
-        });
-        return;
-      } catch (err) {
-        console.error("[repyustaw] Błąd zmiany nazwy:", err);
-        await scheduleRepChannelRename(channel, legitRepCount);
-        await interaction.editReply({
-          content:
-            `✅ Licznik zmieniony: ${prevCount} → ${legitRepCount}\n` +
-            `Zmiana nazwy zaplanowana.`,
-        });
-        return;
-      }
-    } else {
-      await scheduleRepChannelRename(channel, legitRepCount);
-      await interaction.editReply({
-        content:
-          `✅ Licznik zmieniony: ${prevCount} → ${legitRepCount}\n` +
-          `Nazwa kanału zostanie zaktualizowana za chwilę.`,
-      });
-      return;
-    }
-  } catch (err) {
-    console.error("[repyustaw] Błąd:", err);
-    try {
-      await interaction.editReply({
-        content: "❌ Wystąpił błąd podczas zarządzania licznikiem.",
-      });
-    } catch (e) {
-      console.error("Nie udało się wysłać editReply:", e);
-    }
-  }
 }
 
 async function handleAdminPrzejmij(interaction) {
@@ -2528,7 +2375,7 @@ async function handleSendMessageCommand(interaction) {
     max: 1,
   });
 
-collector.on("collect", async (msg) => {
+  collector.on("collect", async (msg) => {
     const content = (msg.content || "").trim();
     if (content.toLowerCase() === "anuluj") {
       try {
@@ -2541,6 +2388,7 @@ collector.on("collect", async (msg) => {
       return;
     }
 
+    // Prepare files from attachments:
     const files = [];
     let imageAttachment = null;
     for (const att of msg.attachments.values()) {
@@ -2551,65 +2399,37 @@ collector.on("collect", async (msg) => {
       }
     }
 
-    // Wyodrębnij pingi
-    let pingContent = "";
-    let embedContent = content;
-    
-    if (content.includes("@everyone")) {
-      pingContent = "@everyone";
-      embedContent = embedContent.replace(/@everyone/g, "").trim();
-    }
-    if (content.includes("@here")) {
-      if (pingContent) pingContent += " ";
-      pingContent += "@here";
-      embedContent = embedContent.replace(/@here/g, "").trim();
-    }
-    const userMentions = content.match(/<@!?\d+>/g);
-    if (userMentions) {
-      if (pingContent) pingContent += " ";
-      pingContent += userMentions.join(" ");
-      embedContent = embedContent.replace(/<@!?\d+>/g, "").trim();
-    }
-    const roleMentions = content.match(/<@&\d+>/g);
-    if (roleMentions) {
-      if (pingContent) pingContent += " ";
-      pingContent += roleMentions.join(" ");
-      embedContent = embedContent.replace(/<@&\d+>/g, "").trim();
-    }
-
+    // Build embed with blue color to send as the message (user requested)
     const sendEmbed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setDescription(embedContent || "`(brak treści)`")
+      .setDescription(content || "`(brak treści)`")
       .setTimestamp();
     
+    // Add image to embed if present
     if (imageAttachment) {
       sendEmbed.setImage(imageAttachment);
     }
 
+    // Forward embeds if the user pasted/embeded some
     const userEmbeds = msg.embeds?.length
       ? msg.embeds.map((e) => e.toJSON())
       : [];
 
     try {
+      // Send to the target channel as embed + attachments (attachments included directly)
       const sendOptions = {
         embeds: [sendEmbed],
         files: files.length ? files : undefined,
       };
-      
-      // Wyślij NAJPIERW ping, POTEM embed
-      if (pingContent) {
-        await targetChannel.send({ 
-          content: pingContent,
-          allowedMentions: { parse: ['everyone', 'roles', 'users'] }
-        });
-      }
-      
       await targetChannel.send(sendOptions);
 
+      // If the user also had embeds, append them as a follow-up (optional)
       if (userEmbeds.length) {
         try {
           await targetChannel.send({ embeds: userEmbeds });
-        } catch (e) { }
+        } catch (e) {
+          // ignore
+        }
       }
 
       await interaction.followUp({
@@ -2621,10 +2441,13 @@ collector.on("collect", async (msg) => {
       try {
         await interaction.followUp({
           content:
-            "❌ Nie udało się wysłać wiadomości.",
+            "❌ Nie udało się wysłać wiadomości (sprawdź uprawnienia bota do wysyłania wiadomości/załączników).",
           ephemeral: true,
         });
       } catch (e) { }
+    } finally {
+      // Optionally delete the user's message to keep the channel clean. Uncomment if desired.
+      // try { await msg.delete().catch(()=>null); } catch(e){}
     }
   });
 
@@ -4286,8 +4109,6 @@ async function handleModalSubmit(interaction) {
       formInfo = `> \`➖\` × **Co chce sprzedać:** \`${co}\`\n> \`➖\` × **Serwer:** \`${serwer}\`\n> \`➖\` × **Oczekiwana kwota:** \`${ile}\``;
       break;
     }
-// Fragment do zastąpienia w index.cjs około linii 4400-4480
-
     case "modal_odbior": {
       const enteredCodeRaw =
         interaction.fields.getTextInputValue("reward_code") || "";
@@ -4306,19 +4127,20 @@ async function handleModalSubmit(interaction) {
       if (!codeData) {
         await interaction.reply({
           content:
-            "> `❌` **Nieprawidłowy kod!**",
+            "> \`❌\` **Nieprawidłowy kod!**",
           ephemeral: true,
         });
         return;
       }
 
+      // Sprawdź czy to kod na nagrodę
       if (
         codeData.type !== "invite_cash" &&
         codeData.type !== "invite_reward"
       ) {
         await interaction.reply({
           content:
-            "❌ Ten kod nie jest kodem nagrody za zaproszenia.",
+            "❌ Ten kod nie jest kodem nagrody za zaproszenia. Użyj go w odpowiedniej kategorii.",
           ephemeral: true,
         });
         return;
@@ -4341,21 +4163,27 @@ async function handleModalSubmit(interaction) {
         return;
       }
 
+      // Sprawdź czy kod należy do użytkownika
       if (String(codeData.oderId) !== String(interaction.user.id)) {
         await interaction.reply({
           content:
-            "❌ Ten kod nie należy do Ciebie.",
+            "❌ Ten kod nie należy do Ciebie — zrealizować może tylko właściciel kodu (ten, który otrzymał go w DM).",
           ephemeral: true,
         });
         return;
       }
 
+      // Oznacz kod jako użyty
       codeData.used = true;
       activeCodes.set(enteredCode, codeData);
 
-      categoryId = REWARDS_CATEGORY_ID;
-      ticketType = "odbior-nagrody";
-      ticketTypeLabel = "NAGRODA ZA ZAPROSZENIA";
+      // Stwórz ticket typu ODBIÓR NAGRODY
+      const ticketNumber = getNextTicketNumber(interaction.guildId);
+      const categories = ticketCategories.get(interaction.guildId) || {};
+      const user = interaction.user;
+
+      const categoryId = REWARDS_CATEGORY_ID;
+      const ticketTypeLabel = "NAGRODA ZA ZAPROSZENIA";
 
       const expiryTs = codeData.expiresAt
         ? Math.floor(codeData.expiresAt / 1000)
@@ -4364,129 +4192,8 @@ async function handleModalSubmit(interaction) {
         ? `\n> \`➖\` × **Kod wygasa za:** <t:${expiryTs}:R>`
         : "";
 
-      formInfo = `> \`➖\` × **Kod:** \`${enteredCode}\`\n> \`➖\` × **Nagroda:** \`${codeData.rewardText || INVITE_REWARD_TEXT || "50k$"}\`${expiryLine}`;
-      
-      // ✅ TUTAJ BRAKOWAŁO ZAMKNIĘCIA - DODAJEMY:
-      try {
-        let parentToUse = categoryId;
-        if (!parentToUse) {
-          const foundCat = interaction.guild.channels.cache.find(
-            (c) =>
-              c.type === ChannelType.GuildCategory &&
-              c.name &&
-              c.name.toLowerCase().includes("odbior"),
-          );
-          if (foundCat) parentToUse = foundCat.id;
-        }
+      const formInfo = `> \`➖\` × **Kod:** \`${enteredCode}\`\n> \`➖\` × **Nagroda:** \`${codeData.rewardText || INVITE_REWARD_TEXT || "50k$"}\`${expiryLine}`;
 
-        const createOptions = {
-          name: `ticket-${interaction.user.username}`,
-          type: ChannelType.GuildText,
-          permissionOverwrites: [
-            {
-              id: interaction.guild.id,
-              deny: [PermissionsBitField.Flags.ViewChannel],
-            },
-            {
-              id: interaction.user.id,
-              allow: [
-                PermissionsBitField.Flags.ViewChannel,
-                PermissionsBitField.Flags.SendMessages,
-                PermissionsBitField.Flags.ReadMessageHistory,
-              ],
-            },
-          ],
-        };
-        if (parentToUse) createOptions.parent = parentToUse;
-
-        const channel = await interaction.guild.channels.create(createOptions);
-
-        const embed = new EmbedBuilder()
-          .setColor(COLOR_BLUE)
-          .setTitle(
-            `${client.user?.username || "NEWSHOP"} × ${ticketTypeLabel}`,
-          )
-          .setDescription(
-            `### **ZAKUP ITY × ${ticketTypeLabel}**\n\n` +
-            `### ・ \`👤\` × Informacje o kliencie:\n` +
-            `> \`➖\` **× Ping:** <@${interaction.user.id}>\n` +
-            `> \`➖\` × **Nick:** \`${interaction.member?.displayName || interaction.user.globalName || interaction.user.username}\`\n` +
-            `> \`➖\` × **ID:** \`${interaction.user.id}\`\n\n` +
-            `### ・ \`📋\` × Informacje z formularza:\n` +
-            `${formInfo}`,
-          )
-          .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 128 }))
-          .setTimestamp();
-
-        const closeButton = new ButtonBuilder()
-          .setCustomId(`ticket_close_${channel.id}`)
-          .setLabel("Zamknij")
-          .setStyle(ButtonStyle.Secondary);
-        const settingsButton = new ButtonBuilder()
-          .setCustomId(`ticket_settings_${channel.id}`)
-          .setLabel("Ustawienia")
-          .setStyle(ButtonStyle.Secondary);
-        const claimButton = new ButtonBuilder()
-          .setCustomId(`ticket_claim_${channel.id}`)
-          .setLabel("Przejmij")
-          .setStyle(ButtonStyle.Primary);
-        const unclaimButton = new ButtonBuilder()
-          .setCustomId(`ticket_unclaim_${channel.id}`)
-          .setLabel("Odprzejmij")
-          .setStyle(ButtonStyle.Danger)
-          .setDisabled(true);
-
-        const buttonRow = new ActionRowBuilder().addComponents(
-          closeButton,
-          settingsButton,
-          claimButton,
-          unclaimButton,
-        );
-
-        const sentMsg = await channel.send({
-          content: `@everyone`,
-          embeds: [embed],
-          components: [buttonRow],
-        });
-
-        ticketOwners.set(channel.id, {
-          claimedBy: null,
-          userId: interaction.user.id,
-          ticketMessageId: sentMsg.id,
-          locked: false,
-        });
-
-        await logTicketCreation(interaction.guild, channel, {
-          openerId: interaction.user.id,
-          ticketTypeLabel,
-          formInfo,
-          ticketChannelId: channel.id,
-          ticketMessageId: sentMsg.id,
-        }).catch(() => { });
-
-        await interaction.reply({
-          content: `> \`✅\` **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
-          ephemeral: true,
-        });
-      } catch (err) {
-        console.error("Błąd tworzenia ticketu (odbior):", err);
-        await interaction.reply({
-          content: "❌ Wystąpił błąd podczas tworzenia ticketa.",
-          ephemeral: true,
-        });
-      }
-      break; // ✅ KONIEC case "modal_odbior"
-    }
-    
-    case "modal_konkurs_odbior": {
-      const info = interaction.fields.getTextInputValue("konkurs_info");
-
-      categoryId = REWARDS_CATEGORY_ID;
-      ticketType = "konkurs-nagrody";
-      ticketTypeLabel = "NAGRODA ZA KONKURS";
-      formInfo = `> \`➖\` × **Informacje:** \`${info}\``;
-      break;
-    }
       try {
         let parentToUse = categoryId;
         if (!parentToUse) {
@@ -4691,57 +4398,55 @@ async function handleModalSubmit(interaction) {
     };
 
     // Dodaj rangi limitów w zależności od kategorii
- if (parentToUse) {
+    if (parentToUse) {
       const categoryId = parentToUse;
       
+      // Zakup 0-20 - wszystkie rangi widzą
       if (categoryId === "1449526840942268526") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
+      // Zakup 20-50 - limit 20 nie widzi
       else if (categoryId === "1449526958508474409") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
+      // Zakup 50-100 - limit 20 i 50 nie widzą
       else if (categoryId === "1449451716129984595") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
+      // Zakup 100-200 - tylko limit 200 widzi
       else if (categoryId === "1449452354201190485") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
+      // Sprzedaż - wszystkie rangi widzą
       else if (categoryId === "1449455848043708426") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
+      // Inne - wszystkie rangi widzą
       else if (categoryId === "1449527585271976131") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
-        );
-      }
-      else if (categoryId === REWARDS_CATEGORY_ID) {
-        createOptions.permissionOverwrites.push(
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] },
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
     }
@@ -4777,7 +4482,6 @@ async function handleModalSubmit(interaction) {
 
     const buttons = [closeButton, settingsButton];
 
-// Dodaj przycisk "Kod rabatowy" tylko dla ZAKUP
     if (ticketTypeLabel === "ZAKUP") {
       buttons.push(
         new ButtonBuilder()
