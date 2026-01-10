@@ -77,7 +77,7 @@ const REP_CHANNEL_ID = "1449840030947217529";
 
 // cooldown (ms) per user between the bot posting the info embed
 const INFO_EMBED_COOLDOWN_MS = 5 * 1000; // default 5s — change to desired value
- 
+
 // map used for throttling per-user
 const infoCooldowns = new Map(); // userId -> timestamp (ms)
 
@@ -522,6 +522,7 @@ function loadPersistentState() {
       const loaded = nestedObjectToMapOfMaps(data.inviteCounts);
       loaded.forEach((inner, guildId) => {
         inviteCounts.set(guildId, inner);
+        console.log(`[state] Wczytano inviteCounts dla guild ${guildId}: ${inner.size} wpisów`);
       });
     }
 
@@ -544,6 +545,7 @@ function loadPersistentState() {
       const loaded = nestedObjectToMapOfMaps(data.inviteRewardsGiven);
       loaded.forEach((inner, guildId) => {
         inviteRewardsGiven.set(guildId, inner);
+        console.log(`[state] Wczytano inviteRewardsGiven dla guild ${guildId}: ${inner.size} wpisów`);
       });
     }
 
@@ -816,7 +818,7 @@ function getNextTicketNumber(guildId) {
 }
 
 // Load persisted state once on startup (after maps are defined)
-loadPersistentState();
+// loadPersistentState(); // Przeniesione do ready event
 
 // Flush debounced state on shutdown so counters don't reset on restart
 process.once("SIGINT", () => {
@@ -1490,8 +1492,12 @@ async function applyDefaultsForGuild(guildId) {
 client.once(Events.ClientReady, async (c) => {
   console.log(`Bot zalogowany jako ${c.user.tag}`);
   console.log(`Bot jest na ${c.guilds.cache.size} serwerach`);
+  
+  // Load persisted state BEFORE initializing guilds
+  loadPersistentState();
+  console.log("[state] Wczytano stan z pliku");
 
-    // --- Webhook startowy do Discorda ---
+  // --- Webhook startowy do Discorda ---
   try {
     const webhookUrl = process.env.UPTIME_WEBHOOK;
     if (webhookUrl) {
