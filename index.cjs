@@ -129,6 +129,7 @@ client.on("inviteCreate", (invite) => {
     const map = guildInvites.get(invite.guild.id) || new Map();
     map.set(invite.code, invite.uses || 0);
     guildInvites.set(invite.guild.id, map);
+    scheduleSavePersistentState();
   } catch (e) {
     console.warn("inviteCreate handler error:", e);
   }
@@ -139,6 +140,7 @@ client.on("inviteDelete", (invite) => {
     if (map) {
       map.delete(invite.code);
       guildInvites.set(invite.guild.id, map);
+      scheduleSavePersistentState();
     }
   } catch (e) {
     console.warn("inviteDelete handler error:", e);
@@ -243,6 +245,160 @@ function buildPersistentStateData() {
     }
   }
 
+  // Convert guildInvites to plain object
+  const guildInvitesObj = {};
+  if (typeof guildInvites !== "undefined" && guildInvites instanceof Map) {
+    for (const [guildId, inviteMap] of guildInvites.entries()) {
+      if (inviteMap && typeof inviteMap.forEach === "function") {
+        guildInvitesObj[guildId] = {};
+        inviteMap.forEach((uses, code) => {
+          guildInvitesObj[guildId][code] = uses;
+        });
+      }
+    }
+  }
+
+  // Convert inviterOfMember to plain object
+  const inviterOfMemberObj = {};
+  if (typeof inviterOfMember !== "undefined" && inviterOfMember instanceof Map) {
+    for (const [key, inviterId] of inviterOfMember.entries()) {
+      inviterOfMemberObj[key] = inviterId;
+    }
+  }
+
+  // Convert inviterRateLimit to plain object
+  const inviterRateLimitObj = {};
+  if (typeof inviterRateLimit !== "undefined" && inviterRateLimit instanceof Map) {
+    for (const [guildId, rateMap] of inviterRateLimit.entries()) {
+      if (rateMap && typeof rateMap.forEach === "function") {
+        inviterRateLimitObj[guildId] = {};
+        rateMap.forEach((timestamps, inviterId) => {
+          inviterRateLimitObj[guildId][inviterId] = timestamps;
+        });
+      }
+    }
+  }
+
+  // Convert leaveRecords to plain object
+  const leaveRecordsObj = {};
+  if (typeof leaveRecords !== "undefined" && leaveRecords instanceof Map) {
+    for (const [key, inviterId] of leaveRecords.entries()) {
+      leaveRecordsObj[key] = inviterId;
+    }
+  }
+
+  // Convert verificationRoles to plain object
+  const verificationRolesObj = {};
+  if (typeof verificationRoles !== "undefined" && verificationRoles instanceof Map) {
+    for (const [guildId, roleId] of verificationRoles.entries()) {
+      verificationRolesObj[guildId] = roleId;
+    }
+  }
+
+  // Convert pendingVerifications to plain object
+  const pendingVerificationsObj = {};
+  if (typeof pendingVerifications !== "undefined" && pendingVerifications instanceof Map) {
+    for (const [modalId, data] of pendingVerifications.entries()) {
+      pendingVerificationsObj[modalId] = data;
+    }
+  }
+
+  // Convert ticketCategories to plain object
+  const ticketCategoriesObj = {};
+  if (typeof ticketCategories !== "undefined" && ticketCategories instanceof Map) {
+    for (const [guildId, categories] of ticketCategories.entries()) {
+      ticketCategoriesObj[guildId] = categories;
+    }
+  }
+
+  // Convert dropChannels to plain object
+  const dropChannelsObj = {};
+  if (typeof dropChannels !== "undefined" && dropChannels instanceof Map) {
+    for (const [guildId, channelId] of dropChannels.entries()) {
+      dropChannelsObj[guildId] = channelId;
+    }
+  }
+
+  // Convert sprawdzZaproszeniaCooldowns to plain object
+  const sprawdzZaproszeniaCooldownsObj = {};
+  if (typeof sprawdzZaproszeniaCooldowns !== "undefined" && sprawdzZaproszeniaCooldowns instanceof Map) {
+    for (const [userId, timestamp] of sprawdzZaproszeniaCooldowns.entries()) {
+      sprawdzZaproszeniaCooldownsObj[userId] = timestamp;
+    }
+  }
+
+  // Convert lastOpinionInstruction to plain object
+  const lastOpinionInstructionObj = {};
+  if (typeof lastOpinionInstruction !== "undefined" && lastOpinionInstruction instanceof Map) {
+    for (const [channelId, messageId] of lastOpinionInstruction.entries()) {
+      lastOpinionInstructionObj[channelId] = messageId;
+    }
+  }
+
+  // Convert lastDropInstruction to plain object
+  const lastDropInstructionObj = {};
+  if (typeof lastDropInstruction !== "undefined" && lastDropInstruction instanceof Map) {
+    for (const [channelId, messageId] of lastDropInstruction.entries()) {
+      lastDropInstructionObj[channelId] = messageId;
+    }
+  }
+
+  // Convert kalkulatorData to plain object
+  const kalkulatorDataObj = {};
+  if (typeof kalkulatorData !== "undefined" && kalkulatorData instanceof Map) {
+    for (const [userId, data] of kalkulatorData.entries()) {
+      kalkulatorDataObj[userId] = data;
+    }
+  }
+
+  // Convert infoCooldowns to plain object
+  const infoCooldownsObj = {};
+  if (typeof infoCooldowns !== "undefined" && infoCooldowns instanceof Map) {
+    for (const [userId, timestamp] of infoCooldowns.entries()) {
+      infoCooldownsObj[userId] = timestamp;
+    }
+  }
+
+  // Convert repLastInfoMessage to plain object
+  const repLastInfoMessageObj = {};
+  if (typeof repLastInfoMessage !== "undefined" && repLastInfoMessage instanceof Map) {
+    for (const [channelId, messageId] of repLastInfoMessage.entries()) {
+      repLastInfoMessageObj[channelId] = messageId;
+    }
+  }
+
+  // Convert dropCooldowns to plain object
+  const dropCooldownsObj = {};
+  if (typeof dropCooldowns !== "undefined" && dropCooldowns instanceof Map) {
+    for (const [userId, timestamp] of dropCooldowns.entries()) {
+      dropCooldownsObj[userId] = timestamp;
+    }
+  }
+
+  // Convert opinionCooldowns to plain object
+  const opinionCooldownsObj = {};
+  if (typeof opinionCooldowns !== "undefined" && opinionCooldowns instanceof Map) {
+    for (const [userId, timestamp] of opinionCooldowns.entries()) {
+      opinionCooldownsObj[userId] = timestamp;
+    }
+  }
+
+  // Convert pendingTicketClose to plain object
+  const pendingTicketCloseObj = {};
+  if (typeof pendingTicketClose !== "undefined" && pendingTicketClose instanceof Map) {
+    for (const [channelId, data] of pendingTicketClose.entries()) {
+      pendingTicketCloseObj[channelId] = data;
+    }
+  }
+
+  // Convert opinieChannels to plain object
+  const opinieChannelsObj = {};
+  if (typeof opinieChannels !== "undefined" && opinieChannels instanceof Map) {
+    for (const [guildId, channelId] of opinieChannels.entries()) {
+      opinieChannelsObj[guildId] = channelId;
+    }
+  }
+
   const data = {
     legitRepCount,
     ticketCounter: Object.fromEntries(ticketCounter),
@@ -260,6 +416,24 @@ function buildPersistentStateData() {
     fourMonthBlockList: fourMonthObj,
     weeklySales: Object.fromEntries(weeklySales),
     activeCodes: Object.fromEntries(activeCodes),
+    guildInvites: guildInvitesObj,
+    inviterOfMember: inviterOfMemberObj,
+    inviterRateLimit: inviterRateLimitObj,
+    leaveRecords: leaveRecordsObj,
+    verificationRoles: verificationRolesObj,
+    pendingVerifications: pendingVerificationsObj,
+    ticketCategories: ticketCategoriesObj,
+    dropChannels: dropChannelsObj,
+    sprawdzZaproszeniaCooldowns: sprawdzZaproszeniaCooldownsObj,
+    lastOpinionInstruction: lastOpinionInstructionObj,
+    lastDropInstruction: lastDropInstructionObj,
+    kalkulatorData: kalkulatorDataObj,
+    infoCooldowns: infoCooldownsObj,
+    repLastInfoMessage: repLastInfoMessageObj,
+    dropCooldowns: dropCooldownsObj,
+    opinionCooldowns: opinionCooldownsObj,
+    pendingTicketClose: pendingTicketCloseObj,
+    opinieChannels: opinieChannelsObj,
   };
 
   return data;
@@ -463,6 +637,144 @@ function loadPersistentState() {
       loaded.forEach((inner, guildId) => {
         inviteBonusInvites.set(guildId, inner);
       });
+    }
+
+    // Load guildInvites
+    if (data.guildInvites && typeof data.guildInvites === "object") {
+      for (const [guildId, inviteMap] of Object.entries(data.guildInvites)) {
+        if (inviteMap && typeof inviteMap === "object") {
+          const map = new Map();
+          for (const [code, uses] of Object.entries(inviteMap)) {
+            map.set(code, uses);
+          }
+          guildInvites.set(guildId, map);
+        }
+      }
+    }
+
+    // Load inviterOfMember
+    if (data.inviterOfMember && typeof data.inviterOfMember === "object") {
+      for (const [key, inviterId] of Object.entries(data.inviterOfMember)) {
+        inviterOfMember.set(key, inviterId);
+      }
+    }
+
+    // Load inviterRateLimit
+    if (data.inviterRateLimit && typeof data.inviterRateLimit === "object") {
+      for (const [guildId, rateMap] of Object.entries(data.inviterRateLimit)) {
+        if (rateMap && typeof rateMap === "object") {
+          const map = new Map();
+          for (const [inviterId, timestamps] of Object.entries(rateMap)) {
+            map.set(inviterId, timestamps);
+          }
+          inviterRateLimit.set(guildId, map);
+        }
+      }
+    }
+
+    // Load leaveRecords
+    if (data.leaveRecords && typeof data.leaveRecords === "object") {
+      for (const [key, inviterId] of Object.entries(data.leaveRecords)) {
+        leaveRecords.set(key, inviterId);
+      }
+    }
+
+    // Load verificationRoles
+    if (data.verificationRoles && typeof data.verificationRoles === "object") {
+      for (const [guildId, roleId] of Object.entries(data.verificationRoles)) {
+        verificationRoles.set(guildId, roleId);
+      }
+    }
+
+    // Load pendingVerifications
+    if (data.pendingVerifications && typeof data.pendingVerifications === "object") {
+      for (const [modalId, data] of Object.entries(data.pendingVerifications)) {
+        pendingVerifications.set(modalId, data);
+      }
+    }
+
+    // Load ticketCategories
+    if (data.ticketCategories && typeof data.ticketCategories === "object") {
+      for (const [guildId, categories] of Object.entries(data.ticketCategories)) {
+        ticketCategories.set(guildId, categories);
+      }
+    }
+
+    // Load dropChannels
+    if (data.dropChannels && typeof data.dropChannels === "object") {
+      for (const [guildId, channelId] of Object.entries(data.dropChannels)) {
+        dropChannels.set(guildId, channelId);
+      }
+    }
+
+    // Load sprawdzZaproszeniaCooldowns
+    if (data.sprawdzZaproszeniaCooldowns && typeof data.sprawdzZaproszeniaCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(data.sprawdzZaproszeniaCooldowns)) {
+        sprawdzZaproszeniaCooldowns.set(userId, timestamp);
+      }
+    }
+
+    // Load lastOpinionInstruction
+    if (data.lastOpinionInstruction && typeof data.lastOpinionInstruction === "object") {
+      for (const [channelId, messageId] of Object.entries(data.lastOpinionInstruction)) {
+        lastOpinionInstruction.set(channelId, messageId);
+      }
+    }
+
+    // Load lastDropInstruction
+    if (data.lastDropInstruction && typeof data.lastDropInstruction === "object") {
+      for (const [channelId, messageId] of Object.entries(data.lastDropInstruction)) {
+        lastDropInstruction.set(channelId, messageId);
+      }
+    }
+
+    // Load kalkulatorData
+    if (data.kalkulatorData && typeof data.kalkulatorData === "object") {
+      for (const [userId, data] of Object.entries(data.kalkulatorData)) {
+        kalkulatorData.set(userId, data);
+      }
+    }
+
+    // Load infoCooldowns
+    if (data.infoCooldowns && typeof data.infoCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(data.infoCooldowns)) {
+        infoCooldowns.set(userId, timestamp);
+      }
+    }
+
+    // Load repLastInfoMessage
+    if (data.repLastInfoMessage && typeof data.repLastInfoMessage === "object") {
+      for (const [channelId, messageId] of Object.entries(data.repLastInfoMessage)) {
+        repLastInfoMessage.set(channelId, messageId);
+      }
+    }
+
+    // Load dropCooldowns
+    if (data.dropCooldowns && typeof data.dropCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(data.dropCooldowns)) {
+        dropCooldowns.set(userId, timestamp);
+      }
+    }
+
+    // Load opinionCooldowns
+    if (data.opinionCooldowns && typeof data.opinionCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(data.opinionCooldowns)) {
+        opinionCooldowns.set(userId, timestamp);
+      }
+    }
+
+    // Load pendingTicketClose
+    if (data.pendingTicketClose && typeof data.pendingTicketClose === "object") {
+      for (const [channelId, data] of Object.entries(data.pendingTicketClose)) {
+        pendingTicketClose.set(channelId, data);
+      }
+    }
+
+    // Load opinieChannels
+    if (data.opinieChannels && typeof data.opinieChannels === "object") {
+      for (const [guildId, channelId] of Object.entries(data.opinieChannels)) {
+        opinieChannels.set(guildId, channelId);
+      }
     }
 
     try {
@@ -1140,6 +1452,7 @@ async function applyDefaultsForGuild(guildId) {
 
     if (role) {
       verificationRoles.set(guildId, role.id);
+      scheduleSavePersistentState();
       console.log(
         `Ustawiono domyślną rolę weryfikacji: ${role.id} (${role.name})`,
       );
@@ -1668,6 +1981,7 @@ async function handleButtonInteraction(interaction) {
       userId: interaction.user.id,
       roleId,
     });
+    scheduleSavePersistentState();
 
     const modal = new ModalBuilder()
       .setCustomId(modalId)
@@ -1759,6 +2073,7 @@ async function handleButtonInteraction(interaction) {
       // remove ticketOwners entry immediately
       const ticketMeta = ticketOwners.get(chId) || null;
       ticketOwners.delete(chId);
+      scheduleSavePersistentState();
 
       await interaction.reply({
         embeds: [
@@ -2009,6 +2324,7 @@ async function handleRozliczenieCommand(interaction) {
 
   if (!weeklySales.has(userId)) {
     weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
+    scheduleSavePersistentState();
   }
 
   const userData = weeklySales.get(userId);
@@ -2184,6 +2500,7 @@ async function handleRozliczenieUstawCommand(interaction) {
   // Inicjalizuj użytkownika jeśli nie istnieje
   if (!weeklySales.has(userId)) {
     weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
+    scheduleSavePersistentState();
   }
 
   const userData = weeklySales.get(userId);
@@ -2535,12 +2852,15 @@ async function handleDropCommand(interaction) {
       oderId: user.id,
       discount: result.discount,
       expiresAt: expiryTime,
-      used: false,
+      created: Date.now(),
       type: "discount",
     });
 
+    scheduleSavePersistentState();
+
     setTimeout(() => {
       activeCodes.delete(code);
+      scheduleSavePersistentState();
     }, 86400000);
 
     const winEmbed = new EmbedBuilder()
@@ -2880,6 +3200,7 @@ async function handleCloseTicketCommand(interaction) {
     // remove ticketOwners entry immediately
     const ticketMeta = ticketOwners.get(chId) || null;
     ticketOwners.delete(chId);
+    scheduleSavePersistentState();
 
     await interaction.reply({
       embeds: [
@@ -3210,6 +3531,7 @@ async function ticketClaimCommon(interaction, channelId) {
 
     ticketData.claimedBy = claimerId;
     ticketOwners.set(channelId, ticketData);
+    scheduleSavePersistentState();
 
     if (ticketData && ticketData.ticketMessageId) {
       await editTicketMessageButtons(ch, ticketData.ticketMessageId, claimerId).catch(() => null);
@@ -3385,6 +3707,7 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
 
     ticketData.claimedBy = null;
     ticketOwners.set(channelId, ticketData);
+    scheduleSavePersistentState();
 
     if (ticketData.ticketMessageId) {
       await editTicketMessageButtons(ch, ticketData.ticketMessageId, null).catch(() => null);
@@ -3696,6 +4019,7 @@ async function handleModalSubmit(interaction) {
       if (role) {
         roleId = role.id;
         verificationRoles.set(guild.id, roleId);
+        scheduleSavePersistentState();
         console.log(
           `Dynamicznie ustawiono rolę weryfikacji dla guild ${guild.id}: ${role.name} (${roleId})`,
         );
@@ -3797,6 +4121,7 @@ async function handleModalSubmit(interaction) {
 
     if (Date.now() > codeData.expiresAt) {
       activeCodes.delete(enteredCode);
+      scheduleSavePersistentState();
       await interaction.reply({
         content: "❌ **Kod wygasł!**",
         ephemeral: true,
@@ -3806,6 +4131,7 @@ async function handleModalSubmit(interaction) {
 
     codeData.used = true;
     activeCodes.set(enteredCode, codeData);
+    scheduleSavePersistentState();
 
     const redeemEmbed = new EmbedBuilder()
       .setColor(0xd4af37)
@@ -4156,6 +4482,7 @@ async function handleModalSubmit(interaction) {
 
       if (Date.now() > (codeData.expiresAt || 0)) {
         activeCodes.delete(enteredCode);
+        scheduleSavePersistentState();
         await interaction.reply({
           content: "❌ Ten kod wygasł.",
           ephemeral: true,
@@ -4176,6 +4503,7 @@ async function handleModalSubmit(interaction) {
       // Oznacz kod jako użyty
       codeData.used = true;
       activeCodes.set(enteredCode, codeData);
+      scheduleSavePersistentState();
 
       // Stwórz ticket typu ODBIÓR NAGRODY
       const ticketNumber = getNextTicketNumber(interaction.guildId);
@@ -4230,15 +4558,12 @@ async function handleModalSubmit(interaction) {
 
         const embed = new EmbedBuilder()
           .setColor(COLOR_BLUE)
-          .setTitle(
-            `${client.user?.username || "NEWSHOP"} × ${ticketTypeLabel}`,
-          )
           .setDescription(
-            `### **ZAKUP ITY × ${ticketTypeLabel}**\n\n` +
+            `## \`🛒 NEW SHOP × ${ticketTypeLabel}\`\n\n` +
             `### ・ \`👤\` × Informacje o kliencie:\n` +
             `> \`➖\` **× Ping:** <@${user.id}>\n` +
             `> \`➖\` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
-            `> \`➖\` × **ID:** \`${user.id}\`\n\n` +
+            `> \`➖\` × **ID:** \`${user.id}\`\n` +
             `### ・ \`📋\` × Informacje z formularza:\n` +
             `${formInfo}`,
           )
@@ -4282,6 +4607,7 @@ async function handleModalSubmit(interaction) {
           ticketMessageId: sentMsg.id,
           locked: false,
         });
+        scheduleSavePersistentState();
 
         await logTicketCreation(interaction.guild, channel, {
           openerId: user.id,
@@ -4347,6 +4673,7 @@ async function handleModalSubmit(interaction) {
         } else {
           // stale entry — remove it
           ticketOwners.delete(chanId);
+          scheduleSavePersistentState();
         }
       }
     }
@@ -4519,6 +4846,7 @@ async function handleModalSubmit(interaction) {
       ticketMessageId: sentMsg.id,
       locked: false,
     });
+    scheduleSavePersistentState();
 
     // LOG: ticket creation in logi-ticket channel (if exists)
     try {
@@ -5709,6 +6037,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
         if (!isFakeAccount) {
           const prev = gMap.get(inviterId) || 0;
           gMap.set(inviterId, prev + 1);
+          inviteCounts.set(member.guild.id, gMap);
+          scheduleSavePersistentState();
         }
       }
 
@@ -5752,10 +6082,11 @@ client.on(Events.GuildMemberAdd, async (member) => {
             oderId: inviterId,
             rewardAmount: 50000,
             rewardText: "50k$",
-            expiresAt,
-            used: false,
             type: "invite_cash",
+            created: Date.now(),
+            expiresAt,
           });
+          scheduleSavePersistentState();
 
           // Wyślij DM
           try {
