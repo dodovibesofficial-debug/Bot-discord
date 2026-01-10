@@ -2020,7 +2020,7 @@ async function handleModalSubmit(interaction) {
           "```\n" +
           "🔢 New Shop × Obliczanie\n" +
           "```\n" +
-          `> `💵` × **Wybrana kwota:** \`${kwota.toFixed(2)}zł\`\n> `❗` × **Wybierz serwer i metodę płatności __poniżej:__`);
+          `> 💵 × **Wybrana kwota:** \`${kwota.toFixed(2)}zł\`\n> ❗ × **Wybierz serwer i metodę płatności __poniżej:__`);
 
       await interaction.reply({
         embeds: [embed],
@@ -2085,7 +2085,7 @@ async function handleModalSubmit(interaction) {
           "```\n" +
           "🔢 New Shop × Obliczanie\n" +
           "```\n" +
-          `> `💵` × **Wybrana waluta:** \`${formatShortWaluta(waluta)}\`\n> `❗` × **Wybierz serwer i metodę płatności __poniżej:__`);
+          `> 💵 × **Wybrana waluta:** \`${formatShortWaluta(waluta)}\`\n> ❗ × **Wybierz serwer i metodę płatności __poniżej:__`);
 
       await interaction.reply({
         embeds: [embed],
@@ -2166,7 +2166,7 @@ async function handleModalSubmit(interaction) {
         "```\n" +
         enteredCode +
         "\n```\n" +
-        `> `💸` × **Otrzymałeś:** \`-${codeData.discount}%\`\n`,
+        `> 💸 × **Otrzymałeś:** \`-${codeData.discount}%\`\n`,
       )
       .setTimestamp();
 
@@ -2415,7 +2415,7 @@ async function handleModalSubmit(interaction) {
       categoryId = REWARDS_CATEGORY_ID;
       ticketType = "odbior-nagrody";
       ticketTypeLabel = "NAGRODA ZA ZAPROSZENIA";
-      formInfo = `> `➖` × **Kod:** \`${enteredCode}\`\n> `➖` × **Nagroda:** \`${codeData.reward || "Brak"}\``;
+      formInfo = `> ➖ × **Kod:** \`${enteredCode}\`\n> ➖ × **Nagroda:** \`${codeData.reward || "Brak"}\``;
       break;
     }
     case "modal_konkurs_odbior": {
@@ -2424,7 +2424,7 @@ async function handleModalSubmit(interaction) {
       categoryId = REWARDS_CATEGORY_ID;
       ticketType = "konkurs-nagrody";
       ticketTypeLabel = "NAGRODA ZA KONKURS";
-      formInfo = `> `➖` × **Informacje:** \`${info}\``;
+      formInfo = `> ➖ × **Informacje:** \`${info}\``;
       break;
     }
     case "modal_inne": {
@@ -2433,7 +2433,7 @@ async function handleModalSubmit(interaction) {
       categoryId = categories["inne"];
       ticketType = "inne";
       ticketTypeLabel = "INNE";
-      formInfo = `> `➖` × **Sprawa:** \`${sprawa}\``;
+      formInfo = `> ➖ × **Sprawa:** \`${sprawa}\``;
       break;
     }
     default:
@@ -2520,12 +2520,12 @@ async function handleModalSubmit(interaction) {
       .setColor(COLOR_BLUE)
       .setTitle(`🛒 NEW SHOP × ${ticketTypeLabel}`)
       .setDescription(
-        `## `🛒` NEW SHOP × ${ticketTypeLabel}\n\n` +
-        `### ・ `👤` × Informacje o kliencie:\n` +
-        `> `➖` **× Ping:** <@${user.id}>\n` +
-        `> `➖` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
-        `> `➖` × **ID:** \`${user.id}\`\n` +
-        `### ・ `📋` × Informacje z formularza:\n` +
+        `## 🛒 NEW SHOP × ${ticketTypeLabel}\n\n` +
+        `### ・ 👤 × Informacje o kliencie:\n` +
+        `> ➖ **× Ping:** <@${user.id}>\n` +
+        `> ➖ **× Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
+        `> ➖ **× ID:** \`${user.id}\`\n` +
+        `### ・ 📋 × Informacje z formularza:\n` +
         `${formInfo}`,
       )
       .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 128 }))
@@ -2579,7 +2579,7 @@ async function handleModalSubmit(interaction) {
     }).catch(() => { });
 
     await interaction.reply({
-      content: `> `✅` **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
+      content: `> ✅ **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
       ephemeral: true,
     });
   } catch (err) {
