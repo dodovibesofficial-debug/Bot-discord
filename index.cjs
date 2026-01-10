@@ -18,7 +18,7 @@ const {
   ButtonStyle,
   AttachmentBuilder,
 } = require("discord.js");
-const fs = require("fs"); 
+const fs = require("fs");
 const path = require("path");
 
 const client = new Client({
@@ -2324,7 +2324,6 @@ async function handleRozliczenieCommand(interaction) {
 
   if (!weeklySales.has(userId)) {
     weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
-    scheduleSavePersistentState();
   }
 
   const userData = weeklySales.get(userId);
@@ -2500,7 +2499,6 @@ async function handleRozliczenieUstawCommand(interaction) {
   // Inicjalizuj użytkownika jeśli nie istnieje
   if (!weeklySales.has(userId)) {
     weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
-    scheduleSavePersistentState();
   }
 
   const userData = weeklySales.get(userId);
