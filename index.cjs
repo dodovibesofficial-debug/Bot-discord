@@ -14,7 +14,7 @@ const {
   TextInputBuilder,
   TextInputStyle,
   PermissionsBitField,
-  ButtonBuilder, 
+  ButtonBuilder,
   ButtonStyle,
   AttachmentBuilder,
 } = require("discord.js");
@@ -503,11 +503,19 @@ function scheduleSavePersistentState(immediate = false) {
 
 function loadPersistentState() {
   try {
-    if (!fs.existsSync(STORE_FILE)) return;
+    console.log("[state] Rozpoczynam wczytywanie stanu...");
+    if (!fs.existsSync(STORE_FILE)) {
+      console.log("[state] Plik stanu nie istnieje, tworzę nowy");
+      return;
+    }
     const raw = fs.readFileSync(STORE_FILE, "utf8");
-    if (!raw.trim()) return;
+    if (!raw.trim()) {
+      console.log("[state] Plik stanu jest pusty");
+      return;
+    }
 
     const data = JSON.parse(raw);
+    console.log("[state] Plik stanu wczytany, rozmiar:", raw.length, "bajtów");
 
     if (typeof data.legitRepCount === "number") {
       legitRepCount = data.legitRepCount;
@@ -816,6 +824,7 @@ function loadPersistentState() {
       // ignore
     }
     console.log("Załadowano zapisany stan bota z pliku.");
+    console.log("[state] Zakończono wczytywanie stanu");
   } catch (err) {
     console.error("Nie udało się odczytać stanu bota z pliku:", err);
   }
@@ -6281,6 +6290,8 @@ client.on(Events.GuildMemberRemove, async (member) => {
       const prev = gMap.get(inviterId) || 0;
       const newCount = Math.max(0, prev - 1);
       gMap.set(inviterId, newCount);
+      inviteCounts.set(member.guild.id, gMap);
+      scheduleSavePersistentState(true); // Natychmiastowy zapis
     }
 
     // decrement totalJoined (since we incremented it on join unconditionally)
