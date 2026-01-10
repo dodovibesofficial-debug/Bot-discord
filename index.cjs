@@ -1758,6 +1758,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 async function handleModalSubmit(interaction) {
+  // Sprawdź czy interakcja już została odpowiedziana
+  if (interaction.replied || interaction.deferred) return;
+  
   const id = interaction.customId;
 
   // --- ILE OTRZYMAM ---
@@ -1825,7 +1828,767 @@ async function handleModalSubmit(interaction) {
   }
 
   // --- INNE MODALE (TWOJE) ---
-  // tu zostawiasz resztę obsługi modali
+  // NEW: verification modal handling
+  if (interaction.customId.startsWith("modal_verify_")) {
+    const modalId = interaction.customId;
+    const record = pendingVerifications.get(modalId);
+
+    if (!record) {
+      await interaction.reply({
+        content:
+          "> `❌` **Nie mogę znaleźć zapisanego zadania weryfikacji (spróbuj ponownie).**",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (record.userId !== interaction.user.id) {
+      await interaction.reply({
+        content:
+          "> `❌` **Tylko użytkownik, który kliknął przycisk, może rozwiązać tę zagadkę.**",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const entered = interaction.fields
+      .getTextInputValue("verify_answer")
+      .trim();
+    const numeric = parseInt(entered.replace(/[^0-9\-]/g, ""), 10);
+
+    if (Number.isNaN(numeric)) {
+      await interaction.reply({
+        content: "`❌` **Nieprawidłowa odpowiedź (powinna być liczbą).**",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (numeric !== record.answer) {
+      await interaction.reply({
+        content: "> `❌` **Źle! Nieprawidłowy wynik. Spróbuj jeszcze raz.**",
+        ephemeral: true,
+      });
+      // remove record so they can request a new puzzle
+      pendingVerifications.delete(modalId);
+      return;
+    }
+
+    // correct answer
+    pendingVerifications.delete(modalId);
+
+    let roleId = record.roleId;
+    const guild = interaction.guild;
+
+    // if no roleId recorded, try to find dynamically in guild and cache it
+    if (!roleId && guild) {
+      const normalize = (s = "") =>
+        s
+          .toString()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9 ]/gi, "")
+          .trim()
+          .toLowerCase();
+
+      let role =
+        guild.roles.cache.find(
+          (r) => r.name === DEFAULT_NAMES.verificationRoleName,
+        ) ||
+        guild.roles.cache.find((r) =>
+          normalize(r.name).includes(normalize("klient")),
+        );
+
+      if (role) {
+        roleId = role.id;
+        verificationRoles.set(guild.id, roleId);
+        scheduleSavePersistentState();
+        console.log(
+          `Dynamicznie ustawiono rolę weryfikacji dla guild ${guild.id}: ${role.name} (${roleId})`,
+        );
+      } else {
+        console.log(
+          `Nie znaleziono roli weryfikacji w guild ${guild.id} podczas nadawania roli.`,
+        );
+      }
+    }
+
+    if (!roleId) {
+      await interaction.reply({
+        content:
+          "✅ Poprawnie! Niestety rola weryfikacji nie została znaleziona. Skontaktuj się z administracją.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    try {
+      // give role
+      const member = await guild.members.fetch(interaction.user.id);
+      await member.roles.add(roleId, "Przejście weryfikacji");
+
+      // prepare DM embed (as requested)
+      const dmEmbed = new EmbedBuilder()
+        .setColor(COLOR_BLUE)
+        .setDescription(
+          "```\n" +
+          "🛒 New Shop × WERYFIKACJA\n" +
+          "```\n" +
+          "`✨` Gratulacje!\n\n" +
+          "`📝` Pomyślnie przeszedłeś weryfikacje na naszym serwerze discord życzymy udanych zakupów!",
+        )
+        .setTimestamp();
+
+      // send DM to user
+      try {
+        await interaction.user.send({ embeds: [dmEmbed] });
+        // ephemeral confirmation (not public)
+        await interaction.reply({
+          content: "> `✅` **Pomyślnie zweryfikowano**",
+          ephemeral: true,
+        });
+      } catch (dmError) {
+        console.error("Nie udało się wysłać DM po weryfikacji:", dmError);
+        await interaction.reply({
+          content: "> `✅` **Pomyślnie zweryfikowano**",
+          ephemeral: true,
+        });
+      }
+
+      console.log(
+        `Użytkownik ${interaction.user.username} przeszedł weryfikację na serwerze ${guild.id}`,
+      );
+    } catch (error) {
+      console.error("Błąd przy nadawaniu roli po weryfikacji:", error);
+      await interaction.reply({
+        content: "> `❌` **Wystąpił błąd przy nadawaniu roli.**",
+        ephemeral: true,
+      });
+    }
+    return;
+  }
+
+  // NEW: konkurs join modal
+  if (interaction.customId.startsWith("konkurs_join_modal_")) {
+    const msgId = interaction.customId.replace("konkurs_join_modal_", "");
+    await handleKonkursJoinModal(interaction, msgId);
+    return;
+  }
+
+  // KALKULATOR: ile otrzymam?
+  if (interaction.customId === "modal_ile_otrzymam") {
+    try {
+      const kwotaStr = interaction.fields.getTextInputValue("kwota");
+      const kwota = parseFloat(kwotaStr.replace(",", "."));
+
+      if (isNaN(kwota) || kwota <= 0) {
+        await interaction.reply({
+          content: "❌ Podaj poprawną kwotę w PLN.",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      // Zapisz kwotę i pokaż menu z wyborem trybu i metody
+      const userId = interaction.user.id;
+      kalkulatorData.set(userId, { kwota, typ: "otrzymam" });
+
+      const trybSelect = new StringSelectMenuBuilder()
+        .setCustomId("kalkulator_tryb")
+        .setPlaceholder("Wybierz serwer...")
+        .addOptions(
+          { label: "ANARCHIA LIFESTEAL", value: "ANARCHIA_LIFESTEAL", emoji: { id: "1457109250949124258" } },
+          { label: "ANARCHIA BOXPVP", value: "ANARCHIA_BOXPVP", emoji: { id: "1457109250949124258" } },
+          { label: "PYK MC", value: "PYK_MC", emoji: { id: "1457113144412475635" } }
+        );
+
+      const metodaSelect = new StringSelectMenuBuilder()
+        .setCustomId("kalkulator_metoda")
+        .setPlaceholder("Wybierz metodę płatności...")
+        .addOptions(
+          { label: "BLIK", value: "BLIK", description: "Szybki przelew BLIK (0% prowizji)", emoji: { id: "1449354065887756378" } },
+          { label: "Kod BLIK", value: "Kod BLIK", description: "Kod BLIK (10% prowizji)", emoji: { id: "1449354065887756378" } },
+          { label: "PSC", value: "PSC", description: "Paysafecard (10% prowizji)", emoji: { id: "1449352743591608422" } },
+          { label: "PSC bez paragonu", value: "PSC bez paragonu", description: "Paysafecard bez paragonu (20% prowizji)", emoji: { id: "1449352743591608422" } },
+          { label: "PayPal", value: "PayPal", description: "PayPal (5% prowizji)", emoji: { id: "1449354427755659444" } },
+          { label: "LTC", value: "LTC", description: "Litecoin (5% prowizji)", emoji: { id: "1449186363101548677" } }
+        );
+
+      const embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE)
+        .setDescription(
+          "```\n" +
+          "🔢 New Shop × Obliczanie\n" +
+          "```\n" +
+          `> `💵` × **Wybrana kwota:** \`${kwota.toFixed(2)}zł\`\n> `❗` × **Wybierz serwer i metodę płatności __poniżej:__`);
+
+      await interaction.reply({
+        embeds: [embed],
+        components: [
+          new ActionRowBuilder().addComponents(trybSelect),
+          new ActionRowBuilder().addComponents(metodaSelect)
+        ],
+        ephemeral: true
+      });
+    } catch (error) {
+      console.error("Błąd w modal_ile_otrzymam:", error);
+      await interaction.reply({
+        content: "❌ Wystąpił błąd podczas przetwarzania. Spróbuj ponownie.",
+        ephemeral: true
+      });
+    }
+    return;
+  }
+
+  // KALKULATOR: ile muszę dać?
+  if (interaction.customId === "modal_ile_musze_dac") {
+    try {
+      const walutaStr = interaction.fields.getTextInputValue("waluta");
+      const waluta = parseShortNumber(walutaStr);
+
+      if (!waluta || waluta <= 0 || waluta > 999_000_000) {
+        await interaction.reply({
+          content: "❌ Podaj poprawną ilość waluty (1–999 000 000, możesz użyć k/m).",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      // Zapisz walutę i pokaż menu z wyborem trybu i metody
+      const userId = interaction.user.id;
+      kalkulatorData.set(userId, { waluta, typ: "muszedac" });
+
+      const trybSelect = new StringSelectMenuBuilder()
+        .setCustomId("kalkulator_tryb")
+        .setPlaceholder("Wybierz serwer...")
+        .addOptions(
+          { label: "ANARCHIA LIFESTEAL", value: "ANARCHIA_LIFESTEAL", emoji: { id: "1457109250949124258" } },
+          { label: "ANARCHIA BOXPVP", value: "ANARCHIA_BOXPVP", emoji: { id: "1457109250949124258" } },
+          { label: "PYK MC", value: "PYK_MC", emoji: { id: "1457113144412475635" } }
+        );
+
+      const metodaSelect = new StringSelectMenuBuilder()
+        .setCustomId("kalkulator_metoda")
+        .setPlaceholder("Wybierz metodę płatności...")
+        .addOptions(
+          { label: "BLIK", value: "BLIK", description: "Szybki przelew BLIK (0% prowizji)", emoji: { id: "1449354065887756378" } },
+          { label: "Kod BLIK", value: "Kod BLIK", description: "Kod BLIK (10% prowizji)", emoji: { id: "1449354065887756378" } },
+          { label: "PSC", value: "PSC", description: "Paysafecard (10% prowizji)", emoji: { id: "1449352743591608422" } },
+          { label: "PSC bez paragonu", value: "PSC bez paragonu", description: "Paysafecard bez paragonu (20% prowizji)", emoji: { id: "1449352743591608422" } },
+          { label: "PayPal", value: "PayPal", description: "PayPal (5% prowizji)", emoji: { id: "1449354427755659444" } },
+          { label: "LTC", value: "LTC", description: "Litecoin (5% prowizji)", emoji: { id: "1449186363101548677" } }
+        );
+
+      const embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE)
+        .setDescription(
+          "```\n" +
+          "🔢 New Shop × Obliczanie\n" +
+          "```\n" +
+          `> `💵` × **Wybrana waluta:** \`${formatShortWaluta(waluta)}\`\n> `❗` × **Wybierz serwer i metodę płatności __poniżej:__`);
+
+      await interaction.reply({
+        embeds: [embed],
+        components: [
+          new ActionRowBuilder().addComponents(trybSelect),
+          new ActionRowBuilder().addComponents(metodaSelect)
+        ],
+        ephemeral: true
+      });
+    } catch (error) {
+      console.error("Błąd w modal_ile_musze_dac:", error);
+      await interaction.reply({
+        content: "❌ Wystąpił błąd podczas przetwarzania. Spróbuj ponownie.",
+        ephemeral: true
+      });
+    }
+    return;
+  }
+
+  // NEW: konkurs create modal
+  if (interaction.customId === "konkurs_create_modal") {
+    await handleKonkursCreateModal(interaction);
+    return;
+  }
+
+  // redeem code modal handling (used in tickets)
+  if (interaction.customId.startsWith("modal_redeem_code_")) {
+    const enteredCode = interaction.fields
+      .getTextInputValue("discount_code")
+      .toUpperCase();
+    const codeData = activeCodes.get(enteredCode);
+
+    if (!codeData) {
+      await interaction.reply({
+        content:
+          "❌ **Nieprawidłowy kod!**",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    // Sprawdź typ kodu
+    if (codeData.type === "invite_cash" || codeData.type === "invite_reward") {
+      await interaction.reply({
+        content:
+          "❌ Kod na 50k$ można wpisać jedynie klikając kategorię 'Nagroda za zaproszenia' w TicketPanel i wpisując tam kod!",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (codeData.used) {
+      await interaction.reply({
+        content: "❌ **Kod został już wykorzystany!**",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    if (Date.now() > codeData.expiresAt) {
+      activeCodes.delete(enteredCode);
+      scheduleSavePersistentState();
+      await interaction.reply({
+        content: "❌ **Kod wygasł!**",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    codeData.used = true;
+    activeCodes.set(enteredCode, codeData);
+    scheduleSavePersistentState();
+
+    const redeemEmbed = new EmbedBuilder()
+      .setColor(0xd4af37)
+      .setTitle("`📉` WYKORZYSTAŁEŚ KOD RABATOWY")
+      .setDescription(
+        "```\n" +
+        enteredCode +
+        "\n```\n" +
+        `> `💸` × **Otrzymałeś:** \`-${codeData.discount}%\`\n`,
+      )
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [redeemEmbed] });
+    console.log(
+      `Użytkownik ${interaction.user.username} odebrał kod rabatowy ${enteredCode} (-${codeData.discount}%)`,
+    );
+    return;
+  }
+
+  // Ticket settings modals: rename/add/remove
+  if (interaction.customId.startsWith("modal_rename_")) {
+    const chId = interaction.customId.replace("modal_rename_", "");
+    const newName = interaction.fields
+      .getTextInputValue("new_ticket_name")
+      .trim();
+    const channel = await interaction.guild.channels
+      .fetch(chId)
+      .catch(() => null);
+    if (!channel) {
+      await interaction.reply({
+        content: "❌ Kanał nie znaleziony.",
+        ephemeral: true,
+      });
+      return;
+    }
+    const data = ticketOwners.get(chId) || { claimedBy: null };
+    const claimer = data.claimedBy;
+
+    if (!isAdminOrSeller(interaction.member)) {
+      await interaction.reply({
+        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        ephemeral: true,
+      });
+      return;
+    }
+    if (
+      claimer &&
+      claimer !== interaction.user.id &&
+      !isAdminOrSeller(interaction.member)
+    ) {
+      await interaction.reply({
+        content: "❌ Tylko przejęty przez Ciebie lub admin/sprzedawca może zmienić nazwę.",
+        ephemeral: true,
+      });
+      return;
+    }
+    try {
+      await channel.setName(newName);
+      await interaction.reply({
+        content: `✅ Nazwa ticketu zmieniona na: ${newName}`,
+        ephemeral: true,
+      });
+    } catch (err) {
+      console.error("Błąd zmiany nazwy ticketu:", err);
+      await interaction.reply({
+        content: "❌ Nie udało się zmienić nazwy (sprawdź uprawnienia).",
+        ephemeral: true,
+      });
+    }
+    return;
+  }
+
+  if (interaction.customId.startsWith("modal_add_")) {
+    const chId = interaction.customId.replace("modal_add_", "");
+    const userInput = interaction.fields
+      .getTextInputValue("user_to_add")
+      .trim();
+    const channel = await interaction.guild.channels
+      .fetch(chId)
+      .catch(() => null);
+    if (!channel) {
+      await interaction.reply({
+        content: "❌ Kanał nie znaleziony.",
+        ephemeral: true,
+      });
+      return;
+    }
+    const data = ticketOwners.get(chId) || { claimedBy: null };
+    const claimer = data.claimedBy;
+
+    if (
+      claimer &&
+      claimer !== interaction.user.id &&
+      !isAdminOrSeller(interaction.member)
+    ) {
+      await interaction.reply({
+        content: "❌ Tylko przejęty przez Ciebie lub admin/Sprzedawca może dodawać użytkowników.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const match = userInput.match(/^<@!?(\d+)>$/);
+    if (!match) {
+      await interaction.reply({
+        content: "❌ Nieprawidłowy format użytkownika. Użyj @mention.",
+        ephemeral: true,
+      });
+      return;
+    }
+    const userIdToAdd = match[1];
+    try {
+      await channel.permissionOverwrites.edit(userIdToAdd, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      });
+      await interaction.reply({
+        content: `✅ Dodano <@${userIdToAdd}> do ticketu.`,
+        ephemeral: true,
+      });
+    } catch (err) {
+      console.error("Błąd dodawania użytkownika do ticketu:", err);
+      await interaction.reply({
+        content: "❌ Nie udało się dodać użytkownika (sprawdź uprawnienia).",
+        ephemeral: true,
+      });
+    }
+    return;
+  }
+
+  if (interaction.customId.startsWith("modal_remove_")) {
+    const chId = interaction.customId.replace("modal_remove_", "");
+    const userInput = interaction.fields
+      .getTextInputValue("user_to_remove")
+      .trim();
+    const channel = await interaction.guild.channels
+      .fetch(chId)
+      .catch(() => null);
+    if (!channel) {
+      await interaction.reply({
+        content: "❌ Kanał nie znaleziony.",
+        ephemeral: true,
+      });
+      return;
+    }
+    const data = ticketOwners.get(chId) || { claimedBy: null };
+    const claimer = data.claimedBy;
+
+    if (!isAdminOrSeller(interaction.member)) {
+      await interaction.reply({
+        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        ephemeral: true,
+      });
+      return;
+    }
+    if (
+      claimer &&
+      claimer !== interaction.user.id &&
+      !isAdminOrSeller(interaction.member)
+    ) {
+      await interaction.reply({
+        content: "❌ Tylko przejęty przez Ciebie lub admin/Sprzedawca może usuwać użytkowników.",
+        ephemeral: true,
+      });
+      return;
+    }
+
+    const match = userInput.match(/^<@!?(\d+)>$/);
+    if (!match) {
+      await interaction.reply({
+        content: "❌ Nieprawidłowy format użytkownika. Użyj @mention.",
+        ephemeral: true,
+      });
+      return;
+    }
+    const userIdToRemove = match[1];
+    try {
+      await channel.permissionOverwrites.edit(userIdToRemove, {
+        ViewChannel: false,
+        SendMessages: false,
+        ReadMessageHistory: false,
+      });
+      await interaction.reply({
+        content: `✅ Usunięto <@${userIdToRemove}> z ticketu.`,
+        ephemeral: true,
+      });
+    } catch (err) {
+      console.error("Błąd usuwania użytkownika z ticketu:", err);
+      await interaction.reply({
+        content: "❌ Nie udało się usunąć użytkownika (sprawdź uprawnienia).",
+        ephemeral: true,
+      });
+    }
+    return;
+  }
+
+  // Ticket creation modals
+  let categoryId = null;
+  let ticketType = null;
+  let ticketTypeLabel = null;
+  let formInfo = "";
+
+  const guild = interaction.guild;
+  const user = interaction.user;
+  const categories = ticketCategories.get(guild.id) || {};
+
+  switch (interaction.customId) {
+    case "modal_odbior": {
+      const enteredCodeRaw =
+        interaction.fields.getTextInputValue("reward_code") || "";
+      const enteredCode = enteredCodeRaw.trim().toUpperCase();
+
+      if (!enteredCode) {
+        await interaction.reply({
+          content: "❌ **Musisz wpisać kod!**",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      const codeData = activeCodes.get(enteredCode);
+
+      if (!codeData) {
+        await interaction.reply({
+          content: "❌ **Nieprawidłowy kod!**",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      if (codeData.used) {
+        await interaction.reply({
+          content: "❌ **Kod został już wykorzystany!**",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      if (Date.now() > codeData.expiresAt) {
+        activeCodes.delete(enteredCode);
+        scheduleSavePersistentState();
+        await interaction.reply({
+          content: "❌ **Kod wygasł!**",
+          ephemeral: true,
+        });
+        return;
+      }
+
+      // Mark code as used
+      codeData.used = true;
+      activeCodes.set(enteredCode, codeData);
+      scheduleSavePersistentState();
+
+      categoryId = REWARDS_CATEGORY_ID;
+      ticketType = "odbior-nagrody";
+      ticketTypeLabel = "NAGRODA ZA ZAPROSZENIA";
+      formInfo = `> `➖` × **Kod:** \`${enteredCode}\`\n> `➖` × **Nagroda:** \`${codeData.reward || "Brak"}\``;
+      break;
+    }
+    case "modal_konkurs_odbior": {
+      const info = interaction.fields.getTextInputValue("konkurs_info");
+
+      categoryId = REWARDS_CATEGORY_ID;
+      ticketType = "konkurs-nagrody";
+      ticketTypeLabel = "NAGRODA ZA KONKURS";
+      formInfo = `> `➖` × **Informacje:** \`${info}\``;
+      break;
+    }
+    case "modal_inne": {
+      const sprawa = interaction.fields.getTextInputValue("sprawa");
+
+      categoryId = categories["inne"];
+      ticketType = "inne";
+      ticketTypeLabel = "INNE";
+      formInfo = `> `➖` × **Sprawa:** \`${sprawa}\``;
+      break;
+    }
+    default:
+      break;
+  }
+
+  // If ticketType not set it was probably a settings modal handled above or unknown
+  if (!ticketType) return;
+
+  try {
+    // ENFORCE: One ticket per user
+    // Search ticketOwners for existing open ticket owned by this user
+    for (const [channelId, ticketData] of ticketOwners.entries()) {
+      if (ticketData.userId === user.id) {
+        await interaction.reply({
+          content: `❌ Masz już otwarty ticket: <#${channelId}>`,
+          ephemeral: true,
+        });
+        return;
+      }
+    }
+
+    const parentToUse = categoryId || categories["zakup-0-20"];
+
+    const createOptions = {
+      name: `ticket-${getNextTicketNumber(guild.id)}`,
+      type: ChannelType.GuildText,
+      parent: parentToUse,
+      permissionOverwrites: [
+        {
+          id: interaction.guild.id,
+          deny: [PermissionsBitField.Flags.ViewChannel], // @everyone nie widzi ticketów
+        },
+        {
+          id: interaction.user.id,
+          allow: [
+            PermissionsBitField.Flags.ViewChannel,
+            PermissionsBitField.Flags.SendMessages,
+            PermissionsBitField.Flags.ReadMessageHistory,
+          ],
+        },
+      ],
+    };
+
+    // Dodaj rangi limitów w zależności od kategorii
+    if (parentToUse) {
+      const categoryId = parentToUse;
+      
+      // Zakup 0-20 - wszystkie rangi widzą
+      if (categoryId === "1449526840942268526") {
+        createOptions.permissionOverwrites.push(
+          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        );
+      }
+      // Zakup 20-50 - limit 20 nie widzi
+      else if (categoryId === "1449526958508474409") {
+        createOptions.permissionOverwrites.push(
+          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        );
+      }
+      // Zakup 50-100 - limit 20 i 50 nie widzą
+      else if (categoryId === "1449451716129984595") {
+        createOptions.permissionOverwrites.push(
+          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        );
+      }
+      // Zakup 100-200 - tylko limit 200 widzi
+      else if (categoryId === "1449452354201190485") {
+        createOptions.permissionOverwrites.push(
+          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+        );
+      }
+    }
+
+    const channel = await guild.channels.create(createOptions);
+
+    const embed = new EmbedBuilder()
+      .setColor(COLOR_BLUE)
+      .setTitle(`🛒 NEW SHOP × ${ticketTypeLabel}`)
+      .setDescription(
+        `## `🛒` NEW SHOP × ${ticketTypeLabel}\n\n` +
+        `### ・ `👤` × Informacje o kliencie:\n` +
+        `> `➖` **× Ping:** <@${user.id}>\n` +
+        `> `➖` × **Nick:** \`${interaction.member?.displayName || user.globalName || user.username}\`\n` +
+        `> `➖` × **ID:** \`${user.id}\`\n` +
+        `### ・ `📋` × Informacje z formularza:\n` +
+        `${formInfo}`,
+      )
+      .setThumbnail(user.displayAvatarURL({ dynamic: true, size: 128 }))
+      .setTimestamp();
+
+    const closeButton = new ButtonBuilder()
+      .setCustomId(`ticket_close_${channel.id}`)
+      .setLabel("Zamknij")
+      .setStyle(ButtonStyle.Secondary);
+    const settingsButton = new ButtonBuilder()
+      .setCustomId(`ticket_settings_${channel.id}`)
+      .setLabel("Ustawienia")
+      .setStyle(ButtonStyle.Secondary);
+    const claimButton = new ButtonBuilder()
+      .setCustomId(`ticket_claim_${channel.id}`)
+      .setLabel("Przejmij")
+      .setStyle(ButtonStyle.Primary);
+    const unclaimButton = new ButtonBuilder()
+      .setCustomId(`ticket_unclaim_${channel.id}`)
+      .setLabel("Odprzejmij")
+      .setStyle(ButtonStyle.Danger)
+      .setDisabled(true);
+
+    const buttonRow = new ActionRowBuilder().addComponents(
+      closeButton,
+      settingsButton,
+      claimButton,
+      unclaimButton,
+    );
+
+    const sentMsg = await channel.send({
+      content: `@everyone`,
+      embeds: [embed],
+      components: [buttonRow],
+    });
+
+    ticketOwners.set(channel.id, {
+      claimedBy: null,
+      userId: user.id,
+      ticketMessageId: sentMsg.id,
+      locked: false,
+    });
+    scheduleSavePersistentState();
+
+    await logTicketCreation(interaction.guild, channel, {
+      openerId: user.id,
+      ticketTypeLabel,
+      formInfo,
+      ticketChannelId: channel.id,
+      ticketMessageId: sentMsg.id,
+    }).catch(() => { });
+
+    await interaction.reply({
+      content: `> `✅` **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
+      ephemeral: true,
+    });
+  } catch (err) {
+    console.error("Błąd tworzenia ticketu (odbior):", err);
+    await interaction.reply({
+      content: "❌ Wystąpił błąd podczas tworzenia ticketa.",
+      ephemeral: true,
+    });
+  }
 }
 
 async function handleKalkulatorSelect(interaction) {
