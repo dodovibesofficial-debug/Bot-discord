@@ -654,8 +654,10 @@ function loadPersistentState() {
 
     // Load inviterOfMember
     if (data.inviterOfMember && typeof data.inviterOfMember === "object") {
-      for (const [key, inviterId] of Object.entries(data.inviterOfMember)) {
-        inviterOfMember.set(key, inviterId);
+      for (const [key, memberData] of Object.entries(data.inviterOfMember)) {
+        if (memberData && typeof memberData === "object") {
+          inviterOfMember.set(key, memberData);
+        }
       }
     }
 
@@ -1694,6 +1696,9 @@ client.once(Events.ClientReady, async (c) => {
       if (!inviterRateLimit.has(guild.id))
         inviterRateLimit.set(guild.id, new Map());
       if (!inviteLeaves.has(guild.id)) inviteLeaves.set(guild.id, new Map());
+      if (!inviteTotalJoined.has(guild.id)) inviteTotalJoined.set(guild.id, new Map());
+      if (!inviteFakeAccounts.has(guild.id)) inviteFakeAccounts.set(guild.id, new Map());
+      if (!inviteBonusInvites.has(guild.id)) inviteBonusInvites.set(guild.id, new Map());
       console.log(`[invites] Zainicjalizowano invites cache dla ${guild.id}`);
     } catch (err) {
       console.warn("[invites] Nie udało się pobrać invite'ów dla guild:", err);
@@ -5925,6 +5930,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
           console.warn("Error compensating leave on rejoin:", e);
         } finally {
           leaveRecords.delete(memberKey);
+          scheduleSavePersistentState();
         }
       }
 
@@ -5990,6 +5996,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const recent = timestamps.filter((t) => t > cutoff);
       recent.push(Date.now());
       rateMap.set(inviterId, recent);
+      inviterRateLimit.set(member.guild.id, rateMap);
+      scheduleSavePersistentState();
 
       if (recent.length > INVITER_RATE_LIMIT_MAX) {
         // too many invites in the window -> mark as not counted
@@ -6028,6 +6036,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
       // Always increment totalJoined (wszystkie dołączenia przypisane do zapraszającego)
       const prevTotal = totalMap.get(inviterId) || 0;
       totalMap.set(inviterId, prevTotal + 1);
+      inviteTotalJoined.set(member.guild.id, totalMap);
+      scheduleSavePersistentState();
 
       // Liczymy zaproszenia tylko jeśli nie jest właścicielem
       if (inviterId !== ownerId) {
@@ -6058,6 +6068,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
       if (toGive > 0) {
         rewardsGivenMap.set(inviterId, alreadyGiven + toGive);
+        inviteRewardsGiven.set(member.guild.id, rewardsGivenMap);
+        scheduleSavePersistentState();
 
         // Przygotuj kanał zaproszeń
         const zapCh =
@@ -6091,15 +6103,20 @@ client.on(Events.GuildMemberAdd, async (member) => {
             const user = await client.users.fetch(inviterId);
             const dmEmbed = new EmbedBuilder()
               .setColor(0xd4af37)
-              .setTitle("\`🔑\` Twój kod za zaproszenia")
               .setDescription(
+                "```\n" +
+                "🎀 New Shop × NAGRODA\n" +
+                "```\n" +
+                `\`👤\` × **Użytkownik:** ${user}\n` +
+                `\`🎉\` × **Gratulacje! Otrzymałeś nagrodę za zaproszenia!**\n` +
+                `\`💸\` × **Kod nagrody:**\n` +
                 "```\n" +
                 rewardCode +
                 "\n```\n" +
-                `> \`💸\` × **Otrzymałeś:** \`50k\$\`\n` +
-                `> \`🕑\` × **Kod wygaśnie za:** <t:${expiryTs}:R> \n\n` +
-                `> \`❔\` × Aby zrealizować kod utwórz nowy ticket, wybierz kategorię\n` +
-                `> \`Odbiór nagrody\` i w polu wpisz otrzymany kod.`,
+                `\`💰\` × **Wartość:** \`50k\$\`\n` +
+                `\`🕑\` × **Kod wygaśnie za:** <t:${expiryTs}:R>\n\n` +
+                `\`❔\` × Aby zrealizować kod utwórz nowy ticket, wybierz kategorię\n` +
+                `\`Odbiór nagrody\` i w polu wpisz otrzymany kod.`
               )
               .setTimestamp();
 
@@ -6119,6 +6136,8 @@ client.on(Events.GuildMemberAdd, async (member) => {
       const fakeMapLocal = fakeMap || inviteFakeAccounts.get(member.guild.id);
       const prevFake = fakeMapLocal.get(inviterId) || 0;
       fakeMapLocal.set(inviterId, prevFake + 1);
+      inviteFakeAccounts.set(member.guild.id, fakeMapLocal);
+      scheduleSavePersistentState();
     }
 
     // store who invited this member (and whether it was counted)
@@ -6259,6 +6278,7 @@ client.on(Events.GuildMemberRemove, async (member) => {
     const lMap = inviteLeaves.get(member.guild.id);
     const prevLeft = lMap.get(inviterId) || 0;
     lMap.set(inviterId, prevLeft + 1);
+    inviteLeaves.set(member.guild.id, lMap);
 
     // Zapisz do leaveRecords na wypadek powrotu
     leaveRecords.set(key, inviterId);
