@@ -52,7 +52,7 @@ function getInviteWord(count) {
   if (count >= 2 && count <= 4) return "zaproszenia";
   return "zaproszeń";
 }
- 
+
 // NEW: weryfikacja
 const verificationRoles = new Map(); // guildId -> roleId
 const pendingVerifications = new Map(); // modalId -> { answer, guildId, userId, roleId }
@@ -454,30 +454,51 @@ function flushPersistentStateSync() {
   }
 }
 
-function scheduleSavePersistentState() {
+function scheduleSavePersistentState(immediate = false) {
   // debounce writes to avoid spamming disk
   if (saveStateTimeout) return;
-  saveStateTimeout = setTimeout(() => {
-    saveStateTimeout = null;
-    try {
-      const data = buildPersistentStateData();
-      fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
-        if (err) {
-          console.error("Nie udało się zapisać stanu bota:", err);
-          console.error(`[state] save failed -> ${STORE_FILE}`);
-          return;
-        }
+  
+  if (immediate) {
+    // Natychmiastowy zapis dla krytycznych danych
+    saveStateTimeout = setTimeout(() => {
+      saveStateTimeout = null;
+      try {
+        const data = buildPersistentStateData();
+        fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
         try {
           const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-          console.log(`[state] save ok -> ${STORE_FILE} size=${size}`);
+          console.log(`[state] immediate save ok -> ${STORE_FILE} size=${size}`);
         } catch (e) {
           // ignore
         }
-      });
-    } catch (err) {
-      console.error("Błąd serializacji stanu bota:", err);
-    }
-  }, 2000);
+      } catch (err) {
+        console.error("Nie udało się zapisać stanu bota (immediate):", err);
+      }
+    }, 100); // Bardzo krótkie opóźnienie
+  } else {
+    // Standardowy debounced save
+    saveStateTimeout = setTimeout(() => {
+      saveStateTimeout = null;
+      try {
+        const data = buildPersistentStateData();
+        fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
+          if (err) {
+            console.error("Nie udało się zapisać stanu bota:", err);
+            console.error(`[state] save failed -> ${STORE_FILE}`);
+            return;
+          }
+          try {
+            const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
+            console.log(`[state] save ok -> ${STORE_FILE} size=${size}`);
+          } catch (e) {
+            // ignore
+          }
+        });
+      } catch (err) {
+        console.error("Błąd serializacji stanu bota:", err);
+      }
+    }, 2000);
+  }
 }
 
 function loadPersistentState() {
@@ -6052,7 +6073,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
           const prev = gMap.get(inviterId) || 0;
           gMap.set(inviterId, prev + 1);
           inviteCounts.set(member.guild.id, gMap);
-          scheduleSavePersistentState();
+          scheduleSavePersistentState(true); // Natychmiastowy zapis
         }
       }
 
@@ -6075,7 +6096,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       if (toGive > 0) {
         rewardsGivenMap.set(inviterId, alreadyGiven + toGive);
         inviteRewardsGiven.set(member.guild.id, rewardsGivenMap);
-        scheduleSavePersistentState();
+        scheduleSavePersistentState(true); // Natychmiastowy zapis
 
         // Przygotuj kanał zaproszeń
         const zapCh =
@@ -6155,7 +6176,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
     });
 
     // persist join/invite state
-    scheduleSavePersistentState();
+    scheduleSavePersistentState(true); // Natychmiastowy zapis
 
     // Powiadomienie na kanale zaproszeń kto kogo dodał
     const zapChannelId = "1449159392388972554";
