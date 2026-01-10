@@ -2,9 +2,9 @@
   "name": "newshop-bot",
   "version": "1.0.0",
   "description": "Discord bot for New Shop",
-  "main": "index (25).cjs",
+  "main": "index.cjs",
   "scripts": {
-    "start": "node index (25).cjs"
+    "start": "node index.cjs"
   },
   "dependencies": {
     "discord.js": "^14.14.1",
