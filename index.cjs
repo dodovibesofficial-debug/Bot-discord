@@ -2011,7 +2011,7 @@ async function handleSlashCommand(interaction) {
       await handleRepyUstawCommand(interaction);
       break;
   }
-}
+}  // ✅ TYLKO JEDNO zamknięcie funkcji
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
