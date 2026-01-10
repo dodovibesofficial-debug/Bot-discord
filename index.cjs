@@ -4286,7 +4286,9 @@ async function handleModalSubmit(interaction) {
       formInfo = `> \`➖\` × **Co chce sprzedać:** \`${co}\`\n> \`➖\` × **Serwer:** \`${serwer}\`\n> \`➖\` × **Oczekiwana kwota:** \`${ile}\``;
       break;
     }
-case "modal_odbior": {
+// Fragment do zastąpienia w index.cjs około linii 4400-4480
+
+    case "modal_odbior": {
       const enteredCodeRaw =
         interaction.fields.getTextInputValue("reward_code") || "";
       const enteredCode = enteredCodeRaw.trim().toUpperCase();
@@ -4363,6 +4365,126 @@ case "modal_odbior": {
         : "";
 
       formInfo = `> \`➖\` × **Kod:** \`${enteredCode}\`\n> \`➖\` × **Nagroda:** \`${codeData.rewardText || INVITE_REWARD_TEXT || "50k$"}\`${expiryLine}`;
+      
+      // ✅ TUTAJ BRAKOWAŁO ZAMKNIĘCIA - DODAJEMY:
+      try {
+        let parentToUse = categoryId;
+        if (!parentToUse) {
+          const foundCat = interaction.guild.channels.cache.find(
+            (c) =>
+              c.type === ChannelType.GuildCategory &&
+              c.name &&
+              c.name.toLowerCase().includes("odbior"),
+          );
+          if (foundCat) parentToUse = foundCat.id;
+        }
+
+        const createOptions = {
+          name: `ticket-${interaction.user.username}`,
+          type: ChannelType.GuildText,
+          permissionOverwrites: [
+            {
+              id: interaction.guild.id,
+              deny: [PermissionsBitField.Flags.ViewChannel],
+            },
+            {
+              id: interaction.user.id,
+              allow: [
+                PermissionsBitField.Flags.ViewChannel,
+                PermissionsBitField.Flags.SendMessages,
+                PermissionsBitField.Flags.ReadMessageHistory,
+              ],
+            },
+          ],
+        };
+        if (parentToUse) createOptions.parent = parentToUse;
+
+        const channel = await interaction.guild.channels.create(createOptions);
+
+        const embed = new EmbedBuilder()
+          .setColor(COLOR_BLUE)
+          .setTitle(
+            `${client.user?.username || "NEWSHOP"} × ${ticketTypeLabel}`,
+          )
+          .setDescription(
+            `### **ZAKUP ITY × ${ticketTypeLabel}**\n\n` +
+            `### ・ \`👤\` × Informacje o kliencie:\n` +
+            `> \`➖\` **× Ping:** <@${interaction.user.id}>\n` +
+            `> \`➖\` × **Nick:** \`${interaction.member?.displayName || interaction.user.globalName || interaction.user.username}\`\n` +
+            `> \`➖\` × **ID:** \`${interaction.user.id}\`\n\n` +
+            `### ・ \`📋\` × Informacje z formularza:\n` +
+            `${formInfo}`,
+          )
+          .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true, size: 128 }))
+          .setTimestamp();
+
+        const closeButton = new ButtonBuilder()
+          .setCustomId(`ticket_close_${channel.id}`)
+          .setLabel("Zamknij")
+          .setStyle(ButtonStyle.Secondary);
+        const settingsButton = new ButtonBuilder()
+          .setCustomId(`ticket_settings_${channel.id}`)
+          .setLabel("Ustawienia")
+          .setStyle(ButtonStyle.Secondary);
+        const claimButton = new ButtonBuilder()
+          .setCustomId(`ticket_claim_${channel.id}`)
+          .setLabel("Przejmij")
+          .setStyle(ButtonStyle.Primary);
+        const unclaimButton = new ButtonBuilder()
+          .setCustomId(`ticket_unclaim_${channel.id}`)
+          .setLabel("Odprzejmij")
+          .setStyle(ButtonStyle.Danger)
+          .setDisabled(true);
+
+        const buttonRow = new ActionRowBuilder().addComponents(
+          closeButton,
+          settingsButton,
+          claimButton,
+          unclaimButton,
+        );
+
+        const sentMsg = await channel.send({
+          content: `@everyone`,
+          embeds: [embed],
+          components: [buttonRow],
+        });
+
+        ticketOwners.set(channel.id, {
+          claimedBy: null,
+          userId: interaction.user.id,
+          ticketMessageId: sentMsg.id,
+          locked: false,
+        });
+
+        await logTicketCreation(interaction.guild, channel, {
+          openerId: interaction.user.id,
+          ticketTypeLabel,
+          formInfo,
+          ticketChannelId: channel.id,
+          ticketMessageId: sentMsg.id,
+        }).catch(() => { });
+
+        await interaction.reply({
+          content: `> \`✅\` **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
+          ephemeral: true,
+        });
+      } catch (err) {
+        console.error("Błąd tworzenia ticketu (odbior):", err);
+        await interaction.reply({
+          content: "❌ Wystąpił błąd podczas tworzenia ticketa.",
+          ephemeral: true,
+        });
+      }
+      break; // ✅ KONIEC case "modal_odbior"
+    }
+    
+    case "modal_konkurs_odbior": {
+      const info = interaction.fields.getTextInputValue("konkurs_info");
+
+      categoryId = REWARDS_CATEGORY_ID;
+      ticketType = "konkurs-nagrody";
+      ticketTypeLabel = "NAGRODA ZA KONKURS";
+      formInfo = `> \`➖\` × **Informacje:** \`${info}\``;
       break;
     }
       try {
