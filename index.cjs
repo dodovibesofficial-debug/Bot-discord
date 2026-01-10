@@ -50,7 +50,7 @@ const inviteRewardsGiven = new Map(); // NEW: guild -> userId -> ile nagród ju�
 
 // Helper: funkcja zwracająca poprawną formę słowa "zaproszenie"
 function getInviteWord(count) {
-  if (count === 1) return "zaproszenie"; 
+  if (count === 1) return "zaproszenie";
   if (count >= 2 && count <= 4) return "zaproszenia";
   return "zaproszeń";
 }
