@@ -853,8 +853,8 @@ async function loadPersistentState() {
 
     // Load kalkulatorData
     if (data.kalkulatorData && typeof data.kalkulatorData === "object") {
-      for (const [userId, data] of Object.entries(data.kalkulatorData)) {
-        kalkulatorData.set(userId, data);
+      for (const [userId, calcData] of Object.entries(data.kalkulatorData)) {
+        kalkulatorData.set(userId, calcData);
       }
     }
 
