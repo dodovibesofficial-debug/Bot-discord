@@ -706,8 +706,13 @@ async function loadPersistentState() {
     // Load weekly sales from Supabase
     try {
       const sales = await db.getWeeklySales();
-      sales.forEach(({ user_id, amount }) => {
-        weeklySales.set(user_id, { amount, lastUpdate: Date.now() });
+      sales.forEach(({ user_id, amount, paid, paid_at }) => {
+        weeklySales.set(user_id, { 
+          amount, 
+          lastUpdate: Date.now(),
+          paid: paid || false, // z Supabase
+          paidAt: paid_at || null
+        });
       });
       console.log(`[Supabase] Wczytano weeklySales: ${sales.length} użytkowników`);
     } catch (error) {
@@ -1199,10 +1204,25 @@ const commands = [
     .addIntegerOption((option) =>
       option
         .setName("kwota")
-        .setDescription("Kwota sprzedaży w złotych")
+        .setDescription("Kwota w zł")
         .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(999999)
+    )
+    .addUserOption((option) =>
+      option
+        .setName("uzytkownik")
+        .setDescription("Użytkownik (opcjonalnie, domyślnie ty)")
+        .setRequired(false)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("rozliczeniazaplacil")
+    .setDescription("Oznacz rozliczenie jako zapłacone (admin only)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addUserOption((option) =>
+      option
+        .setName("uzytkownik")
+        .setDescription("Użytkownik do oznaczenia")
+        .setRequired(true)
     )
     .toJSON(),
   new SlashCommandBuilder()
@@ -3198,6 +3218,9 @@ async function handleSlashCommand(interaction) {
     case "rozliczenie":
       await handleRozliczenieCommand(interaction);
       break;
+    case "rozliczeniazaplacil":
+      await handleRozliczenieZaplacilCommand(interaction);
+      break;
     case "rozliczeniezakoncz":
       await handleRozliczenieZakonczCommand(interaction);
       break;
@@ -3252,7 +3275,7 @@ async function handleRozliczenieCommand(interaction) {
   userData.lastUpdate = Date.now();
   
   // Zapisz weekly sales do Supabase
-  await db.saveWeeklySale(userId, userData.amount, interaction.guild.id);
+  await db.saveWeeklySale(userId, userData.amount, interaction.guild.id, userData.paid || false, userData.paidAt || null);
   console.log(`[rozliczenie] Użytkownik ${userId} dodał rozliczenie: ${kwota} zł, suma tygodniowa: ${userData.amount} zł`);
 
   const embed = new EmbedBuilder()
@@ -3270,6 +3293,57 @@ async function handleRozliczenieCommand(interaction) {
   console.log(`Użytkownik ${userId} dodał rozliczenie: ${kwota} zł`);
   
   // Odśwież wiadomość ROZLICZENIA TYGODNIOWE po dodaniu rozliczenia
+  setTimeout(sendRozliczeniaMessage, 1000);
+}
+
+// Handler dla komendy /rozliczeniazaplacil
+async function handleRozliczenieZaplacilCommand(interaction) {
+  // Sprawdź czy admin
+  if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+    await interaction.reply({
+      content: "❌ Nie masz uprawnień administracyjnych!",
+      flags: [MessageFlags.Ephemeral]
+    });
+    return;
+  }
+
+  const targetUser = interaction.options.getUser("uzytkownik");
+  const userId = targetUser.id;
+
+  // Sprawdź czy użytkownik ma rozliczenie
+  if (!weeklySales.has(userId)) {
+    await interaction.reply({
+      content: `❌ Użytkownik <@${userId}> nie ma żadnych rozliczeń!`,
+      flags: [MessageFlags.Ephemeral]
+    });
+    return;
+  }
+
+  const userData = weeklySales.get(userId);
+  const prowizja = userData.amount * ROZLICZENIA_PROWIZJA;
+
+  // Zaktualizuj status zapłaty
+  userData.paid = true;
+  userData.paidAt = Date.now();
+  weeklySales.set(userId, userData);
+
+  // Zapisz do Supabase
+  await db.saveWeeklySale(userId, userData.amount, interaction.guild.id, true, Date.now());
+
+  const embed = new EmbedBuilder()
+    .setColor(0x00ff00) // zielony
+    .setTitle("✅ Rozliczenie oznaczone jako zapłacone")
+    .setDescription(
+      `> \`✅\` × <@${userId}> **Zapłacił** **${prowizja.toLocaleString("pl-PL")} zł**\n` +
+      `> \`📊\` × **Suma sprzedaży:** ${userData.amount.toLocaleString("pl-PL")} zł\n` +
+      `> \`🕐\` × **Czas zapłaty:** <t:${Math.floor(Date.now() / 1000)}:R>`
+    )
+    .setTimestamp();
+
+  await interaction.reply({ embeds: [embed] });
+  console.log(`[rozliczenie] Admin ${interaction.user.id} oznaczył rozliczenie użytkownika ${userId} jako zapłacone (${prowizja} zł)`);
+  
+  // Odśwież wiadomość ROZLICZENIA TYGODNIOWE
   setTimeout(sendRozliczeniaMessage, 1000);
 }
 
@@ -3311,7 +3385,13 @@ async function handleRozliczenieZakonczCommand(interaction) {
       // Pobierz nazwę użytkownika zamiast pingować
       const user = client.users.cache.get(userId);
       const userName = user ? `<@${userId}>` : `<@${userId}>`;
-      reportLines.push(`${userName} Do zapłaty ${prowizja}zł`);
+      
+      // Sprawdź status zapłaty
+      const isPaid = data.paid || false;
+      const emoji = isPaid ? "✅" : "❌";
+      const status = isPaid ? "Zapłacił" : "Do zapłaty";
+      
+      reportLines.push(`${emoji} ${userName} ${status} ${prowizja}zł`);
       totalSales += data.amount;
     }
 
@@ -3661,7 +3741,7 @@ async function handleSendMessageCommand(interaction) {
     // Build embed with blue color to send as the message (user requested)
     const sendEmbed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setDescription((content || "`(brak treści)`").replace(/<@!?(\d+)>/g, '<@$1>'))
+      .setDescription((content || "`(brak treści)`").replace(/<@!?(\d+)>/g, ''))
       .setTimestamp();
     
     // Add image to embed if present
