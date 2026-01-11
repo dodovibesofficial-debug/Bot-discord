@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 // Weekly sales functions
-async function saveWeeklySale(userId, amount) {
+async function saveWeeklySale(userId, amount, guildId = "default") {
   // Pobierz początek tygodnia (niedziela)
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = niedziela
@@ -18,6 +18,7 @@ async function saveWeeklySale(userId, amount) {
     .from("weekly_sales")
     .upsert({ 
       user_id: userId, 
+      guild_id: guildId,
       amount, 
       week_start: weekStart.toISOString().split('T')[0], // YYYY-MM-DD
       updated_at: new Date().toISOString() 
@@ -26,7 +27,7 @@ async function saveWeeklySale(userId, amount) {
   else console.log(`[Supabase] Zapisano weekly_sales: ${userId} -> ${amount}`);
 }
 
-async function getWeeklySales() {
+async function getWeeklySales(guildId = null) {
   // Pobierz początek aktualnego tygodnia (niedziela)
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = niedziela
@@ -35,10 +36,16 @@ async function getWeeklySales() {
   weekStart.setHours(0, 0, 0, 0);
   const weekStartStr = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD
   
-  const { data, error } = await supabase
+  let query = supabase
     .from("weekly_sales")
     .select("*")
     .eq("week_start", weekStartStr); // Tylko aktualny tydzień
+    
+  if (guildId) {
+    query = query.eq("guild_id", guildId); // Konkretny guild
+  }
+  
+  const { data, error } = await query;
   if (error) {
     console.error("[Supabase] Błąd odczytu weekly_sales:", error);
     return [];
@@ -64,7 +71,7 @@ async function getInviteCounts(guildId) {
   const { data, error } = await supabase
     .from("invite_counts")
     .select("*")
-    .eq("guild_id", guildId); 
+    .eq("guild_id", guildId);
   if (error) {
     console.error("[Supabase] Błąd odczytu invite_counts:", error);
     return [];
