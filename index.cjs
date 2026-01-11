@@ -303,7 +303,7 @@ function buildPersistentStateData() {
       leaveRecordsObj[key] = inviterId;
     }
   }
- 
+
   // Convert verificationRoles to plain object
   const verificationRolesObj = {};
   if (typeof verificationRoles !== "undefined" && verificationRoles instanceof Map) {
@@ -1403,6 +1403,9 @@ async function editTicketMessageButtons(channel, messageId, claimerId = null) {
     const msg = await ch.messages.fetch(messageId).catch(() => null);
     if (!msg) return;
 
+    // Check if this is a rewards ticket
+    const isRewardsTicket = ch.parentId && String(ch.parentId) === String(REWARDS_CATEGORY_ID);
+
     const newRows = [];
 
     for (const row of msg.components) {
@@ -1426,7 +1429,7 @@ async function editTicketMessageButtons(channel, messageId, claimerId = null) {
                   `ticket_claim_${cid.split("_").slice(2).join("_")}`,
                 )
                 .setLabel("Przejmij")
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(isRewardsTicket ? ButtonStyle.Secondary : ButtonStyle.Secondary)
                 .setDisabled(true),
             );
           } else {
@@ -1434,7 +1437,7 @@ async function editTicketMessageButtons(channel, messageId, claimerId = null) {
               new ButtonBuilder()
                 .setCustomId(cid)
                 .setLabel("Przejmij")
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(isRewardsTicket ? ButtonStyle.Secondary : ButtonStyle.Secondary)
                 .setDisabled(false),
             );
           }
@@ -1446,7 +1449,7 @@ async function editTicketMessageButtons(channel, messageId, claimerId = null) {
               new ButtonBuilder()
                 .setCustomId(`ticket_unclaim_${channelIdPart}_${claimerId}`)
                 .setLabel("Odprzejmij")
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(isRewardsTicket ? ButtonStyle.Secondary : ButtonStyle.Danger)
                 .setDisabled(false),
             );
           } else {
@@ -1455,7 +1458,7 @@ async function editTicketMessageButtons(channel, messageId, claimerId = null) {
               new ButtonBuilder()
                 .setCustomId(`ticket_unclaim_${channelIdPart}`)
                 .setLabel("Odprzejmij")
-                .setStyle(ButtonStyle.Secondary)
+                .setStyle(isRewardsTicket ? ButtonStyle.Secondary : ButtonStyle.Secondary)
                 .setDisabled(true),
             );
           }
@@ -2656,11 +2659,11 @@ async function handleModalSubmit(interaction) {
     const claimButton = new ButtonBuilder()
       .setCustomId(`ticket_claim_${channel.id}`)
       .setLabel("Przejmij")
-      .setStyle(ButtonStyle.Primary);
+      .setStyle(ticketTypeLabel && ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Primary);
     const unclaimButton = new ButtonBuilder()
       .setCustomId(`ticket_unclaim_${channel.id}`)
       .setLabel("Odprzejmij")
-      .setStyle(ButtonStyle.Danger)
+      .setStyle(ticketTypeLabel && ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Danger)
       .setDisabled(true);
 
     const buttonRow = new ActionRowBuilder().addComponents(
@@ -3307,7 +3310,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
       const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
       // Pobierz nazwę użytkownika zamiast pingować
       const user = client.users.cache.get(userId);
-      const userName = user ? user.username : `Użytkownik${userId}`;
+      const userName = user ? `<@${userId}>` : `<@${userId}>`;
       reportLines.push(`${userName} Do zapłaty ${prowizja}zł`);
       totalSales += data.amount;
     }
@@ -3337,27 +3340,20 @@ async function handleRozliczenieZakonczCommand(interaction) {
     weeklySales.clear();
     console.log("Ręcznie zresetowano rozliczenia po /rozliczeniezakoncz");
     
-    // Resetuj też w Supabase - usuń wszystkie rozliczenia z tego tygodnia
+    // Resetuj też w Supabase - usuń WSZYSTKIE rozliczenia
     try {
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 = niedziela
-      const diff = now.getDate() - dayOfWeek;
-      const weekStart = new Date(now.setDate(diff));
-      weekStart.setHours(0, 0, 0, 0);
-      const weekStartStr = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD
-      
       const { error } = await supabase
         .from("weekly_sales")
         .delete()
-        .eq("week_start", weekStartStr);
+        .neq("user_id", "000000000000000000"); // usuń wszystkie (warunek zawsze prawdziwy)
         
       if (error) {
-        console.error("[Supabase] Błąd resetowania weekly_sales:", error);
+        console.error("[Supabase] Błąd resetowania wszystkich weekly_sales:", error);
       } else {
-        console.log("[Supabase] Zresetowano weekly_sales w bazie danych");
+        console.log("[Supabase] Zresetowano WSZYSTKIE weekly_sales w bazie danych");
       }
     } catch (err) {
-      console.error("Błąd podczas resetowania rozliczeń w Supabase:", err);
+      console.error("Błąd podczas resetowania wszystkich rozliczeń w Supabase:", err);
     }
     
     // UWAGA: NIE resetujemy zaproszeń - są one przechowywane w Supabase osobno!
@@ -3665,7 +3661,7 @@ async function handleSendMessageCommand(interaction) {
     // Build embed with blue color to send as the message (user requested)
     const sendEmbed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setDescription(content || "`(brak treści)`")
+      .setDescription((content || "`(brak treści)`").replace(/<@!?(\d+)>/g, '<@$1>'))
       .setTimestamp();
     
     // Add image to embed if present
@@ -3684,6 +3680,13 @@ async function handleSendMessageCommand(interaction) {
         embeds: [sendEmbed],
         files: files.length ? files : undefined,
       };
+      
+      // Extract pings from content and send as separate message
+      const pings = content.match(/<@!?(\d+)>/g);
+      if (pings && pings.length > 0) {
+        await targetChannel.send({ content: pings.join(' ') });
+      }
+      
       await targetChannel.send(sendOptions);
 
       // If the user also had embeds, append them as a follow-up (optional)
@@ -4062,7 +4065,7 @@ async function handleTicketCommand(interaction) {
         value: "konkurs_odbior",
         description: "Odbiór nagrody za konkurs",
       },
-      { label: "❓ Inne", value: "inne", description: "Inna sprawa" },
+      { label: "❓ INNE", value: "inne", description: "Kliknij, aby zadać inne pytanie!" },
     ]);
 
   const row = new ActionRowBuilder().addComponents(selectMenu);
@@ -4110,7 +4113,7 @@ async function handleTicketPanelCommand(interaction) {
         value: "konkurs_odbior",
         description: "Kliknij, aby odebrać nagrode za konkurs",
       },
-      { label: "❓ Pytanie", value: "inne", description: "Kliknij, aby zadać pytanie!" },
+      { label: "❓ INNE", value: "inne", description: "Kliknij, aby zadać inne pytanie!" },
     ]);
 
   const row = new ActionRowBuilder().addComponents(selectMenu);
@@ -5544,11 +5547,11 @@ async function handleModalSubmit(interaction) {
         const claimButton = new ButtonBuilder()
           .setCustomId(`ticket_claim_${channel.id}`)
           .setLabel("Przejmij")
-          .setStyle(ButtonStyle.Primary);
+          .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Primary);
         const unclaimButton = new ButtonBuilder()
           .setCustomId(`ticket_unclaim_${channel.id}`)
           .setLabel("Odprzejmij")
-          .setStyle(ButtonStyle.Danger)
+          .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Danger)
           .setDisabled(true);
 
         const buttonRow = new ActionRowBuilder().addComponents(
@@ -5784,12 +5787,12 @@ async function handleModalSubmit(interaction) {
     const claimButton = new ButtonBuilder()
       .setCustomId(`ticket_claim_${channel.id}`)
       .setLabel("Przejmij")
-      .setStyle(ButtonStyle.Secondary);
+      .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Secondary);
 
     const unclaimButton = new ButtonBuilder()
       .setCustomId(`ticket_unclaim_${channel.id}`)
       .setLabel("Odprzejmij")
-      .setStyle(ButtonStyle.Secondary)
+      .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Secondary)
       .setDisabled(true);
 
     buttons.push(claimButton, unclaimButton);
@@ -6930,9 +6933,9 @@ client.on(Events.GuildMemberAdd, async (member) => {
       console.error("Błąd podczas wykrywania invite:", e);
     }
 
-    // Simple fake-account detection (~1 month)
+    // Simple fake-account detection (~2 months)
     try {
-      const ACCOUNT_AGE_THRESHOLD_MS = 30 * 24 * 60 * 60 * 1000;
+      const ACCOUNT_AGE_THRESHOLD_MS = 60 * 24 * 60 * 60 * 1000;
       const accountAgeMs =
         Date.now() - (member.user.createdTimestamp || Date.now());
       isFakeAccount = accountAgeMs < ACCOUNT_AGE_THRESHOLD_MS;
@@ -7001,7 +7004,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
       // Liczymy zaproszenia tylko jeśli nie jest właścicielem
       if (inviterId !== ownerId) {
-        // ZAWSZE liczymy zaproszenia z kont < 1 miesiąca
+        // ZAWSZE liczymy zaproszenia z kont < 2 mies.
         if (!isFakeAccount) {
           const prev = gMap.get(inviterId) || 0;
           gMap.set(inviterId, prev + 1);
@@ -7129,7 +7132,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
         } else {
           // Normalne zaproszenie
           message = isFakeAccount 
-            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 1mies)`
+            ? `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}! (konto ma mniej niż 2 mies.)`
             : `> \`✉️\` × <@${inviterId}> zaprosił <@${member.id}> i ma teraz **${currentInvites}** ${inviteWord}!`;
         }
         await zapChannel.send(message);
@@ -7368,7 +7371,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       `> 💸 × **Brakuje ci zaproszeń do nagrody \`${INVITE_REWARD_TEXT}:** ${missingToReward}\n\n` +
       `> 👥 × **Prawdziwe osoby które dołączyły:** ${displayedInvites}\n` +
       `> 🚶 × **Osoby które opuściły serwer:** ${left}\n` +
-      `> ⚠️ × **Niespełniające kryteriów (< konto 1 mies.):** ${fake}\n` +
+      `> ⚠️ × **Niespełniające kryteriów (< konto 2 mies.):** ${fake}\n` +
       `> 🎁 × **Dodatkowe zaproszenia:** ${bonus}`
     );
 
