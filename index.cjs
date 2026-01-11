@@ -55,7 +55,7 @@ function getInviteWord(count) {
   if (count >= 2 && count <= 4) return "zaproszenia";
   return "zaproszeń";
 } 
-
+ 
 // NEW: weryfikacja
 const verificationRoles = new Map(); // guildId -> roleId
 const pendingVerifications = new Map(); // modalId -> { answer, guildId, userId, roleId }
