@@ -19,6 +19,7 @@ const {
   AttachmentBuilder,
   MessageFlags,
 } = require("discord.js");
+const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
 const path = require("path");
 const db = require("./database.js");
@@ -155,7 +156,12 @@ const INVITER_RATE_LIMIT_MAX = 10; // maksymalnie 10 zaproszeń w oknie (zmień 
 const inviteLeaves = new Map(); // guildId -> Map<inviterId, leftCount>
 // -----------------------------------------------------
 
-// Prefer Persistent Disk on Render, fallback to local file
+// Konfiguracja Supabase
+const supabaseUrl = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseKey = process.env.SUPABASE_ANON_KEY || 'your-anon-key';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Prefer Persistent Disk on Render, fallback to local file (tylko jako backup)
 const STORE_FILE = process.env.STORE_FILE
   ? path.resolve(process.env.STORE_FILE)
   : (fs.existsSync("/opt/render/project") ? "/opt/render/project/data/legit_store.json" : path.join(__dirname, "legit_store.json"));
@@ -446,18 +452,74 @@ function buildPersistentStateData() {
   return data;
 }
 
+// Funkcje do obsługi Supabase
+async function saveStateToSupabase(data) {
+  try {
+    const { error } = await supabase
+      .from('bot_state')
+      .upsert({ 
+        id: 1, 
+        data: data,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'id'
+      });
+    
+    if (error) {
+      console.error('[supabase] Błąd zapisu:', error);
+      return false;
+    }
+    
+    console.log('[supabase] Stan zapisany pomyślnie');
+    return true;
+  } catch (error) {
+    console.error('[supabase] Błąd podczas zapisu:', error);
+    return false;
+  }
+}
+
+async function loadStateFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from('bot_state')
+      .select('data')
+      .eq('id', 1)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        console.log('[supabase] Nie znaleziono stanu, tworzę nowy');
+        return null;
+      }
+      console.error('[supabase] Błąd odczytu:', error);
+      return null;
+    }
+    
+    console.log('[supabase] Stan wczytany pomyślnie');
+    return data.data;
+  } catch (error) {
+    console.error('[supabase] Błąd podczas odczytu:', error);
+    return null;
+  }
+}
+
 function flushPersistentStateSync() {
   try {
     const data = buildPersistentStateData();
+    
+    // Zapis do Supabase (asynchroniczny, nie blokuje)
+    saveStateToSupabase(data);
+    
+    // Fallback: zapis do pliku JSON (synchroniczny)
     fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
     try {
       const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-      console.log(`[state] flush ok -> ${STORE_FILE} size=${size}`);
+      console.log(`[state] flush ok -> ${STORE_FILE} size=${size} + supabase`);
     } catch (e) {
       // ignore
     }
-  } catch (err) {
-    console.error("Nie udało się zapisać stanu bota (flush):", err);
+  } catch (e) {
+    console.error("[state] flush failed:", e);
   }
 }
 
@@ -471,10 +533,13 @@ function scheduleSavePersistentState(immediate = false) {
       saveStateTimeout = null;
       try {
         const data = buildPersistentStateData();
+        // Zapis do Supabase (asynchroniczny)
+        saveStateToSupabase(data);
+        // Fallback: zapis do pliku JSON
         fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
         try {
           const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-          console.log(`[state] immediate save ok -> ${STORE_FILE} size=${size}`);
+          console.log(`[state] immediate save ok -> ${STORE_FILE} size=${size} + supabase`);
         } catch (e) {
           // ignore
         }
@@ -488,6 +553,9 @@ function scheduleSavePersistentState(immediate = false) {
       saveStateTimeout = null;
       try {
         const data = buildPersistentStateData();
+        // Zapis do Supabase (asynchroniczny)
+        saveStateToSupabase(data);
+        // Fallback: zapis do pliku JSON
         fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
           if (err) {
             console.error("Nie udało się zapisać stanu bota:", err);
@@ -496,7 +564,7 @@ function scheduleSavePersistentState(immediate = false) {
           }
           try {
             const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-            console.log(`[state] save ok -> ${STORE_FILE} size=${size}`);
+            console.log(`[state] save ok -> ${STORE_FILE} size=${size} + supabase`);
           } catch (e) {
             // ignore
           }
@@ -511,18 +579,29 @@ function scheduleSavePersistentState(immediate = false) {
 async function loadPersistentState() {
   try {
     console.log("[state] Rozpoczynam wczytywanie stanu...");
-    if (!fs.existsSync(STORE_FILE)) {
-      console.log("[state] Plik stanu nie istnieje, tworzę nowy");
-      return;
+    
+    // Najpierw próbujemy wczytać z Supabase
+    const supabaseData = await loadStateFromSupabase();
+    let data = null;
+    
+    if (supabaseData) {
+      console.log("[state] Używam danych z Supabase");
+      data = supabaseData;
+    } else {
+      // Fallback: wczytaj z pliku JSON
+      console.log("[state] Fallback do pliku JSON");
+      if (!fs.existsSync(STORE_FILE)) {
+        console.log("[state] Plik stanu nie istnieje, tworzę nowy");
+        return;
+      }
+      const raw = fs.readFileSync(STORE_FILE, "utf8");
+      if (!raw.trim()) {
+        console.log("[state] Plik stanu jest pusty");
+        return;
+      }
+      data = JSON.parse(raw);
+      console.log("[state] Plik stanu wczytany, rozmiar:", raw.length, "bajtów");
     }
-    const raw = fs.readFileSync(STORE_FILE, "utf8");
-    if (!raw.trim()) {
-      console.log("[state] Plik stanu jest pusty");
-      return;
-    }
-
-    const data = JSON.parse(raw);
-    console.log("[state] Plik stanu wczytany, rozmiar:", raw.length, "bajtów");
 
     if (typeof data.legitRepCount === "number") {
       legitRepCount = data.legitRepCount;
