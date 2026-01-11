@@ -3267,21 +3267,12 @@ async function handleRozliczenieCommand(interaction) {
   const userId = interaction.user.id;
 
   if (!weeklySales.has(userId)) {
-    weeklySales.set(userId, { 
-      amount: 0, 
-      lastUpdate: Date.now(),
-      paid: false, // domyślnie nie zapłacone
-      paidAt: null
-    });
+    weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
   }
 
   const userData = weeklySales.get(userId);
   userData.amount += kwota;
   userData.lastUpdate = Date.now();
-  
-  // Upewnij się że pola paid i paidAt istnieją
-  if (userData.paid === undefined) userData.paid = false;
-  if (userData.paidAt === undefined) userData.paidAt = null;
   
   // Zapisz weekly sales do Supabase
   await db.saveWeeklySale(userId, userData.amount, interaction.guild.id, userData.paid || false, userData.paidAt || null);
@@ -3319,25 +3310,6 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   const targetUser = interaction.options.getUser("uzytkownik");
   const userId = targetUser.id;
 
-  // Sprawdź w pamięci, jeśli nie ma - wczytaj z Supabase
-  if (!weeklySales.has(userId)) {
-    try {
-      const sales = await db.getWeeklySales();
-      const userSale = sales.find(s => s.user_id === userId);
-      if (userSale) {
-        weeklySales.set(userId, {
-          amount: userSale.amount,
-          lastUpdate: Date.now(),
-          paid: userSale.paid || false,
-          paidAt: userSale.paid_at || null
-        });
-        console.log(`[DEBUG] Wczytano rozliczenie z Supabase dla ${userId}: ${userSale.amount} zł (paid: ${userSale.paid})`);
-      }
-    } catch (error) {
-      console.error("[DEBUG] Błąd wczytywania z Supabase:", error);
-    }
-  }
-
   // Sprawdź czy użytkownik ma rozliczenie
   if (!weeklySales.has(userId)) {
     await interaction.reply({
@@ -3350,14 +3322,10 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   const userData = weeklySales.get(userId);
   const prowizja = userData.amount * ROZLICZENIA_PROWIZJA;
 
-  console.log(`[DEBUG] Przed zmianą: userId=${userId}, paid=${userData.paid}, paidAt=${userData.paidAt}`);
-
   // Zaktualizuj status zapłaty
   userData.paid = true;
   userData.paidAt = Date.now();
   weeklySales.set(userId, userData);
-
-  console.log(`[DEBUG] Po zmianie: userId=${userId}, paid=${userData.paid}, paidAt=${userData.paidAt}`);
 
   // Zapisz do Supabase
   await db.saveWeeklySale(userId, userData.amount, interaction.guild.id, true, Date.now());
@@ -3422,8 +3390,6 @@ async function handleRozliczenieZakonczCommand(interaction) {
       const isPaid = data.paid || false;
       const emoji = isPaid ? "✅" : "❌";
       const status = isPaid ? "Zapłacił" : "Do zapłaty";
-      
-      console.log(`[DEBUG] Raport: userId=${userId}, paid=${data.paid}, emoji=${emoji}, status=${status}`);
       
       reportLines.push(`${emoji} ${userName} ${status} ${prowizja}zł`);
       totalSales += data.amount;
