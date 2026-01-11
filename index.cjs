@@ -54,8 +54,8 @@ function getInviteWord(count) {
   if (count === 1) return "zaproszenie";
   if (count >= 2 && count <= 4) return "zaproszenia";
   return "zaproszeń";
-} 
- 
+}
+
 // NEW: weryfikacja
 const verificationRoles = new Map(); // guildId -> roleId
 const pendingVerifications = new Map(); // modalId -> { answer, guildId, userId, roleId }
@@ -119,6 +119,10 @@ const inviteCounts = new Map(); // guildId -> Map<inviterId, count>  (current cy
 const inviterOfMember = new Map(); // `${guildId}:${memberId}` -> inviterId
 const INVITE_REWARD_THRESHOLD = 5;
 const INVITE_REWARD_TEXT = "50k$"; // <-- zmienione z 40k$ na 50k$
+
+// Nowa struktura do śledzenia nagród za konkretne progi
+// guildId -> Map<userId, Set<rewardLevel>> gdzie rewardLevel to "5", "10", "15", etc.
+const inviteRewardLevels = new Map();
 
 // additional maps:
 const inviteRewards = new Map(); // guildId -> Map<inviterId, rewardsGiven>
@@ -404,6 +408,19 @@ function buildPersistentStateData() {
     }
   }
 
+  // Convert inviteRewardLevels to plain object
+  const inviteRewardLevelsObj = {};
+  if (typeof inviteRewardLevels !== "undefined" && inviteRewardLevels instanceof Map) {
+    for (const [guildId, userMap] of inviteRewardLevels.entries()) {
+      inviteRewardLevelsObj[guildId] = {};
+      if (userMap && typeof userMap.forEach === "function") {
+        userMap.forEach((levelSet, userId) => {
+          inviteRewardLevelsObj[guildId][userId] = Array.from(levelSet || []);
+        });
+      }
+    }
+  }
+
   // Convert opinieChannels to plain object
   const opinieChannelsObj = {};
   if (typeof opinieChannels !== "undefined" && opinieChannels instanceof Map) {
@@ -420,6 +437,7 @@ function buildPersistentStateData() {
     inviteRewards: mapOfMapsToPlainObject(inviteRewards),
     inviteLeaves: mapOfMapsToPlainObject(inviteLeaves),
     inviteRewardsGiven: mapOfMapsToPlainObject(inviteRewardsGiven),
+    inviteRewardLevels: inviteRewardLevelsObj,
     inviteTotalJoined: mapOfMapsToPlainObject(inviteTotalJoined),
     inviteFakeAccounts: mapOfMapsToPlainObject(inviteFakeAccounts),
     inviteBonusInvites: mapOfMapsToPlainObject(inviteBonusInvites),
@@ -507,17 +525,10 @@ function flushPersistentStateSync() {
   try {
     const data = buildPersistentStateData();
     
-    // Zapis do Supabase (asynchroniczny, nie blokuje)
+    // Tylko zapis do Supabase
     saveStateToSupabase(data);
     
-    // Fallback: zapis do pliku JSON (synchroniczny)
-    fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
-    try {
-      const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-      console.log(`[state] flush ok -> ${STORE_FILE} size=${size} + supabase`);
-    } catch (e) {
-      // ignore
-    }
+    console.log(`[state] flush ok -> supabase only`);
   } catch (e) {
     console.error("[state] flush failed:", e);
   }
@@ -533,16 +544,9 @@ function scheduleSavePersistentState(immediate = false) {
       saveStateTimeout = null;
       try {
         const data = buildPersistentStateData();
-        // Zapis do Supabase (asynchroniczny)
+        // Tylko zapis do Supabase
         saveStateToSupabase(data);
-        // Fallback: zapis do pliku JSON
-        fs.writeFileSync(STORE_FILE, JSON.stringify(data, null, 2));
-        try {
-          const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-          console.log(`[state] immediate save ok -> ${STORE_FILE} size=${size} + supabase`);
-        } catch (e) {
-          // ignore
-        }
+        console.log(`[state] immediate save ok -> supabase only`);
       } catch (err) {
         console.error("Nie udało się zapisać stanu bota (immediate):", err);
       }
@@ -553,22 +557,9 @@ function scheduleSavePersistentState(immediate = false) {
       saveStateTimeout = null;
       try {
         const data = buildPersistentStateData();
-        // Zapis do Supabase (asynchroniczny)
+        // Tylko zapis do Supabase
         saveStateToSupabase(data);
-        // Fallback: zapis do pliku JSON
-        fs.writeFile(STORE_FILE, JSON.stringify(data, null, 2), (err) => {
-          if (err) {
-            console.error("Nie udało się zapisać stanu bota:", err);
-            console.error(`[state] save failed -> ${STORE_FILE}`);
-            return;
-          }
-          try {
-            const size = fs.existsSync(STORE_FILE) ? fs.statSync(STORE_FILE).size : 0;
-            console.log(`[state] save ok -> ${STORE_FILE} size=${size} + supabase`);
-          } catch (e) {
-            // ignore
-          }
-        });
+        console.log(`[state] save ok -> supabase only`);
       } catch (err) {
         console.error("Błąd serializacji stanu bota:", err);
       }
@@ -580,32 +571,16 @@ async function loadPersistentState() {
   try {
     console.log("[state] Rozpoczynam wczytywanie stanu...");
     
-    // Najpierw próbujemy wczytać z Supabase
+    // Tylko wczytywanie z Supabase
     const supabaseData = await loadStateFromSupabase();
-    let data = null;
     
     if (supabaseData) {
       console.log("[state] Używam danych z Supabase");
-      data = supabaseData;
-    } else {
-      // Fallback: wczytaj z pliku JSON
-      console.log("[state] Fallback do pliku JSON");
-      if (!fs.existsSync(STORE_FILE)) {
-        console.log("[state] Plik stanu nie istnieje, tworzę nowy");
-        return;
-      }
-      const raw = fs.readFileSync(STORE_FILE, "utf8");
-      if (!raw.trim()) {
-        console.log("[state] Plik stanu jest pusty");
-        return;
-      }
-      data = JSON.parse(raw);
-      console.log("[state] Plik stanu wczytany, rozmiar:", raw.length, "bajtów");
-    }
+      const data = supabaseData;
 
-    if (typeof data.legitRepCount === "number") {
-      legitRepCount = data.legitRepCount;
-    }
+      if (typeof data.legitRepCount === "number") {
+        legitRepCount = data.legitRepCount;
+      }
 
     if (data.ticketCounter && typeof data.ticketCounter === "object") {
       for (const [guildId, value] of Object.entries(data.ticketCounter)) {
@@ -662,6 +637,20 @@ async function loadPersistentState() {
         inviteRewardsGiven.set(guildId, inner);
         console.log(`[state] Wczytano inviteRewardsGiven dla guild ${guildId}: ${inner.size} wpisów`);
       });
+    }
+
+    if (data.inviteRewardLevels) {
+      // Load inviteRewardLevels
+      for (const [guildId, userObj] of Object.entries(data.inviteRewardLevels)) {
+        const userMap = new Map();
+        for (const [userId, levelsArray] of Object.entries(userObj)) {
+          if (Array.isArray(levelsArray)) {
+            userMap.set(userId, new Set(levelsArray));
+          }
+        }
+        inviteRewardLevels.set(guildId, userMap);
+      }
+      console.log("[state] Wczytano inviteRewardLevels");
     }
 
     if (
@@ -906,15 +895,18 @@ async function loadPersistentState() {
         if (inner && typeof inner.size === "number") fakeEntries += inner.size;
       }
       console.log(
-        `[state] load ok <- ${STORE_FILE} inviteFakeAccounts guilds=${fakeGuilds} entries=${fakeEntries}`,
+        `[state] load ok <- supabase inviteFakeAccounts guilds=${fakeGuilds} entries=${fakeEntries}`,
       );
     } catch (e) {
       // ignore
     }
-    console.log("Załadowano zapisany stan bota z pliku.");
+    console.log("Załadowano zapisany stan bota z Supabase.");
     console.log("[state] Zakończono wczytywanie stanu");
+    } else {
+      console.log("[state] Nie znaleziono danych w Supabase, zaczynam z pustym stanem");
+    }
   } catch (err) {
-    console.error("Nie udało się odczytać stanu bota z pliku:", err);
+    console.error("Nie udało się odczytać stanu bota z Supabase:", err);
   }
 }
 
@@ -7221,19 +7213,20 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
+  // Defer na początku, aby uniknąć błędów
+  await interaction.deferReply({ ephemeral: false }).catch(() => null);
+
   if (!interaction.guild) {
-    await interaction.reply({
+    await interaction.editReply({
       content: "❌ Tylko na serwerze.",
-      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
   const SPRAWDZ_ZAPROSZENIA_CHANNEL_ID = "1449159417445482566";
   if (interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
-    await interaction.reply({
+    await interaction.editReply({
       content: `❌ Użyj tej komendy na kanale <#${SPRAWDZ_ZAPROSZENIA_CHANNEL_ID}>.`,
-      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
@@ -7243,16 +7236,12 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   const lastTs = sprawdzZaproszeniaCooldowns.get(interaction.user.id) || 0;
   if (nowTs - lastTs < 30_000) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
-    await interaction.reply({
+    await interaction.editReply({
       content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
-      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
   sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
-
-  // Defer to avoid timeout and allow multiple replies
-  await interaction.deferReply({ ephemeral: false }).catch(() => null);
 
   // ===== SPRAWDZ-ZAPROSZENIA – PEŁNY SCRIPT =====
 
@@ -7478,24 +7467,34 @@ async function handleZaprosieniaStatsCommand(interaction) {
 
   // BEFORE saving: jeśli edytujemy "prawdziwe", sprawdź czy osiągnięto próg i przyznaj nagrody
   if (category === "prawdziwe") {
-    // Sprawdź ile pełnych progów (5) jest w newVal
-    const rewardsToGive = Math.floor(newVal / INVITE_REWARD_THRESHOLD);
-
-    // Sprawdź ile już przyznaliśmy
-    const rewardsGivenMap = inviteRewardsGiven.get(guildId) || new Map();
-    const alreadyGiven = rewardsGivenMap.get(user.id) || 0;
-
-    // Ile nowych nagród do przyznania
-    const newRewards = Math.max(0, rewardsToGive - alreadyGiven);
-
-    if (newRewards > 0) {
-      // Przyznajemy nowe nagrody
+    // Inicjalizacja mapy reward levels dla tego guilda
+    if (!inviteRewardLevels.has(guildId)) {
+      inviteRewardLevels.set(guildId, new Map());
+    }
+    const rewardLevelsMap = inviteRewardLevels.get(guildId);
+    
+    // Inicjalizacja setu dla tego użytkownika
+    if (!rewardLevelsMap.has(user.id)) {
+      rewardLevelsMap.set(user.id, new Set());
+    }
+    const userRewardLevels = rewardLevelsMap.get(user.id);
+    
+    // Sprawdź jakie progi zostały osiągnięte (5, 10, 15, 20...)
+    const achievedLevels = [];
+    for (let level = 5; level <= newVal; level += 5) {
+      if (newVal >= level && !userRewardLevels.has(level.toString())) {
+        achievedLevels.push(level);
+      }
+    }
+    
+    // Przyznaj nagrody za nowe progi
+    if (achievedLevels.length > 0) {
       const rMap = inviteRewards.get(guildId) || new Map();
       inviteRewards.set(guildId, rMap);
 
       const generatedCodes = [];
 
-      for (let i = 0; i < newRewards; i++) {
+      for (const level of achievedLevels) {
         const rewardCode = generateCode();
         const CODE_EXPIRES_MS = 24 * 60 * 60 * 1000;
         const expiresAt = Date.now() + CODE_EXPIRES_MS;
@@ -7510,10 +7509,15 @@ async function handleZaprosieniaStatsCommand(interaction) {
         });
 
         generatedCodes.push(rewardCode);
+        // Oznacz ten próg jako odebrany
+        userRewardLevels.add(level.toString());
+        console.log(`[rewards] Użytkownik ${user.id} otrzymał nagrodę za próg ${level} zaproszeń`);
       }
 
-      // Zaktualizuj liczbę przyznanych nagród
-      rewardsGivenMap.set(user.id, alreadyGiven + newRewards);
+      // Zaktualizuj liczbę przyznanych nagród (stary system dla kompatybilności)
+      const rewardsGivenMap = inviteRewardsGiven.get(guildId) || new Map();
+      const alreadyGiven = rewardsGivenMap.get(user.id) || 0;
+      rewardsGivenMap.set(user.id, alreadyGiven + achievedLevels.length);
       inviteRewardsGiven.set(guildId, rewardsGivenMap);
 
       // Przygotuj kanał zaproszeń
