@@ -715,6 +715,26 @@ async function loadPersistentState() {
     }
 
     // Load active codes
+    try {
+      const codes = await db.getActiveCodes();
+      codes.forEach(({ code, ...codeData }) => {
+        // Konwertuj nazwy pól na format używany w bocie
+        const botCodeData = {
+          oderId: codeData.user_id,
+          discount: codeData.discount,
+          expiresAt: new Date(codeData.expires_at).getTime(),
+          used: codeData.used,
+          reward: codeData.reward,
+          rewardAmount: codeData.reward_amount,
+          rewardText: codeData.reward_text,
+          type: codeData.type
+        };
+        activeCodes.set(code, botCodeData);
+      });
+      console.log(`[Supabase] Wczytano activeCodes: ${codes.length} kodów`);
+    } catch (error) {
+      console.error("[Supabase] Błąd wczytywania activeCodes:", error);
+    }
     if (data.activeCodes && typeof data.activeCodes === "object") {
       for (const [code, codeData] of Object.entries(data.activeCodes)) {
         if (codeData && typeof codeData === "object") {
@@ -2240,6 +2260,10 @@ async function handleModalSubmit(interaction) {
 
     codeData.used = true;
     activeCodes.set(enteredCode, codeData);
+    
+    // Aktualizuj w Supabase
+    await db.updateActiveCode(enteredCode, { used: true });
+    
     scheduleSavePersistentState();
 
     const redeemEmbed = new EmbedBuilder()
@@ -3741,6 +3765,15 @@ async function handleDropCommand(interaction) {
       created: Date.now(),
       type: "discount",
     });
+    
+    // Zapisz do Supabase
+    await db.saveActiveCode(code, {
+      oderId: user.id,
+      discount: result.discount,
+      expiresAt: expiryTime,
+      created: Date.now(),
+      type: "discount"
+    });
 
     scheduleSavePersistentState();
 
@@ -5017,6 +5050,10 @@ async function handleModalSubmit(interaction) {
 
     codeData.used = true;
     activeCodes.set(enteredCode, codeData);
+    
+    // Aktualizuj w Supabase
+    await db.updateActiveCode(enteredCode, { used: true });
+    
     scheduleSavePersistentState();
 
     const redeemEmbed = new EmbedBuilder()
@@ -7506,6 +7543,16 @@ async function handleZaprosieniaStatsCommand(interaction) {
           used: false,
           reward: INVITE_REWARD_TEXT,
           type: "invite_reward",
+        });
+
+        // Zapisz do Supabase
+        await db.saveActiveCode(rewardCode, {
+          oderId: user.id,
+          discount: 0,
+          expiresAt,
+          used: false,
+          reward: INVITE_REWARD_TEXT,
+          type: "invite_reward"
         });
 
         generatedCodes.push(rewardCode);
