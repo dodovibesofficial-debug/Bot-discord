@@ -2254,6 +2254,7 @@ async function handleModalSubmit(interaction) {
 
     if (Date.now() > codeData.expiresAt) {
       activeCodes.delete(enteredCode);
+      await db.deleteActiveCode(enteredCode);
       scheduleSavePersistentState();
       await interaction.reply({
         content: "❌ **Kod wygasł!**",
@@ -2263,7 +2264,8 @@ async function handleModalSubmit(interaction) {
     }
 
     codeData.used = true;
-    activeCodes.set(enteredCode, codeData);
+    activeCodes.delete(enteredCode);
+    await db.deleteActiveCode(enteredCode);
     
     // Aktualizuj w Supabase
     await db.updateActiveCode(enteredCode, { used: true });
@@ -2520,7 +2522,8 @@ async function handleModalSubmit(interaction) {
 
       // Mark code as used
       codeData.used = true;
-      activeCodes.set(enteredCode, codeData);
+      activeCodes.delete(enteredCode);
+      await db.deleteActiveCode(enteredCode);
       scheduleSavePersistentState();
 
       categoryId = REWARDS_CATEGORY_ID;
@@ -3812,6 +3815,7 @@ async function handleDropCommand(interaction) {
 
     setTimeout(() => {
       activeCodes.delete(code);
+      db.deleteActiveCode(code);
       scheduleSavePersistentState();
     }, 86400000);
 
@@ -5073,6 +5077,7 @@ async function handleModalSubmit(interaction) {
 
     if (Date.now() > codeData.expiresAt) {
       activeCodes.delete(enteredCode);
+      await db.deleteActiveCode(enteredCode);
       scheduleSavePersistentState();
       await interaction.reply({
         content: "❌ **Kod wygasł!**",
@@ -5082,7 +5087,8 @@ async function handleModalSubmit(interaction) {
     }
 
     codeData.used = true;
-    activeCodes.set(enteredCode, codeData);
+    activeCodes.delete(enteredCode);
+    await db.deleteActiveCode(enteredCode);
     
     // Aktualizuj w Supabase
     await db.updateActiveCode(enteredCode, { used: true });
@@ -5458,7 +5464,8 @@ async function handleModalSubmit(interaction) {
 
       // Oznacz kod jako użyty
       codeData.used = true;
-      activeCodes.set(enteredCode, codeData);
+      activeCodes.delete(enteredCode);
+      await db.deleteActiveCode(enteredCode);
       scheduleSavePersistentState();
 
       // Stwórz ticket typu ODBIÓR NAGRODY
