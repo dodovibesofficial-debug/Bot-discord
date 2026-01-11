@@ -818,8 +818,8 @@ async function loadPersistentState() {
 
     // Load pendingVerifications
     if (data.pendingVerifications && typeof data.pendingVerifications === "object") {
-      for (const [modalId, data] of Object.entries(data.pendingVerifications)) {
-        pendingVerifications.set(modalId, data);
+      for (const [modalId, verificationData] of Object.entries(data.pendingVerifications)) {
+        pendingVerifications.set(modalId, verificationData);
       }
     }
 
@@ -3242,7 +3242,7 @@ async function handleRozliczenieCommand(interaction) {
   userData.lastUpdate = Date.now();
   
   // Zapisz weekly sales do Supabase
-  await db.saveWeeklySale(userId, userData.amount);
+  await db.saveWeeklySale(userId, userData.amount, interaction.guild.id);
   console.log(`[rozliczenie] Użytkownik ${userId} dodał rozliczenie: ${kwota} zł, suma tygodniowa: ${userData.amount} zł`);
 
   const embed = new EmbedBuilder()
@@ -3424,6 +3424,9 @@ async function handleRozliczenieUstawCommand(interaction) {
   }
 
   userData.lastUpdate = Date.now();
+  
+  // Zapisz do Supabase
+  await db.saveWeeklySale(userId, userData.amount, interaction.guild.id);
   
   // Zapisz stan po zmianie rozliczenia
   scheduleSavePersistentState();
