@@ -736,6 +736,17 @@ async function loadPersistentState() {
       console.error("[Supabase] Błąd wczytywania activeCodes:", error);
     }
 
+    // Load ticket owners from Supabase
+    try {
+      const ticketOwnersData = await db.getTicketOwners();
+      for (const [channelId, ticketData] of Object.entries(ticketOwnersData)) {
+        ticketOwners.set(channelId, ticketData);
+      }
+      console.log(`[Supabase] Wczytano ticketOwners: ${Object.keys(ticketOwnersData).length} wpisów`);
+    } catch (error) {
+      console.error("[Supabase] Błąd wczytywania ticketOwners:", error);
+    }
+
     // Load invite total joined
     if (data.inviteTotalJoined) {
       const loaded = nestedObjectToMapOfMaps(data.inviteTotalJoined);
@@ -888,8 +899,8 @@ async function loadPersistentState() {
 
     // Load pendingTicketClose
     if (data.pendingTicketClose && typeof data.pendingTicketClose === "object") {
-      for (const [channelId, data] of Object.entries(data.pendingTicketClose)) {
-        pendingTicketClose.set(channelId, data);
+      for (const [channelId, ticketData] of Object.entries(data.pendingTicketClose)) {
+        pendingTicketClose.set(channelId, ticketData);
       }
     }
 
@@ -3319,9 +3330,35 @@ async function handleRozliczenieZakonczCommand(interaction) {
     const totalSalesValue = totalSales;
     const totalProwizjaValue = totalProwizja;
 
-    // Resetuj dane po wysłaniu raportu
+    // Resetuj dane po wysłaniu raportu - TYLKO rozliczenia, NIE zaproszenia!
     weeklySales.clear();
     console.log("Ręcznie zresetowano rozliczenia po /rozliczeniezakoncz");
+    
+    // Resetuj też w Supabase - usuń wszystkie rozliczenia z tego tygodnia
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 = niedziela
+      const diff = now.getDate() - dayOfWeek;
+      const weekStart = new Date(now.setDate(diff));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekStartStr = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      const { error } = await supabase
+        .from("weekly_sales")
+        .delete()
+        .eq("week_start", weekStartStr);
+        
+      if (error) {
+        console.error("[Supabase] Błąd resetowania weekly_sales:", error);
+      } else {
+        console.log("[Supabase] Zresetowano weekly_sales w bazie danych");
+      }
+    } catch (err) {
+      console.error("Błąd podczas resetowania rozliczeń w Supabase:", err);
+    }
+    
+    // UWAGA: NIE resetujemy zaproszeń - są one przechowywane w Supabase osobno!
+    console.log("🔒 ZAPROSZENIA ZACHOWANE - nie resetowane!");
 
     const embed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
