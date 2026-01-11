@@ -303,7 +303,7 @@ function buildPersistentStateData() {
       leaveRecordsObj[key] = inviterId;
     }
   }
-
+ 
   // Convert verificationRoles to plain object
   const verificationRolesObj = {};
   if (typeof verificationRoles !== "undefined" && verificationRoles instanceof Map) {
