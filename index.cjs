@@ -3322,10 +3322,14 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   const userData = weeklySales.get(userId);
   const prowizja = userData.amount * ROZLICZENIA_PROWIZJA;
 
+  console.log(`[DEBUG] Przed zmianą: userId=${userId}, paid=${userData.paid}, paidAt=${userData.paidAt}`);
+
   // Zaktualizuj status zapłaty
   userData.paid = true;
   userData.paidAt = Date.now();
   weeklySales.set(userId, userData);
+
+  console.log(`[DEBUG] Po zmianie: userId=${userId}, paid=${userData.paid}, paidAt=${userData.paidAt}`);
 
   // Zapisz do Supabase
   await db.saveWeeklySale(userId, userData.amount, interaction.guild.id, true, Date.now());
@@ -3390,6 +3394,8 @@ async function handleRozliczenieZakonczCommand(interaction) {
       const isPaid = data.paid || false;
       const emoji = isPaid ? "✅" : "❌";
       const status = isPaid ? "Zapłacił" : "Do zapłaty";
+      
+      console.log(`[DEBUG] Raport: userId=${userId}, paid=${data.paid}, emoji=${emoji}, status=${status}`);
       
       reportLines.push(`${emoji} ${userName} ${status} ${prowizja}zł`);
       totalSales += data.amount;
