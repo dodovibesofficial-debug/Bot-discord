@@ -20,8 +20,7 @@ async function saveWeeklySale(userId, amount, guildId = "default") {
       user_id: userId, 
       guild_id: guildId,
       amount, 
-      week_start: weekStart.toISOString().split('T')[0], // YYYY-MM-DD
-      updated_at: new Date().toISOString() 
+      week_start: weekStart.toISOString().split('T')[0] // YYYY-MM-DD
     });
   if (error) console.error("[Supabase] Błąd zapisu weekly_sales:", error);
   else console.log(`[Supabase] Zapisano weekly_sales: ${userId} -> ${amount}`);
