@@ -3386,12 +3386,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
       const user = client.users.cache.get(userId);
       const userName = user ? `<@${userId}>` : `<@${userId}>`;
       
-      // Sprawdź status zapłaty
-      const isPaid = data.paid || false;
-      const emoji = isPaid ? "✅" : "❌";
-      const status = isPaid ? "Zapłacił" : "Do zapłaty";
-      
-      reportLines.push(`${emoji} ${userName} ${status} ${prowizja}zł`);
+      reportLines.push(`${userName} Do zapłaty ${prowizja}zł`);
       totalSales += data.amount;
     }
 
