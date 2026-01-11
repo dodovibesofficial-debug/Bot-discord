@@ -64,7 +64,7 @@ async function getInviteCounts(guildId) {
   const { data, error } = await supabase
     .from("invite_counts")
     .select("*")
-    .eq("guild_id", guildId);
+    .eq("guild_id", guildId); 
   if (error) {
     console.error("[Supabase] Błąd odczytu invite_counts:", error);
     return [];
