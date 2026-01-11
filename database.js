@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 // Weekly sales functions
-async function saveWeeklySale(userId, amount, guildId = "default") {
+async function saveWeeklySale(userId, amount, guildId = "default", paid = false, paidAt = null) {
   // Pobierz początek tygodnia (niedziela)
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = niedziela
@@ -20,10 +20,12 @@ async function saveWeeklySale(userId, amount, guildId = "default") {
       user_id: userId, 
       guild_id: guildId,
       amount, 
+      paid,
+      paid_at: paidAt,
       week_start: weekStart.toISOString().split('T')[0] // YYYY-MM-DD
     });
   if (error) console.error("[Supabase] Błąd zapisu weekly_sales:", error);
-  else console.log(`[Supabase] Zapisano weekly_sales: ${userId} -> ${amount}`);
+  else console.log(`[Supabase] Zapisano weekly_sales: ${userId} -> ${amount} (paid: ${paid})`);
 }
 
 async function getWeeklySales(guildId = null) {
