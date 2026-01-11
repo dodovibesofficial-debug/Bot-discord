@@ -7553,19 +7553,8 @@ async function handleZaprosieniaStatsCommand(interaction) {
           .setTimestamp();
 
         await u.send({ embeds: [dmEmbed] }).catch(async () => {
-          // fallback: opublikuj kody w zaproszenia channel jako spoilery
-          if (zapCh) {
-            try {
-              const spoilers = generatedCodes
-                .map((c) => `||\`${c}\`||`)
-                .join(" ");
-              await zapCh
-                .send({
-                  content: `🎉 <@${user.id}> otrzymał nagrodę ${INVITE_REWARD_TEXT}! Kody: ${spoilers} (jeśli nie otrzymałeś DM, sprawdź tutaj).`,
-                })
-                .catch(() => null);
-            } catch (e) { }
-          }
+          // Jeśli DM się nie udało, nie wysyłamy kodów na kanał
+          console.error("Nie udało się wysłać DM z nagrodą do użytkownika", user.id);
         });
 
         // Powiadomienie publiczne
