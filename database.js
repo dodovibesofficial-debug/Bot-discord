@@ -16,7 +16,7 @@ const {
   PermissionsBitField,
   ButtonBuilder,
   ButtonStyle,
-  AttachmentBuilder,
+  AttachmentBuilder, 
   MessageFlags,
 } = require("discord.js");
 const { createClient } = require("@supabase/supabase-js");
