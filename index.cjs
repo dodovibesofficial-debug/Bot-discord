@@ -3267,12 +3267,21 @@ async function handleRozliczenieCommand(interaction) {
   const userId = interaction.user.id;
 
   if (!weeklySales.has(userId)) {
-    weeklySales.set(userId, { amount: 0, lastUpdate: Date.now() });
+    weeklySales.set(userId, { 
+      amount: 0, 
+      lastUpdate: Date.now(),
+      paid: false, // domyślnie nie zapłacone
+      paidAt: null
+    });
   }
 
   const userData = weeklySales.get(userId);
   userData.amount += kwota;
   userData.lastUpdate = Date.now();
+  
+  // Upewnij się że pola paid i paidAt istnieją
+  if (userData.paid === undefined) userData.paid = false;
+  if (userData.paidAt === undefined) userData.paidAt = null;
   
   // Zapisz weekly sales do Supabase
   await db.saveWeeklySale(userId, userData.amount, interaction.guild.id, userData.paid || false, userData.paidAt || null);
