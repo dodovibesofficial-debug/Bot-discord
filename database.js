@@ -207,6 +207,15 @@ async function updateActiveCode(code, updates) {
   else console.log(`[Supabase] Zaktualizowano active_code: ${code}`);
 }
 
+async function deleteActiveCode(code) {
+  const { error } = await supabase
+    .from("active_codes")
+    .delete()
+    .eq("code", code);
+  if (error) console.error("[Supabase] Błąd usuwania active_codes:", error);
+  else console.log(`[Supabase] Usunięto active_code: ${code}`);
+}
+
 // Ticket owners functions
 async function saveTicketOwner(channelId, ticketData) {
   const { error } = await supabase
@@ -493,6 +502,7 @@ module.exports = {
   saveActiveCode,
   getActiveCodes,
   updateActiveCode,
+  deleteActiveCode,
   saveContest,
   getContests,
   saveContestParticipant,
