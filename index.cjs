@@ -1537,21 +1537,7 @@ client.once(Events.ClientReady, async (c) => {
   console.log(`Bot zalogowany jako ${c.user.tag}`);
   console.log(`Bot jest na ${c.guilds.cache.size} serwerach`);
   
-  // DODAJ TĘ LINIJKĘ:
-  console.log("[Supabase] Próba połączenia z Supabase...");
-  
-  try {
-    const sales = await db.getWeeklySales();
-    sales.forEach(({ user_id, amount }) => {
-      weeklySales.set(user_id, { amount, lastUpdate: Date.now() });
-    });
-    console.log(`[Supabase] Wczytano weeklySales: ${sales.length} użytkowników`);
-  } catch (error) {
-    console.error("[Supabase] Błąd wczytywania weeklySales:", error);
-  }
-  
-  // reszta kodu...
-});
+  // loadPersistentState() już wywołane na początku pliku
 
   // --- Webhook startowy do Discorda ---
   try {
