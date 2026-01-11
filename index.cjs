@@ -1,6 +1,3 @@
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL ? "OK" : "BRAK");
-console.log("SUPABASE_KEY:", process.env.SUPABASE_ANON_KEY ? "OK" : "BRAK");
-
 const {
   Client,
   GatewayIntentBits,
