@@ -3319,6 +3319,25 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   const targetUser = interaction.options.getUser("uzytkownik");
   const userId = targetUser.id;
 
+  // Sprawdź w pamięci, jeśli nie ma - wczytaj z Supabase
+  if (!weeklySales.has(userId)) {
+    try {
+      const sales = await db.getWeeklySales();
+      const userSale = sales.find(s => s.user_id === userId);
+      if (userSale) {
+        weeklySales.set(userId, {
+          amount: userSale.amount,
+          lastUpdate: Date.now(),
+          paid: userSale.paid || false,
+          paidAt: userSale.paid_at || null
+        });
+        console.log(`[DEBUG] Wczytano rozliczenie z Supabase dla ${userId}: ${userSale.amount} zł (paid: ${userSale.paid})`);
+      }
+    } catch (error) {
+      console.error("[DEBUG] Błąd wczytywania z Supabase:", error);
+    }
+  }
+
   // Sprawdź czy użytkownik ma rozliczenie
   if (!weeklySales.has(userId)) {
     await interaction.reply({
