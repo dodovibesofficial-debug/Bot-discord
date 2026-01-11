@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 // Weekly sales functions
-async function saveWeeklySale(userId, amount, guildId = "default", paid = false, paidAt = null) {
+async function saveWeeklySale(userId, amount, guildId = "default") {
   // Pobierz początek tygodnia (niedziela)
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = niedziela
@@ -20,18 +20,25 @@ async function saveWeeklySale(userId, amount, guildId = "default", paid = false,
       user_id: userId, 
       guild_id: guildId,
       amount, 
-      paid,
-      paid_at: paidAt,
       week_start: weekStart.toISOString().split('T')[0] // YYYY-MM-DD
     });
   if (error) console.error("[Supabase] Błąd zapisu weekly_sales:", error);
-  else console.log(`[Supabase] Zapisano weekly_sales: ${userId} -> ${amount} (paid: ${paid})`);
+  else console.log(`[Supabase] Zapisano weekly_sales: ${userId} -> ${amount}`);
 }
 
 async function getWeeklySales(guildId = null) {
+  // Pobierz początek aktualnego tygodnia (niedziela)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = niedziela
+  const diff = now.getDate() - dayOfWeek;
+  const weekStart = new Date(now.setDate(diff));
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD
+  
   let query = supabase
     .from("weekly_sales")
-    .select("*");
+    .select("*")
+    .eq("week_start", weekStartStr); // Tylko aktualny tydzień
     
   if (guildId) {
     query = query.eq("guild_id", guildId); // Konkretny guild
