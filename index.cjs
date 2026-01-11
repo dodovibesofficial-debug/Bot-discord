@@ -3741,7 +3741,7 @@ async function handleSendMessageCommand(interaction) {
     // Build embed with blue color to send as the message (user requested)
     const sendEmbed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setDescription((content || "`(brak treści)`").replace(/<@!?(\d+)>/g, ''))
+      .setDescription((content || "`(brak treści)`").replace(/<@!?\d+>|@everyone|@here/g, ''))
       .setTimestamp();
     
     // Add image to embed if present
@@ -3762,7 +3762,7 @@ async function handleSendMessageCommand(interaction) {
       };
       
       // Extract pings from content and send as separate message
-      const pings = content.match(/<@!?(\d+)>/g);
+      const pings = content.match(/<@!?\d+>|@everyone|@here/g);
       if (pings && pings.length > 0) {
         await targetChannel.send({ content: pings.join(' ') });
       }
