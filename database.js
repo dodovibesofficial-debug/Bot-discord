@@ -7,11 +7,19 @@ const supabase = createClient(
 
 // Weekly sales functions
 async function saveWeeklySale(userId, amount) {
+  // Pobierz początek tygodnia (niedziela)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = niedziela
+  const diff = now.getDate() - dayOfWeek;
+  const weekStart = new Date(now.setDate(diff));
+  weekStart.setHours(0, 0, 0, 0);
+  
   const { error } = await supabase
     .from("weekly_sales")
     .upsert({ 
       user_id: userId, 
       amount, 
+      week_start: weekStart.toISOString().split('T')[0], // YYYY-MM-DD
       updated_at: new Date().toISOString() 
     });
   if (error) console.error("[Supabase] Błąd zapisu weekly_sales:", error);
@@ -19,7 +27,18 @@ async function saveWeeklySale(userId, amount) {
 }
 
 async function getWeeklySales() {
-  const { data, error } = await supabase.from("weekly_sales").select("*");
+  // Pobierz początek aktualnego tygodnia (niedziela)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = niedziela
+  const diff = now.getDate() - dayOfWeek;
+  const weekStart = new Date(now.setDate(diff));
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD
+  
+  const { data, error } = await supabase
+    .from("weekly_sales")
+    .select("*")
+    .eq("week_start", weekStartStr); // Tylko aktualny tydzień
   if (error) {
     console.error("[Supabase] Błąd odczytu weekly_sales:", error);
     return [];
@@ -144,6 +163,44 @@ async function getContestParticipants(messageId) {
   return data;
 }
 
+// Active codes functions
+async function saveActiveCode(code, codeData) {
+  const { error } = await supabase
+    .from("active_codes")
+    .upsert({ 
+      code,
+      user_id: codeData.oderId || codeData.user_id,
+      discount: codeData.discount || 0,
+      expires_at: new Date(codeData.expiresAt).toISOString(),
+      used: codeData.used || false,
+      reward: codeData.reward,
+      reward_amount: codeData.rewardAmount,
+      reward_text: codeData.rewardText,
+      type: codeData.type,
+      updated_at: new Date().toISOString()
+    });
+  if (error) console.error("[Supabase] Błąd zapisu active_codes:", error);
+  else console.log(`[Supabase] Zapisano active_code: ${code}`);
+}
+
+async function getActiveCodes() {
+  const { data, error } = await supabase.from("active_codes").select("*");
+  if (error) {
+    console.error("[Supabase] Błąd odczytu active_codes:", error);
+    return [];
+  }
+  return data;
+}
+
+async function updateActiveCode(code, updates) {
+  const { error } = await supabase
+    .from("active_codes")
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq("code", code);
+  if (error) console.error("[Supabase] Błąd aktualizacji active_codes:", error);
+  else console.log(`[Supabase] Zaktualizowano active_code: ${code}`);
+}
+
 module.exports = {
   saveWeeklySale,
   getWeeklySales,
@@ -153,6 +210,7 @@ module.exports = {
   getTicketOwners,
   saveActiveCode,
   getActiveCodes,
+  updateActiveCode,
   saveContest,
   getContests,
   saveContestParticipant,
