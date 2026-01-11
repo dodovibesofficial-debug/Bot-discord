@@ -735,13 +735,6 @@ async function loadPersistentState() {
     } catch (error) {
       console.error("[Supabase] Błąd wczytywania activeCodes:", error);
     }
-    if (data.activeCodes && typeof data.activeCodes === "object") {
-      for (const [code, codeData] of Object.entries(data.activeCodes)) {
-        if (codeData && typeof codeData === "object") {
-          activeCodes.set(code, codeData);
-        }
-      }
-    }
 
     // Load invite total joined
     if (data.inviteTotalJoined) {
