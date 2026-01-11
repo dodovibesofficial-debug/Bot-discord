@@ -29,18 +29,9 @@ async function saveWeeklySale(userId, amount, guildId = "default", paid = false,
 }
 
 async function getWeeklySales(guildId = null) {
-  // Pobierz początek aktualnego tygodnia (niedziela)
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = niedziela
-  const diff = now.getDate() - dayOfWeek;
-  const weekStart = new Date(now.setDate(diff));
-  weekStart.setHours(0, 0, 0, 0);
-  const weekStartStr = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD
-  
   let query = supabase
     .from("weekly_sales")
-    .select("*")
-    .eq("week_start", weekStartStr); // Tylko aktualny tydzień
+    .select("*");
     
   if (guildId) {
     query = query.eq("guild_id", guildId); // Konkretny guild
