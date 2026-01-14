@@ -1738,9 +1738,9 @@ client.once(Events.ClientReady, async (c) => {
               (emb) =>
                 typeof emb.description === "string" &&
                 (emb.description.includes(
-                  "Użyj komendy </opinia:1454974442873553113>",
+                  "Użyj **komendy** </opinia:1454974442873553113>",
                 ) ||
-                  emb.description.includes("Użyj komendy `/opinia`")),
+                  emb.description.includes("Użyj **komendy** `/opinia`")),
             );
             if (found) {
               lastOpinionInstruction.set(ch.id, found.id);
@@ -1765,12 +1765,12 @@ client.once(Events.ClientReady, async (c) => {
               (emb) =>
                 typeof emb.description === "string" &&
                 (emb.description.includes(
-                  "Użyj komendy </drop:1454974442370240585>",
+                  "Użyj **komendy** </drop:1454974442370240585>",
                 ) ||
                   emb.description.includes(
-                    "`🎁` Użyj komendy </drop:1454974442370240585>",
+                    "`🎁` Użyj **komendy** </drop:1454974442370240585>",
                   ) ||
-                  emb.description.includes("Użyj komendy `/drop`")),
+                  emb.description.includes("Użyj **komendy** `/drop`")),
             );
             if (foundDrop) {
               lastDropInstruction.set(chd.id, foundDrop.id);
@@ -1822,7 +1822,7 @@ client.once(Events.ClientReady, async (c) => {
               (emb) =>
                 typeof emb.description === "string" &&
                 (emb.description.includes(
-                  "Użyj komendy /sprawdz-zaproszenia",
+                  "Użyj **komendy** /sprawdz-zaproszenia",
                 ) ||
                   emb.description.includes("sprawdz-zaproszenia")),
             );
@@ -3997,7 +3997,7 @@ async function handleDropCommand(interaction) {
       const instructionDropEmbed = new EmbedBuilder()
         .setColor(COLOR_YELLOW)
         .setDescription(
-          "`🎁` Użyj komendy </drop:1454974442370240585>, aby wylosować zniżkę na zakupy!",
+          "`🎁` × Użyj **komendy** </drop:1454974442370240585>, aby wylosować zniżkę na zakupy!",
         );
 
       try {
@@ -6116,7 +6116,7 @@ client.on(Events.MessageCreate, async (message) => {
                   new EmbedBuilder()
                     .setColor(COLOR_YELLOW)
                     .setDescription(
-                      `Użyj komendy </opinia:1454974442873553113> aby wystawić opinię — post został przyjęty.`,
+                      `Użyj **komendy** × </opinia:1454974442873553113> aby wystawić opinię — post został przyjęty.`,
                     ),
                 ],
               });
@@ -6416,7 +6416,7 @@ async function handleOpinionCommand(interaction) {
   const instructionEmbed = new EmbedBuilder()
     .setColor(0xffd700)
     .setDescription(
-      "`📊` Użyj komendy </opinia:1454974442873553113>, aby podzielić się opinią o naszym serwerze!",
+      "`📊` × Użyj **komendy** </opinia:1454974442873553113>, aby podzielić się opinią o naszym serwerze!",
     );
   try {
     const channel = interaction.channel;
@@ -6476,9 +6476,9 @@ async function handleOpinionCommand(interaction) {
         (emb) =>
           typeof emb.description === "string" &&
           (emb.description.includes(
-            "Użyj komendy </opinia:1454974442873553113>",
+            "Użyj **komendy** </opinia:1454974442873553113>",
           ) ||
-            emb.description.includes("Użyj komendy `/opinia`")),
+            emb.description.includes("Użyj **komendy** `/opinia`")),
       );
       if (found) instrMsg = found;
     }
@@ -8788,7 +8788,7 @@ async function sendRozliczeniaMessage() {
       .setDescription(
         "> \`ℹ️\` **Jeżeli sprzedajecie coś na shopie, wysyłacie tutaj kwotę, za którą dokonaliście sprzedaży. Na koniec każdego tygodnia w niedzielę rano macie czas do godziny 20:00, aby rozliczyć się i zapłacić 10% od łącznej sumy sprzedaży z __całego tygodnia.__**"
       )
-      .setFooter({ text: "Użyj komendy /rozliczenie aby dodać sprzedaż" })
+      .setFooter({ text: "Użyj **komendy** /rozliczenie aby dodać sprzedaż" })
       .setTimestamp();
 
     await channel.send({ embeds: [embed] });
