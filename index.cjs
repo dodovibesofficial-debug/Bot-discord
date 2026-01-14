@@ -1903,7 +1903,7 @@ async function handleModalSubmit(interaction) {
     if (isNaN(kwota) || kwota <= 0) {
       return interaction.reply({
         flags: [MessageFlags.Ephemeral],
-        content: "❌ Podaj poprawną kwotę w PLN.",
+        content: "> `❌` × Podaj **poprawną** kwotę w PLN.",
       });
     }
 
@@ -1935,7 +1935,7 @@ async function handleModalSubmit(interaction) {
     if (isNaN(amount) || amount <= 0) {
       return interaction.reply({
         flags: [MessageFlags.Ephemeral],
-        content: "❌ Podaj poprawną ilość waluty (np. 125k / 1m).",
+        content: "> `❌` × Podaj **poprawną** ilość waluty (np. 125k / 1m).",
       });
     }
 
@@ -1966,7 +1966,7 @@ async function handleModalSubmit(interaction) {
     if (!record) {
       await interaction.reply({
         content:
-          "> `❌` **Nie mogę znaleźć zapisanego zadania weryfikacji (spróbuj ponownie).**",
+          "> `❌` × **Nie mogę** znaleźć zapisanego zadania **weryfikacji** (spróbuj ponownie).",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -1975,7 +1975,7 @@ async function handleModalSubmit(interaction) {
     if (record.userId !== interaction.user.id) {
       await interaction.reply({
         content:
-          "> `❌` **Tylko użytkownik, który kliknął przycisk, może rozwiązać tę zagadkę.**",
+          "> `❌` × **Tylko** użytkownik, który kliknął **przycisk**, może rozwiązać tę zagadkę.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -1988,7 +1988,7 @@ async function handleModalSubmit(interaction) {
 
     if (Number.isNaN(numeric)) {
       await interaction.reply({
-        content: "`❌` **Nieprawidłowa odpowiedź (powinna być liczbą).**",
+        content: "> `❌` × **Nieprawidłowa** odpowiedź (powinna być **liczbą**).",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -1996,7 +1996,7 @@ async function handleModalSubmit(interaction) {
 
     if (numeric !== record.answer) {
       await interaction.reply({
-        content: "> `❌` **Źle! Nieprawidłowy wynik. Spróbuj jeszcze raz.**",
+        content: "> `❌` × **Źle**! Nieprawidłowy wynik. Spróbuj jeszcze **raz**.",
         flags: [MessageFlags.Ephemeral],
       });
       // remove record so they can request a new puzzle
@@ -2113,7 +2113,7 @@ async function handleModalSubmit(interaction) {
 
       if (isNaN(kwota) || kwota <= 0) {
         await interaction.reply({
-          content: "❌ Podaj poprawną kwotę w PLN.",
+          content: "> `❌` × Podaj **poprawną** kwotę w PLN.",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -2163,7 +2163,7 @@ async function handleModalSubmit(interaction) {
     } catch (error) {
       console.error("Błąd w modal_ile_otrzymam:", error);
       await interaction.reply({
-        content: "❌ Wystąpił błąd podczas przetwarzania. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas przetwarzania. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     }
@@ -2178,7 +2178,7 @@ async function handleModalSubmit(interaction) {
 
       if (!waluta || waluta <= 0 || waluta > 999_000_000) {
         await interaction.reply({
-          content: "❌ Podaj poprawną ilość waluty (1–999 000 000, możesz użyć k/m).",
+          content: "> `❌` × Podaj **poprawną** ilość waluty (1–999 000 000, możesz użyć k/m).",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -2228,7 +2228,7 @@ async function handleModalSubmit(interaction) {
     } catch (error) {
       console.error("Błąd w modal_ile_musze_dac:", error);
       await interaction.reply({
-        content: "❌ Wystąpił błąd podczas przetwarzania. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas przetwarzania. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     }
@@ -2269,7 +2269,7 @@ async function handleModalSubmit(interaction) {
 
     if (codeData.used) {
       await interaction.reply({
-        content: "❌ **Kod został już wykorzystany!**",
+        content: "> `❌` × **Kod** został już wykorzystany!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2280,7 +2280,7 @@ async function handleModalSubmit(interaction) {
       await db.deleteActiveCode(enteredCode);
       scheduleSavePersistentState();
       await interaction.reply({
-        content: "❌ **Kod wygasł!**",
+        content: "> `❌` × **Kod** wygasł!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2324,7 +2324,7 @@ async function handleModalSubmit(interaction) {
       .catch(() => null);
     if (!channel) {
       await interaction.reply({
-        content: "❌ Kanał nie znaleziony.",
+        content: "> `❌` × **Kanał** nie znaleziony.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2334,7 +2334,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2345,7 +2345,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "❌ Tylko przejęty przez Ciebie lub admin/sprzedawca może zmienić nazwę.",
+        content: "> `❌` × **Tylko** przejęty przez Ciebie lub **admin/sprzedawca** może zmienić nazwę.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2359,7 +2359,7 @@ async function handleModalSubmit(interaction) {
     } catch (err) {
       console.error("Błąd zmiany nazwy ticketu:", err);
       await interaction.reply({
-        content: "❌ Nie udało się zmienić nazwy (sprawdź uprawnienia).",
+        content: "> `❌` × **Nie udało się** zmienić nazwy (sprawdź uprawnienia).",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -2376,7 +2376,7 @@ async function handleModalSubmit(interaction) {
       .catch(() => null);
     if (!channel) {
       await interaction.reply({
-        content: "❌ Kanał nie znaleziony.",
+        content: "> `❌` × **Kanał** nie znaleziony.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2390,7 +2390,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "❌ Tylko przejęty przez Ciebie lub admin/Sprzedawca może dodawać użytkowników.",
+        content: "> `❌` × **Tylko** przejęty przez Ciebie lub **admin/Sprzedawca** może dodawać użytkowników.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2399,7 +2399,7 @@ async function handleModalSubmit(interaction) {
     const match = userInput.match(/^<@!?(\d+)>$/);
     if (!match) {
       await interaction.reply({
-        content: "❌ Nieprawidłowy format użytkownika. Użyj @mention.",
+        content: "> `❌` × **Nieprawidłowy** format użytkownika. Użyj **@mention**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2418,7 +2418,7 @@ async function handleModalSubmit(interaction) {
     } catch (err) {
       console.error("Błąd dodawania użytkownika do ticketu:", err);
       await interaction.reply({
-        content: "❌ Nie udało się dodać użytkownika (sprawdź uprawnienia).",
+        content: "> `❌` × **Nie udało się** dodać użytkownika (sprawdź uprawnienia).",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -2435,7 +2435,7 @@ async function handleModalSubmit(interaction) {
       .catch(() => null);
     if (!channel) {
       await interaction.reply({
-        content: "❌ Kanał nie znaleziony.",
+        content: "> `❌` × **Kanał** nie znaleziony.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2445,7 +2445,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2456,7 +2456,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "❌ Tylko przejęty przez Ciebie lub admin/Sprzedawca może usuwać użytkowników.",
+        content: "> `❌` × **Tylko** przejęty przez Ciebie lub **admin/Sprzedawca** może usuwać użytkowników.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2465,7 +2465,7 @@ async function handleModalSubmit(interaction) {
     const match = userInput.match(/^<@!?(\d+)>$/);
     if (!match) {
       await interaction.reply({
-        content: "❌ Nieprawidłowy format użytkownika. Użyj @mention.",
+        content: "> `❌` × **Nieprawidłowy** format użytkownika. Użyj **@mention**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2484,7 +2484,7 @@ async function handleModalSubmit(interaction) {
     } catch (err) {
       console.error("Błąd usuwania użytkownika z ticketu:", err);
       await interaction.reply({
-        content: "❌ Nie udało się usunąć użytkownika (sprawdź uprawnienia).",
+        content: "> `❌` × **Nie udało się** usunąć użytkownika (sprawdź uprawnienia).",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -2509,7 +2509,7 @@ async function handleModalSubmit(interaction) {
 
       if (!enteredCode) {
         await interaction.reply({
-          content: "❌ **Musisz wpisać kod!**",
+          content: "> `❌` × **Musisz** wpisać kod!",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -2519,7 +2519,7 @@ async function handleModalSubmit(interaction) {
 
       if (!codeData) {
         await interaction.reply({
-          content: "❌ **Nieprawidłowy kod!**",
+          content: "> `❌` × **Nieprawidłowy** kod!",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -2527,7 +2527,7 @@ async function handleModalSubmit(interaction) {
 
       if (codeData.used) {
         await interaction.reply({
-          content: "❌ **Kod został już wykorzystany!**",
+          content: "> `❌` × **Kod** został już wykorzystany!",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -2537,7 +2537,7 @@ async function handleModalSubmit(interaction) {
         activeCodes.delete(enteredCode);
         scheduleSavePersistentState();
         await interaction.reply({
-          content: "❌ **Kod wygasł!**",
+          content: "> `❌` × **Kod** wygasł!",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -2722,7 +2722,7 @@ async function handleModalSubmit(interaction) {
   } catch (err) {
     console.error("Błąd tworzenia ticketu (odbior):", err);
     await interaction.reply({
-      content: "❌ Wystąpił błąd podczas tworzenia ticketa.",
+      content: "> `❌` × **Wystąpił** błąd podczas tworzenia **ticketa**.",
       flags: [MessageFlags.Ephemeral],
     });
   }
@@ -2758,12 +2758,12 @@ async function handleKalkulatorSelect(interaction) {
     console.error("Błąd w handleKalkulatorSelect:", error);
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "❌ Wystąpił błąd podczas przetwarzania wyboru. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas przetwarzania wyboru. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     } else {
       await interaction.followUp({
-        content: "❌ Wystąpił błąd podczas przetwarzania wyboru. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas przetwarzania wyboru. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     }
@@ -2777,7 +2777,7 @@ async function handleKalkulatorSubmit(interaction, typ) {
 
     if (!userData.tryb || !userData.metoda) {
       await interaction.followUp({
-        content: "❌ Proszę wybrać zarówno tryb jak i metodę płatności.",
+        content: "> `❌` × **Proszę** wybrać zarówno tryb jak i metodę **płatności**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2838,12 +2838,12 @@ async function handleKalkulatorSubmit(interaction, typ) {
     console.error("Błąd w handleKalkulatorSubmit:", error);
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "❌ Wystąpił błąd podczas obliczania. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas obliczania. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     } else {
       await interaction.followUp({
-        content: "❌ Wystąpił błąd podczas obliczania. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas obliczania. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     }
@@ -2986,7 +2986,7 @@ async function handleButtonInteraction(interaction) {
     const channel = interaction.channel;
     if (!isTicketChannel(channel)) {
       await interaction.reply({
-        content: "❌ Ta komenda działa tylko w kanałach ticketów!",
+        content: "> `❌` × **Ta komenda** działa tylko w kanałach **ticketów**!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2994,7 +2994,7 @@ async function handleButtonInteraction(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "❌ Tylko administrator lub sprzedawca może zamknąć ticket.",
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może zamknąć ticket.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3065,7 +3065,7 @@ async function handleButtonInteraction(interaction) {
 
     if (interaction.user.id !== ticketUserId) {
       await interaction.reply({
-        content: "❌ Tylko właściciel ticketu może użyć tego przycisku!",
+        content: "> `❌` × **Tylko** właściciel ticketu może użyć tego **przycisku**!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3094,7 +3094,7 @@ async function handleButtonInteraction(interaction) {
     const channel = interaction.channel;
     if (!isTicketChannel(channel)) {
       await interaction.reply({
-        content: "❌ Ta funkcja działa tylko w kanałach ticketów!",
+        content: "> `❌` × **Ta funkcja** działa tylko w kanałach **ticketów**!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3257,7 +3257,7 @@ async function handleRozliczenieCommand(interaction) {
   
   if (!isOwner && !hasRole) {
     await interaction.reply({
-      content: "❌ Tylko właściciel serwera lub użytkownicy z rolą sprzedawcy mogą użyć tej komendy!",
+      content: "> `❌` × **Tylko** właściciel serwera lub użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3301,7 +3301,7 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   // Sprawdź czy admin
   if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych!",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3352,7 +3352,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "❌ Tylko właściciel serwera może użyć tej komendy!",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3362,7 +3362,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
     const logsChannel = await client.channels.fetch(ROZLICZENIA_LOGS_CHANNEL_ID);
     if (!logsChannel) {
       await interaction.reply({
-        content: "❌ Nie znaleziono kanału rozliczeń!",
+        content: "> `❌` × **Nie znaleziono** kanału **rozliczeń**!",
         flags: [MessageFlags.Ephemeral]
       });
       return;
@@ -3370,7 +3370,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
 
     if (weeklySales.size === 0) {
       await interaction.reply({
-        content: "❌ Brak rozliczeń w tym tygodniu!",
+        content: "> `❌` × **Brak** rozliczeń w tym **tygodniu**!",
         flags: [MessageFlags.Ephemeral]
       });
       return;
@@ -3468,7 +3468,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
   } catch (err) {
     console.error("Błąd generowania podsumowania:", err);
     await interaction.reply({
-      content: "❌ Wystąpił błąd podczas generowania podsumowania!",
+      content: "> `❌` × **Wystąpił** błąd podczas generowania **podsumowania**!",
       flags: [MessageFlags.Ephemeral]
     });
   }
@@ -3479,7 +3479,7 @@ async function handleStatusBotaCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "❌ Tylko właściciel serwera może użyć tej komendy!",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3507,7 +3507,7 @@ async function handleStatusBotaCommand(interaction) {
   } catch (err) {
     console.error("Błąd komendy /statusbota:", err);
     await interaction.reply({
-      content: "❌ Wystąpił błąd podczas pobierania statusu bota!",
+      content: "> `❌` × **Wystąpił** błąd podczas pobierania statusu **bota**!",
       flags: [MessageFlags.Ephemeral]
     });
   }
@@ -3518,7 +3518,7 @@ async function handleRozliczenieUstawCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "❌ Tylko właściciel serwera może użyć tej komendy!",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3577,7 +3577,7 @@ async function handleAdminPrzejmij(interaction) {
   const channel = interaction.channel;
   if (!isTicketChannel(channel)) {
     await interaction.reply({
-      content: "❌ Użyj komendy w kanale ticketu.",
+      content: "> `❌` × **Użyj** komendy w kanale **ticketu**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3587,7 +3587,7 @@ async function handleAdminPrzejmij(interaction) {
 async function handlePanelKalkulatorCommand(interaction) {
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze.",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3601,7 +3601,7 @@ async function handlePanelKalkulatorCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.ManageGuild));
   if (!isAdmin) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych.",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3632,7 +3632,7 @@ async function handlePanelKalkulatorCommand(interaction) {
   );
 
   await interaction.reply({
-    content: "✅ Panel kalkulatora został wysłany na ten kanał.",
+    content: "> `✅` × **Panel** kalkulatora został wysłany na ten **kanał**.",
     flags: [MessageFlags.Ephemeral],
   });
 
@@ -3643,7 +3643,7 @@ async function handleAdminOdprzejmij(interaction) {
   const channel = interaction.channel;
   if (!isTicketChannel(channel)) {
     await interaction.reply({
-      content: "❌ Użyj komendy w kanale ticketu.",
+      content: "> `❌` × **Użyj** komendy w kanale **ticketu**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3663,7 +3663,7 @@ async function handleSendMessageCommand(interaction) {
   // Admin command: interactive sendmessage
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze.",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3677,7 +3677,7 @@ async function handleSendMessageCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.ManageGuild));
   if (!isAdmin) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych.",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3689,7 +3689,7 @@ async function handleSendMessageCommand(interaction) {
 
   if (!targetChannel || targetChannel.type !== ChannelType.GuildText) {
     await interaction.reply({
-      content: "❌ Wybierz poprawny kanał tekstowy docelowy.",
+      content: "> `❌` × **Wybierz** poprawny kanał tekstowy **docelowy**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3731,7 +3731,7 @@ async function handleSendMessageCommand(interaction) {
     if (content.toLowerCase() === "anuluj") {
       try {
         await interaction.followUp({
-          content: "❌ Anulowano wysyłanie wiadomości.",
+          content: "> `❌` × **Anulowano** wysyłanie wiadomości.",
           flags: [MessageFlags.Ephemeral],
         });
       } catch (e) { }
@@ -3829,7 +3829,7 @@ async function handleDropCommand(interaction) {
   // Now require guild and configured drop channel
   if (!guildId) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze!",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4017,7 +4017,7 @@ async function handleOpinieKanalCommand(interaction) {
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze!",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4035,7 +4035,7 @@ async function handlePanelWeryfikacjaCommand(interaction) {
   const guildId = interaction.guildId;
   if (!guildId) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze!",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4095,7 +4095,7 @@ async function handlePanelWeryfikacjaCommand(interaction) {
     await interaction.channel.send(sendOptions);
 
     await interaction.editReply({
-      content: "✅ Panel weryfikacji wysłany na ten kanał.",
+      content: "> `✅` × **Panel** weryfikacji wysłany na ten **kanał**.",
     });
     console.log(
       `Wysłano panel weryfikacji na kanale ${interaction.channelId} (serwer ${guildId})`,
@@ -4211,7 +4211,7 @@ async function handleTicketPanelCommand(interaction) {
   const row = new ActionRowBuilder().addComponents(selectMenu);
 
   await interaction.reply({
-    content: "✅ Panel ticketów wysłany!",
+    content: "> `✅` × **Panel** ticketów wysłany!",
     flags: [MessageFlags.Ephemeral],
   });
 
@@ -4223,7 +4223,7 @@ async function handleCloseTicketCommand(interaction) {
 
   if (!isTicketChannel(channel)) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko w kanałach ticketów!",
+      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4232,7 +4232,7 @@ async function handleCloseTicketCommand(interaction) {
   // only admins / sellers
   if (!isAdminOrSeller(interaction.member)) {
     await interaction.reply({
-      content: "❌ Tylko administrator lub sprzedawca może zamknąć ticket.",
+      content: "> `❌` × **Tylko** administrator lub **sprzedawca** może zamknąć ticket.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4318,7 +4318,7 @@ async function handleSelectMenu(interaction) {
         break;
       default:
         await interaction.reply({
-          content: "❌ × Nie wybrano żadnej z kategorii!",
+          content: "> `❌` × **Nie wybrano** żadnej z kategorii!",
           flags: [MessageFlags.Ephemeral],
         });
     }
@@ -4387,7 +4387,7 @@ async function handleSelectMenu(interaction) {
       return;
     }
 
-    await interaction.reply({ content: "❌ Nieznana akcja.", flags: [MessageFlags.Ephemeral] });
+    await interaction.reply({ content: "> `❌` × **Nieznana** akcja.", flags: [MessageFlags.Ephemeral] });
     return;
   }
 }
@@ -4459,12 +4459,12 @@ async function ticketClaimCommon(interaction, channelId) {
   if (!isAdminOrSeller(interaction.member)) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "❌ Tylko administrator lub sprzedawca może przejąć ticket.",
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może przejąć ticket.",
         flags: [MessageFlags.Ephemeral],
       });
     } else {
       await interaction.followUp({
-        content: "❌ Tylko administrator lub sprzedawca może przejąć ticket.",
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może przejąć ticket.",
         flags: [MessageFlags.Ephemeral],
       }).catch(() => null);
     }
@@ -4608,12 +4608,12 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
   if (!isAdminOrSeller(interaction.member)) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "❌ Tylko administrator lub sprzedawca może oddać ticket.",
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może oddać ticket.",
         flags: [MessageFlags.Ephemeral],
       });
     } else {
       await interaction.followUp({
-        content: "❌ Tylko administrator lub sprzedawca może oddać ticket.",
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może oddać ticket.",
         flags: [MessageFlags.Ephemeral],
       }).catch(() => null);
     }
@@ -4867,7 +4867,7 @@ async function handleModalSubmit(interaction) {
 
       if (isNaN(kwota) || kwota <= 0) {
         await interaction.reply({
-          content: "❌ Podaj poprawną kwotę w PLN.",
+          content: "> `❌` × Podaj **poprawną** kwotę w PLN.",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -4917,7 +4917,7 @@ async function handleModalSubmit(interaction) {
     } catch (error) {
       console.error("Błąd w modal_ile_otrzymam:", error);
       await interaction.reply({
-        content: "❌ Wystąpił błąd podczas przetwarzania. Spróbuj ponownie.",
+        content: "> `❌` × **Wystąpił** błąd podczas przetwarzania. Spróbuj **ponownie**.",
         flags: [MessageFlags.Ephemeral]
       });
     }
@@ -4932,7 +4932,7 @@ async function handleModalSubmit(interaction) {
 
       if (!waluta || waluta <= 0 || waluta > 999_000_000) {
         await interaction.reply({
-          content: "❌ Podaj poprawną ilość waluty (1–999 000 000, możesz użyć k/m).",
+          content: "> `❌` × Podaj **poprawną** ilość waluty (1–999 000 000, możesz użyć k/m).",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -5164,7 +5164,7 @@ async function handleModalSubmit(interaction) {
 
     if (codeData.used) {
       await interaction.reply({
-        content: "❌ **Kod został już wykorzystany!**",
+        content: "> `❌` × **Kod** został już wykorzystany!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5175,7 +5175,7 @@ async function handleModalSubmit(interaction) {
       await db.deleteActiveCode(enteredCode);
       scheduleSavePersistentState();
       await interaction.reply({
-        content: "❌ **Kod wygasł!**",
+        content: "> `❌` × **Kod** wygasł!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5219,7 +5219,7 @@ async function handleModalSubmit(interaction) {
       .catch(() => null);
     if (!channel) {
       await interaction.reply({
-        content: "❌ Błąd z próbą odnalezienia kanału.",
+        content: "> `❌` × **Błąd** z próbą odnalezienia **kanału**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5232,7 +5232,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5243,8 +5243,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content:
-          "❌ Tylko osoba która przejęła ticket lub sprzedawca/admin może to zrobić.",
+        content: "> `❌` × **Tylko** osoba która przejęła ticket lub **sprzedawca/admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5262,7 +5261,7 @@ async function handleModalSubmit(interaction) {
     } catch (err) {
       console.error("Błąd zmiany nazwy ticketu:", err);
       await interaction.reply({
-        content: "❌ Nie udało się zmienić nazwy ticketu.",
+        content: "> `❌` × **Nie udało się** zmienić nazwy **ticketu**.",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -5279,7 +5278,7 @@ async function handleModalSubmit(interaction) {
       .catch(() => null);
     if (!channel) {
       await interaction.reply({
-        content: "❌ Kanał nie znaleziony.",
+        content: "> `❌` × **Kanał** nie znaleziony.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5289,7 +5288,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5300,8 +5299,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content:
-          "❌ Tylko osoba która przejęła ticket lub sprzedawca/admin może to zrobić.",
+        content: "> `❌` × **Tylko** osoba która przejęła ticket lub **sprzedawca/admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5312,7 +5310,7 @@ async function handleModalSubmit(interaction) {
       userInput.match(/<@!?(\d+)>/) || userInput.match(/(\d{17,20})/);
     if (!match) {
       await interaction.reply({
-        content: "❌ Nieprawidłowy format użytkownika. Podaj @mention lub ID.",
+        content: "> `❌` × **Nieprawidłowy** format użytkownika. Podaj **@mention** lub **ID**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5331,7 +5329,7 @@ async function handleModalSubmit(interaction) {
     } catch (err) {
       console.error("Błąd dodawania użytkownika do ticketu:", err);
       await interaction.reply({
-        content: "❌ Nie udało się dodać użytkownika (sprawdź uprawnienia).",
+        content: "> `❌` × **Nie udało się** dodać użytkownika (sprawdź uprawnienia).",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -5348,7 +5346,7 @@ async function handleModalSubmit(interaction) {
       .catch(() => null);
     if (!channel) {
       await interaction.reply({
-        content: "❌ Kanał nie znaleziony.",
+        content: "> `❌` × **Kanał** nie znaleziony.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5358,7 +5356,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "❌ Tylko sprzedawca lub admin może to zrobić.",
+        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5369,8 +5367,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content:
-          "❌ Tylko osoba która przejęła ticket lub sprzedawca/admin może to zrobić.",
+        content: "> `❌` × **Tylko** osoba która przejęła ticket lub **sprzedawca/admin** może to zrobić.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5380,7 +5377,7 @@ async function handleModalSubmit(interaction) {
       userInput.match(/<@!?(\d+)>/) || userInput.match(/(\d{17,20})/);
     if (!match) {
       await interaction.reply({
-        content: "❌ Nieprawidłowy format użytkownika. Podaj @mention lub ID.",
+        content: "> `❌` × **Nieprawidłowy** format użytkownika. Podaj **@mention** lub **ID**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5397,7 +5394,7 @@ async function handleModalSubmit(interaction) {
     } catch (err) {
       console.error("Błąd usuwania użytkownika z ticketu:", err);
       await interaction.reply({
-        content: "❌ Nie udało się usunąć użytkownika (sprawdź uprawnienia).",
+        content: "> `❌` × **Nie udało się** usunąć użytkownika (sprawdź uprawnienia).",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -5438,7 +5435,7 @@ async function handleModalSubmit(interaction) {
       const kwotaNum = parseInt(kwotaRaw.replace(/[^0-9]/g, ""), 10);
       if (Number.isNaN(kwotaNum)) {
         await interaction.reply({
-          content: "❌ Nieprawidłowa kwota — wpisz proszę liczbę (np. `40`).",
+          content: "> `❌` × **Nieprawidłowa** kwota — wpisz proszę **liczbę** (np. `40`).",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -5499,7 +5496,7 @@ async function handleModalSubmit(interaction) {
 
       if (!enteredCode) {
         await interaction.reply({
-          content: "❌ Nie podałeś kodu.",
+          content: "> `❌` × **Nie podałeś** kodu.",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -5531,7 +5528,7 @@ async function handleModalSubmit(interaction) {
 
       if (codeData.used) {
         await interaction.reply({
-          content: "❌ Ten kod został już użyty.",
+          content: "> `❌` × **Ten kod** został już użyty.",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -5541,7 +5538,7 @@ async function handleModalSubmit(interaction) {
         activeCodes.delete(enteredCode);
         scheduleSavePersistentState();
         await interaction.reply({
-          content: "❌ Ten kod wygasł.",
+          content: "> `❌` × **Ten kod** wygasł.",
           flags: [MessageFlags.Ephemeral],
         });
         return;
@@ -5682,7 +5679,7 @@ async function handleModalSubmit(interaction) {
       } catch (err) {
         console.error("Błąd tworzenia ticketu (odbior):", err);
         await interaction.reply({
-          content: "❌ Wystąpił błąd podczas tworzenia ticketa.",
+          content: "> `❌` × **Wystąpił** błąd podczas tworzenia **ticketa**.",
           flags: [MessageFlags.Ephemeral],
         });
       }
@@ -5926,7 +5923,7 @@ async function handleModalSubmit(interaction) {
   } catch (error) {
     console.error("Błąd tworzenia ticketu:", error);
     await interaction.reply({
-      content: "❌ Wystąpił błąd podczas tworzenia ticketu.",
+      content: "> `❌` × **Wystąpił** błąd podczas tworzenia **ticketu**.",
       flags: [MessageFlags.Ephemeral],
     });
   }
@@ -6321,7 +6318,7 @@ async function handleOpinionCommand(interaction) {
   const guildId = interaction.guildId;
   if (!guildId || !interaction.guild) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze!",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6506,14 +6503,14 @@ async function handleOpinionCommand(interaction) {
     }
 
     await interaction.reply({
-      content: "✅ Twoja opinia została opublikowana.",
+      content: "> `✅` × **Twoja opinia** została opublikowana.",
       flags: [MessageFlags.Ephemeral],
     });
   } catch (err) {
     console.error("Błąd publikacji opinii:", err);
     try {
       await interaction.reply({
-        content: "❌ Wystąpił błąd podczas publikacji opinii.",
+        content: "> `❌` × **Wystąpił** błąd podczas publikacji **opinii**.",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) {
@@ -6542,7 +6539,7 @@ async function handleWyczyscKanalCommand(interaction) {
 
   if (!guildId || !interaction.guild) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze!",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6606,7 +6603,7 @@ async function handleWyczyscKanalCommand(interaction) {
       if (amount <= 0 || amount > 100) {
         try {
           await interaction.editReply({
-            content: "❌ Podaj poprawną ilość wiadomości do usunięcia (1-100).",
+            content: "> `❌` × **Podaj** poprawną ilość wiadomości do usunięcia (1-100).",
           });
         } catch (e) {
           // ignore
@@ -6706,7 +6703,7 @@ async function handleWyczyscKanalCommand(interaction) {
 
     try {
       await interaction.editReply({
-        content: "❌ Nieznany tryb. Wybierz 'wszystko' lub 'ilosc'.",
+        content: "> `❌` × **Nieznany** tryb. Wybierz '**wszystko**' lub '**ilosc**'.",
       });
     } catch (e) {
       // ignore
@@ -6715,7 +6712,7 @@ async function handleWyczyscKanalCommand(interaction) {
     console.error("Błąd wyczyszczenia kanału:", error);
     try {
       await interaction.editReply({
-        content: "❌ Wystąpił błąd podczas czyszczenia kanału.",
+        content: "> `❌` × **Wystąpił** błąd podczas czyszczenia **kanału**.",
       });
     } catch (e) {
       // ignore
@@ -6789,7 +6786,7 @@ async function handleResetLCCommand(interaction) {
   if (!interaction.guild) {
     try {
       await interaction.reply({
-        content: "❌ Ta komenda działa tylko na serwerze!",
+        content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) {
@@ -6891,7 +6888,7 @@ async function handleResetLCCommand(interaction) {
     console.error("[resetlc] Błąd podczas resetowania licznika:", err);
     try {
       await interaction.editReply({
-        content: "❌ Wystąpił błąd podczas resetowania licznika.",
+        content: "> `❌` × **Wystąpił** błąd podczas resetowania **licznika**.",
       });
     } catch (e) {
       console.error("Nie udało się wysłać editReply po błędzie:", e);
@@ -6906,7 +6903,7 @@ async function handleResetLCCommand(interaction) {
 async function handleZresetujCzasCommand(interaction) {
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze!",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6921,7 +6918,7 @@ async function handleZresetujCzasCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.ManageGuild));
   if (!isAdmin) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych.",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6944,7 +6941,7 @@ async function handleZresetujCzasCommand(interaction) {
   } catch (err) {
     console.error("[zresetujczasoczekiwania] Błąd:", err);
     await interaction.reply({
-      content: "❌ Wystąpił błąd podczas resetowania czasów oczekiwania.",
+      content: "> `❌` × **Wystąpił** błąd podczas resetowania czasów **oczekiwania**.",
       flags: [MessageFlags.Ephemeral],
     });
   }
@@ -7388,7 +7385,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   // Najpierw sprawdzamy warunki bez defer
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Tylko na serwerze.",
+      content: "> `❌` × **Tylko** na **serwerze**.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -7397,7 +7394,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   const SPRAWDZ_ZAPROSZENIA_CHANNEL_ID = "1449159417445482566";
   if (interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
     await interaction.reply({
-      content: `❌ Użyj tej komendy na kanale <#${SPRAWDZ_ZAPROSZENIA_CHANNEL_ID}>.`,
+      content: "> `❌` × Użyj tej **komendy** na kanale <#1449159417445482566>.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -7409,7 +7406,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   if (nowTs - lastTs < 30_000) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
     await interaction.reply({
-      content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
+      content: `> \`❌\` × **Poczekaj** jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia **ponownie**.`,
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -7495,7 +7492,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
         const instructionInviteEmbed = new EmbedBuilder()
           .setColor(0xffffff)
           .setDescription(
-            `\`📩\` Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!`
+            "> 📩 × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje **zaproszenia**!"
           );
 
         const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
@@ -7507,7 +7504,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     }
 
     await interaction.editReply({
-      content: "> \`✅\` Informacje o twoich zaproszeniach zostały wysłane."
+      content: "> \`✅\` × Informacje o twoich **zaproszeniach** zostały wysłane."
     });
 
   } catch (err) {
@@ -7516,7 +7513,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       await interaction.editReply({ embeds: [embed] });
     } catch {
       await interaction.editReply({
-        content: "> \`❌\` Nie udało się opublikować informacji o zaproszeniach."
+        content: "> \`❌\` × Nie udało się opublikować informacji o **zaproszeniach**."
       });
     }
   }
@@ -7527,7 +7524,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
 async function handleZaprosieniaStatsCommand(interaction) {
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Ta komenda działa tylko na serwerze.",
+      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7541,7 +7538,7 @@ async function handleZaprosieniaStatsCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.ManageGuild));
   if (!isAdmin) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych.",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7580,8 +7577,7 @@ async function handleZaprosieniaStatsCommand(interaction) {
 
   if (!category) {
     await interaction.reply({
-      content:
-        "❌ Nieznana kategoria. Wybierz: `prawdziwe`, `opuszczone`, `mniej4mies`, `dodatkowe`.",
+      content: "> ❌ × **Nieznana** kategoria. Wybierz: `prawdziwe`, `opuszczone`, `mniej4mies`, `dodatkowe`.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7787,7 +7783,7 @@ async function handleHelpCommand(interaction) {
     console.error("handleHelpCommand error:", err);
     try {
       await interaction.reply({
-        content: "❌ Błąd podczas wyświetlania pomocy.",
+        content: "> `❌` × **Błąd** podczas wyświetlania **pomocy**.",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) { }
@@ -7852,7 +7848,7 @@ function pickRandom(arr, n) {
 async function handleDodajKonkursCommand(interaction) {
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Tylko na serwerze.",
+      content: "> `❌` × **Tylko** na **serwerze**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7866,7 +7862,7 @@ async function handleDodajKonkursCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.ManageGuild));
   if (!isAdmin) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych.",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8004,7 +8000,7 @@ async function handleKonkursCreateModal(interaction) {
   if (!sent) {
     try {
       await interaction.editReply({
-        content: "❌ Nie udało się utworzyć konkursu (nie wysłano wiadomości w kanał).",
+        content: "> `❌` × **Nie udało się** utworzyć konkursu (nie wysłano wiadomości w **kanał**).",
       });
     } catch (e) {
       // ignore
@@ -8049,7 +8045,7 @@ async function handleKonkursCreateModal(interaction) {
     console.error("Błąd tworzenia konkursu:", err);
     try {
       await interaction.editReply({
-        content: "❌ Nie udało się utworzyć konkursu.",
+        content: "> `❌` × **Nie udało się** utworzyć **konkursu**.",
       });
     } catch (e) {
       console.error("Nie udało się wysłać editReply po błędzie:", e);
@@ -8061,7 +8057,7 @@ async function handleKonkursCreateModal(interaction) {
 async function handleDodajKonkursCommand(interaction) {
   if (!interaction.guild) {
     await interaction.reply({
-      content: "❌ Tylko na serwerze.",
+      content: "> `❌` × **Tylko** na **serwerze**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8075,7 +8071,7 @@ async function handleDodajKonkursCommand(interaction) {
       member.permissions.has(PermissionFlagsBits.ManageGuild));
   if (!isAdmin) {
     await interaction.reply({
-      content: "❌ Nie masz uprawnień administracyjnych.",
+      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8213,7 +8209,7 @@ async function handleKonkursCreateModal(interaction) {
   if (!sent) {
     try {
       await interaction.editReply({
-        content: "❌ Nie udało się utworzyć konkursu (nie wysłano wiadomości w kanał).",
+        content: "> `❌` × **Nie udało się** utworzyć konkursu (nie wysłano wiadomości w **kanał**).",
       });
     } catch (e) {
       // ignore
@@ -8258,7 +8254,7 @@ async function handleKonkursCreateModal(interaction) {
     console.error("Błąd tworzenia konkursu:", err);
     try {
       await interaction.editReply({
-        content: "❌ Nie udało się utworzyć konkursu.",
+        content: "> `❌` × **Nie udało się** utworzyć **konkursu**.",
       });
     } catch (e) {
       console.error("Nie udało się wysłać editReply po błędzie:", e);
@@ -8270,14 +8266,14 @@ async function handleKonkursJoinModal(interaction, msgId) {
   const contest = contests.get(msgId);
   if (!contest) {
     await interaction.reply({
-      content: "❌ Konkurs nie został znaleziony.",
+      content: "> `❌` × **Konkurs** nie został znaleziony.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
   }
   if (Date.now() >= contest.endsAt) {
     await interaction.reply({
-      content: "❌ Konkurs już się zakończył.",
+      content: "> `❌` × **Konkurs** już się zakończył.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8531,7 +8527,7 @@ async function handleKonkursLeave(interaction, msgId) {
   const contest = contests.get(msgId);
   if (!contest) {
     await interaction.update({
-      content: "❌ Konkurs nie został znaleziony.",
+      content: "> `❌` × **Konkurs** nie został znaleziony.",
       components: [],
     });
     return;
@@ -8540,7 +8536,7 @@ async function handleKonkursLeave(interaction, msgId) {
   let participantsMap = contestParticipants.get(msgId);
   if (!participantsMap) {
     await interaction.update({
-      content: "❌ Nie bierzesz udziału w tym konkursie.",
+      content: "> `❌` × **Nie bierzesz** udziału w tym **konkursie**.",
       components: [],
     });
     return;
@@ -8549,7 +8545,7 @@ async function handleKonkursLeave(interaction, msgId) {
   const userId = interaction.user.id;
   if (!participantsMap.has(userId)) {
     await interaction.update({
-      content: "❌ Nie bierzesz udziału w tym konkursie.",
+      content: "> `❌` × **Nie bierzesz** udziału w tym **konkursie**.",
       components: [],
     });
     return;
@@ -8605,7 +8601,7 @@ async function handleKonkursLeave(interaction, msgId) {
 // --- Obsługa anulowania opuszczenia konkursu ---
 async function handleKonkursCancelLeave(interaction, msgId) {
   await interaction.update({
-    content: "❌ Anulowano. Nadal bierzesz udział w konkursie.",
+    content: "> `❌` × **Anulowano**. Nadal bierzesz udział w **konkursie**.",
     components: [],
   });
 }
