@@ -7416,8 +7416,8 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   }
   sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
 
-  // Teraz dopiero defer - raport będzie publiczny, błędy już obsłużone
-  await interaction.deferReply({ ephemeral: false }).catch(() => null);
+  // Teraz dopiero defer - tymczasowo ephemeral dla potwierdzenia
+  await interaction.deferReply({ ephemeral: true }).catch(() => null);
 
   // ===== SPRAWDZ-ZAPROSZENIA – PEŁNY SCRIPT =====
 
@@ -7505,9 +7505,8 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
 
-    await interaction.followUp({
-      content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
-      flags: [MessageFlags.Ephemeral]
+    await interaction.editReply({
+      content: "✅ Informacje o twoich zaproszeniach zostały wysłane."
     });
 
   } catch (err) {
@@ -7515,9 +7514,8 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     try {
       await interaction.editReply({ embeds: [embed] });
     } catch {
-      await interaction.followUp({
-        content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
-        flags: [MessageFlags.Ephemeral]
+      await interaction.editReply({
+        content: "❌ Nie udało się opublikować informacji o zaproszeniach."
       });
     }
   }
