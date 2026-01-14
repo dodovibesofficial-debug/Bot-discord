@@ -7492,7 +7492,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
         const instructionInviteEmbed = new EmbedBuilder()
           .setColor(0xffffff)
           .setDescription(
-            "> `📩` × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje **zaproszenia**"
+            "`📩` × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje **zaproszenia**"
           );
 
         const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
