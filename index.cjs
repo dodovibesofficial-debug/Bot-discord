@@ -3386,11 +3386,11 @@ async function handleRozliczenieZakonczCommand(interaction) {
       const user = client.users.cache.get(userId);
       const userName = user ? `<@${userId}>` : `<@${userId}>`;
       
-      reportLines.push(`${userName} Do zapłaty ${prowizja}zł`);
+      reportLines.push(`${userName} Do zapłaty ${prowizja.toFixed(2)}zł`);
       totalSales += data.amount;
     }
 
-    const totalProwizja = totalSales * ROZLICZENIA_PROWIZJA;
+    const totalProwizja = (totalSales * ROZLICZENIA_PROWIZJA).toFixed(2);
 
     const reportEmbed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
@@ -3459,7 +3459,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
         `> \`🔄\` × **Zresetowano statystyki** na nowy tydzień\n` +
         `> \`📊\` × **Liczba osób:** ${liczbaOsob}\n` +
         `> \`💰\` × **Łączna sprzedaż:** ${totalSalesValue.toLocaleString("pl-PL")} zł\n` +
-        `> \`💸\` × **Łączna prowizja:** ${totalProwizjaValue.toLocaleString("pl-PL")} zł`
+        `> \`💸\` × **Łączna prowizja:** ${parseFloat(totalProwizjaValue).toFixed(2)} zł`
       )
       .setTimestamp();
 
@@ -8818,13 +8818,13 @@ async function checkWeeklyReset() {
 
         for (const [userId, data] of weeklySales) {
           const prowizja = data.amount * ROZLICZENIA_PROWIZJA;
-          report += `> 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Do zapałaty: ${prowizja.toLocaleString("pl-PL")} zł\n`;
+          report += `> 👤 <@${userId}>: Sprzedał: ${data.amount.toLocaleString("pl-PL")} zł | Do zapałaty: ${prowizja.toFixed(2)} zł\n`;
           totalSales += data.amount;
         }
 
-        const totalProwizja = totalSales * ROZLICZENIA_PROWIZJA;
+        const totalProwizja = (totalSales * ROZLICZENIA_PROWIZJA).toFixed(2);
         report += `\n> 💰 **Łączna sprzedaż:** ${totalSales.toLocaleString("pl-PL")} zł\n`;
-        report += `> 💸 **Łączna prowizja (10%):** ${totalProwizja.toLocaleString("pl-PL")} zł\n`;
+        report += `> 💸 **Łączna prowizja (10%):** ${totalProwizja} zł\n`;
         report += `> 📱 **Przelew na numer:** 880 260 392\n`;
         report += `> ⏳ **Termin płatności:** do 20:00 dnia dzisiejszego\n`;
         report += `> 🚫 **Brak płatności = brak dostępu do ticketów**`;
