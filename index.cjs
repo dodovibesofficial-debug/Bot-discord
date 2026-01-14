@@ -3406,6 +3406,23 @@ async function handleRozliczenieZakonczCommand(interaction) {
 
     const sentMessage = await logsChannel.send({ embeds: [reportEmbed] });
 
+    // Wyślij osobną wiadomość z pingami osób do zapłaty
+    if (weeklySales.size > 0) {
+      const pings = [];
+      for (const [userId, data] of weeklySales) {
+        pings.push(`<@${userId}>`);
+      }
+      
+      const pingMessage = await logsChannel.send({
+        content: `**Osoby do zapłaty prowizji:** ${pings.join(' ')}`
+      });
+      
+      // Usuń wiadomość z pingami po 5 sekundach
+      setTimeout(() => {
+        pingMessage.delete().catch(err => console.log('Nie udało się usunąć wiadomości z pingami:', err));
+      }, 5000);
+    }
+
     // Zapisz dane przed resetem dla embeda
     const liczbaOsob = weeklySales.size;
     const totalSalesValue = totalSales;
@@ -7374,6 +7391,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   if (!interaction.guild) {
     await interaction.editReply({
       content: "❌ Tylko na serwerze.",
+      flags: [MessageFlags.Ephemeral]
     });
     return;
   }
@@ -7382,6 +7400,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   if (interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
     await interaction.editReply({
       content: `❌ Użyj tej komendy na kanale <#${SPRAWDZ_ZAPROSZENIA_CHANNEL_ID}>.`,
+      flags: [MessageFlags.Ephemeral]
     });
     return;
   }
@@ -7393,6 +7412,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
     await interaction.editReply({
       content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
+      flags: [MessageFlags.Ephemeral]
     });
     return;
   }
@@ -7486,6 +7506,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
 
     await interaction.editReply({
       content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
+      flags: [MessageFlags.Ephemeral]
     });
 
   } catch (err) {
@@ -7495,6 +7516,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     } catch {
       await interaction.editReply({
         content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
+        flags: [MessageFlags.Ephemeral]
       });
     }
   }
