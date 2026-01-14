@@ -7385,11 +7385,9 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
-  // Defer na początku, aby uniknąć błędów
-  await interaction.deferReply({ ephemeral: false }).catch(() => null);
-
+  // Najpierw sprawdzamy warunki bez defer
   if (!interaction.guild) {
-    await interaction.editReply({
+    await interaction.reply({
       content: "❌ Tylko na serwerze.",
       flags: [MessageFlags.Ephemeral]
     });
@@ -7398,7 +7396,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
 
   const SPRAWDZ_ZAPROSZENIA_CHANNEL_ID = "1449159417445482566";
   if (interaction.channelId !== SPRAWDZ_ZAPROSZENIA_CHANNEL_ID) {
-    await interaction.editReply({
+    await interaction.reply({
       content: `❌ Użyj tej komendy na kanale <#${SPRAWDZ_ZAPROSZENIA_CHANNEL_ID}>.`,
       flags: [MessageFlags.Ephemeral]
     });
@@ -7410,13 +7408,16 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   const lastTs = sprawdzZaproszeniaCooldowns.get(interaction.user.id) || 0;
   if (nowTs - lastTs < 30_000) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
-    await interaction.editReply({
+    await interaction.reply({
       content: `❌ Poczekaj jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia ponownie.`,
       flags: [MessageFlags.Ephemeral]
     });
     return;
   }
   sprawdzZaproszeniaCooldowns.set(interaction.user.id, nowTs);
+
+  // Teraz dopiero defer - raport będzie publiczny, błędy już obsłużone
+  await interaction.deferReply({ ephemeral: false }).catch(() => null);
 
   // ===== SPRAWDZ-ZAPROSZENIA – PEŁNY SCRIPT =====
 
@@ -7504,7 +7505,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       console.warn("Nie udało się odświeżyć instrukcji zaproszeń:", e);
     }
 
-    await interaction.editReply({
+    await interaction.followUp({
       content: "✅ Informacje o twoich zaproszeniach zostały wysłane.",
       flags: [MessageFlags.Ephemeral]
     });
@@ -7514,7 +7515,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     try {
       await interaction.editReply({ embeds: [embed] });
     } catch {
-      await interaction.editReply({
+      await interaction.followUp({
         content: "❌ Nie udało się opublikować informacji o zaproszeniach.",
         flags: [MessageFlags.Ephemeral]
       });
