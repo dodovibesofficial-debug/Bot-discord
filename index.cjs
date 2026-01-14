@@ -2,7 +2,7 @@ const {
   Client,
   GatewayIntentBits,
   Events,
-  EmbedBuilder,
+  EmbedBuilder, 
   SlashCommandBuilder,
   REST,
   Routes,
