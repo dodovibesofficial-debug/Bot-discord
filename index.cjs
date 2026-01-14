@@ -3847,7 +3847,7 @@ async function handleDropCommand(interaction) {
 
   if (interaction.channelId !== dropChannelId) {
     await interaction.reply({
-      content: `❌ Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`,
+      content: `> \`❌\`  Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6361,7 +6361,7 @@ async function handleOpinionCommand(interaction) {
 
   if (!allowedChannelId || interaction.channelId !== allowedChannelId) {
     await interaction.reply({
-      content: `❌ Komendę </opinia:1454974442873553113> można użyć tylko na kanale <#${allowedChannelId || "⭐-×┃opinie-klientow"}>.`,
+      content: `> \`❌\` Komendę </opinia:1454974442873553113> można użyć tylko na kanale <#${allowedChannelId || "⭐-×┃opinie-klientow"}>.`,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7492,7 +7492,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
         const instructionInviteEmbed = new EmbedBuilder()
           .setColor(0xffffff)
           .setDescription(
-            "> 📩 × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje **zaproszenia**!"
+            "> \`📩\` × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263>, aby sprawdzić swoje **zaproszenia**!"
           );
 
         const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
