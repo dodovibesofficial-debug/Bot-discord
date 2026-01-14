@@ -7461,14 +7461,15 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   const embed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
     .setDescription(
-      `\n` +
-      `📩 **New Shop × ZAPROSZENIA**\n\n` +
-      `> 👤 × <@${userId}> **posiada** **${displayedInvites} ${inviteWord}**!\n\n` +
-      `> 💸 × **Brakuje ci zaproszeń do nagrody \`${INVITE_REWARD_TEXT}:** ${missingToReward}\n\n` +
-      `> 👥 × **Prawdziwe osoby które dołączyły:** ${displayedInvites}\n` +
-      `> 🚶 × **Osoby które opuściły serwer:** ${left}\n` +
-      `> ⚠️ × **Niespełniające kryteriów (< konto 2 mies.):** ${fake}\n` +
-      `> 🎁 × **Dodatkowe zaproszenia:** ${bonus}`
+          "```\n" +
+          "📩 New Shop × ZAPROSZENIA\n" +
+          "```\n" +
+      `> \`👤\` × <@${userId}> **posiada:** \`${displayedInvites}\` **${inviteWord}**!\n` +
+      `> \`💸\` × **Brakuje ci zaproszeń do nagrody ${INVITE_REWARD_TEXT}:** \`${missingToReward}\`\n\n` +
+      `> \`👥\` × **Prawdziwe osoby które dołączyły:** \`${displayedInvites}\`\n` +
+      `> \`🚶\` × **Osoby które opuściły serwer:** \`${left}\`\n` +
+      `> \`⚠️\` × **Niespełniające kryteriów (< konto 2 mies.):** \`${fake}\`\n` +
+      `> \`🎁\` × **Dodatkowe zaproszenia:** \`${bonus}\``
     );
 
   try {
@@ -7494,7 +7495,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
         const instructionInviteEmbed = new EmbedBuilder()
           .setColor(0xffffff)
           .setDescription(
-            `📩 Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!`
+            `\`📩\` Użyj komendy </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje zaproszenia!`
           );
 
         const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
@@ -7506,7 +7507,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
     }
 
     await interaction.editReply({
-      content: "✅ Informacje o twoich zaproszeniach zostały wysłane."
+      content: "> \`✅\` Informacje o twoich zaproszeniach zostały wysłane."
     });
 
   } catch (err) {
@@ -7515,7 +7516,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
       await interaction.editReply({ embeds: [embed] });
     } catch {
       await interaction.editReply({
-        content: "❌ Nie udało się opublikować informacji o zaproszeniach."
+        content: "> \`❌\` Nie udało się opublikować informacji o zaproszeniach."
       });
     }
   }
