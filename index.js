@@ -3859,7 +3859,7 @@ async function handleDropCommand(interaction) {
   if (now - lastDrop < DROP_COOLDOWN_MS) {
     const remaining = DROP_COOLDOWN_MS - (now - lastDrop);
     await interaction.reply({
-      content: `❌ Możesz użyć /drop ponownie za ${humanizeMs(remaining)}.`,
+      content: `> \`❌\` Możesz użyć /drop ponownie za \`${humanizeMs(remaining)}\``,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6329,7 +6329,7 @@ async function handleOpinionCommand(interaction) {
   if (Date.now() - lastUsed < OPINION_COOLDOWN_MS) {
     const remaining = OPINION_COOLDOWN_MS - (Date.now() - lastUsed);
     await interaction.reply({
-      content: `❌ Możesz użyć /opinia ponownie za ${humanizeMs(remaining)}.`,
+      content: `> \`❌\` Możesz użyć /opinia ponownie za \`${humanizeMs(remaining)}\``,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7406,7 +7406,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   if (nowTs - lastTs < 30_000) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
     await interaction.reply({
-      content: `> \`❌\` × **Poczekaj** jeszcze ${remain}s zanim użyjesz /sprawdz-zaproszenia **ponownie**.`,
+      content: `> \`❌\` × **Poczekaj** jeszcze ${remain}s zanim użyjesz \`/sprawdz-zaproszenia\` **ponownie**.`,
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -7492,7 +7492,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
         const instructionInviteEmbed = new EmbedBuilder()
           .setColor(0xffffff)
           .setDescription(
-            "`📩` × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263> aby sprawdzić swoje **zaproszenia**"
+            "`📩` × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263>, aby sprawdzić swoje **zaproszenia**"
           );
 
         const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
