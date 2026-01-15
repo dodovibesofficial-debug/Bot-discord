@@ -1022,6 +1022,33 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
+    .setName("ticket-zakoncz")
+    .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
+    .addStringOption((option) =>
+      option
+        .setName("typ")
+        .setDescription("Typ transakcji")
+        .setRequired(true)
+        .addChoices(
+          { name: "ZAKUP", value: "zakup" },
+          { name: "SPRZEDAŻ", value: "sprzedaż" },
+          { name: "WRĘCZYŁ NAGRODĘ", value: "wręczył nagrodę" }
+        )
+    )
+    .addStringOption((option) =>
+      option
+        .setName("ile")
+        .setDescription("Kwota transakcji (np. 22,5k, 50k, 200k)")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("serwer")
+        .setDescription("Nazwa serwera (np. anarchia lf)")
+        .setRequired(true)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
     .setName("help")
     .setDescription("Spis wszystkich komend bota")
     .toJSON(),
@@ -3182,6 +3209,9 @@ async function handleSlashCommand(interaction) {
     case "ticket":
       await handleTicketCommand(interaction);
       break;
+    case "ticket-zakoncz":
+      await handleTicketZakonczCommand(interaction);
+      break;
     case "ticketpanel":
       await handleTicketPanelCommand(interaction);
       break;
@@ -4282,11 +4312,121 @@ async function handleCloseTicketCommand(interaction) {
     pendingTicketClose.set(chId, { userId: interaction.user.id, ts: now });
     await interaction.reply({
       content:
-        "⚠️ Kliknij /zamknij ponownie w ciągu 30 sekund, aby potwierdzić zamknięcie ticketu.",
+        "> \`⚠️\` Kliknij /zamknij ponownie w ciągu 30 sekund, aby potwierdzić zamknięcie ticketu.",
       flags: [MessageFlags.Ephemeral],
     });
     setTimeout(() => pendingTicketClose.delete(chId), 30_000);
   }
+}
+
+// ----------------- /ticket-zakoncz handler -----------------
+async function handleTicketZakonczCommand(interaction) {
+  const channel = interaction.channel;
+
+  // Sprawdź czy komenda jest używana w tickecie
+  if (!isTicketChannel(channel)) {
+    await interaction.reply({
+      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  // Pobierz parametry
+  const typ = interaction.options.getString("typ");
+  const ile = interaction.options.getString("ile");
+  const serwer = interaction.options.getString("serwer");
+
+  // Pobierz właściciela ticketu
+  const ticketData = ticketOwners.get(channel.id);
+  const ticketOwnerId = ticketData?.userId;
+
+  if (!ticketOwnerId) {
+    await interaction.reply({
+      content: "> `❌` × **Nie udało się** zidentyfikować właściciela ticketu.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  // Ping autora ticketa
+  await interaction.reply({
+    content: `<@${ticketOwnerId}>`,
+    allowedMentions: { users: [ticketOwnerId] }
+  });
+
+  // Stwórz embed instrukcji w zależności od typu
+  let embed;
+  const legitRepChannelId = "1449840030947217529";
+
+  switch (typ.toLowerCase()) {
+    case "zakup":
+      embed = new EmbedBuilder()
+        .setColor(0x00ff00) // 🟢 zielony
+        .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep <@${ticketOwnerId}> sprzedał ${ile} ${serwer}\n\`\`\``
+        );
+      break;
+
+    case "sprzedaż":
+      embed = new EmbedBuilder()
+        .setColor(0xffa500) // 🟠 pomarańczowy
+        .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep <@${ticketOwnerId}> kupił ${ile} ${serwer}\n\`\`\``
+        );
+      break;
+
+    case "wręczył nagrodę":
+      embed = new EmbedBuilder()
+        .setColor(0xffff00) // 🟡 żółty
+        .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep <@${ticketOwnerId}> wręczył nagrodę ${ile} ${serwer}\n\`\`\``
+        );
+      
+      // Dodaj informację o brakujących zaproszeniach dla typu "wręczył nagrodę"
+      try {
+        const guildId = interaction.guildId;
+        const gMap = inviteCounts.get(guildId) || new Map();
+        const userInvites = gMap.get(ticketOwnerId) || 0;
+        const requiredInvites = 10; // zakładam 10 zaproszeń na nagrodę
+        const missing = Math.max(0, requiredInvites - userInvites);
+        
+        if (missing > 0) {
+          embed.addFields({
+            name: "ℹ️ Informacja o zaproszeniach",
+            value: `Brakuje ci **${missing}** zaproszeń, aby otrzymać kolejną nagrodę 50k$.`
+          });
+        }
+      } catch (e) {
+        console.error("Błąd sprawdzania zaproszeń:", e);
+      }
+      break;
+
+    default:
+      await interaction.followUp({
+        content: "> `❌` × **Nieprawidłowy** typ. Wybierz: **zakup**, **sprzedaż** lub **wręczył nagrodę**.",
+        flags: [MessageFlags.Ephemeral],
+      });
+      return;
+  }
+
+  // Wyślij embed instrukcji
+  await interaction.followUp({ embeds: [embed] });
+
+  // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
+  pendingTicketClose.set(channel.id, {
+    userId: ticketOwnerId,
+    awaitingRep: true,
+    ts: Date.now()
+  });
+
+  console.log(`Ticket ${channel.id} oczekuje na +rep od użytkownika ${ticketOwnerId}`);
 }
 
 async function handleSelectMenu(interaction) {
@@ -6215,6 +6355,62 @@ client.on(Events.MessageCreate, async (message) => {
       // Valid +rep message - increment counter
       legitRepCount++;
       console.log(`+rep otrzymany! Licznik: ${legitRepCount}`);
+
+      // Sprawdź czy istnieje ticket oczekujący na +rep od tego użytkownika
+      try {
+        const mentionedUserId = message.content.match(/<@!?(\d+)>/)?.[1];
+        if (mentionedUserId) {
+          // Przeszukaj wszystkie tickety oczekujące na +rep
+          for (const [channelId, ticketData] of pendingTicketClose.entries()) {
+            if (ticketData.awaitingRep && ticketData.userId === mentionedUserId) {
+              console.log(`Znaleziono ticket ${channelId} oczekujący na +rep od ${mentionedUserId}`);
+              
+              // Pobierz kanał ticketu
+              const ticketChannel = await client.channels.fetch(channelId).catch(() => null);
+              if (ticketChannel) {
+                // Wyślij wiadomość o zamknięciu ticketu za 5 sekund
+                try {
+                  const closeMessage = await ticketChannel.send({
+                    content: `✅ **Otrzymano +rep!** Ticket zostanie zamknięty za **5 sekund**...`
+                  });
+                  
+                  // Zamknij ticket po 5 sekundach
+                  setTimeout(async () => {
+                    try {
+                      // Spróbuj zamknąć kanał
+                      await ticketChannel.delete('Ticket zamknięty po otrzymaniu +rep');
+                      
+                      // Usuń z mapy oczekujących ticketów
+                      pendingTicketClose.delete(channelId);
+                      ticketOwners.delete(channelId);
+                      
+                      console.log(`Ticket ${channelId} został zamknięty po otrzymaniu +rep`);
+                    } catch (closeErr) {
+                      console.error(`Błąd zamykania ticketu ${channelId}:`, closeErr);
+                      
+                      // Jeśli nie udało się zamknąć kanału, wyślij wiadomość o błędzie
+                      try {
+                        await ticketChannel.send({
+                          content: "> `❌` × **Wystąpił** błąd podczas zamykania ticketu. Skontaktuj się z **administracją**."
+                        });
+                      } catch (msgErr) {
+                        console.error("Błąd wysyłania wiadomości o błędzie:", msgErr);
+                      }
+                    }
+                  }, 5000);
+                  
+                } catch (msgErr) {
+                  console.error("Błąd wysyłania wiadomości o zamknięciu ticketu:", msgErr);
+                }
+              }
+              
+              break; // Znaleziono ticket, nie trzeba dalej szukać
+            }
+          }
+        }
+      } catch (ticketErr) {
+        console.error("Błąd sprawdzania ticketów oczekujących na +rep:", ticketErr);
+      }
 
       // Use scheduled rename (respect cooldown)
       scheduleRepChannelRename(channel, legitRepCount).catch(() => null);
