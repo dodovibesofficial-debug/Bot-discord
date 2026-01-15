@@ -1242,7 +1242,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczenie")
     .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -3289,22 +3289,22 @@ async function handleSlashCommand(interaction) {
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
-  // Sprawdź czy komenda jest używana na właściwym kanale
-  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
-    await interaction.reply({
-      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
-      flags: [MessageFlags.Ephemeral]
-    });
-    return;
-  }
-
-  // Sprawdź czy sprzedawca
+  // Sprawdź czy sprzedawca - specjalne pozwolenie mimo braku uprawnień Administratora
   const SELLER_ROLE_ID = "1350786945944391733";
   const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
   
   if (!hasSellerRole) {
     await interaction.reply({
       content: "> `❌` × **Tylko** użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
+      flags: [MessageFlags.Ephemeral]
+    });
+    return;
+  }
+
+  // Sprawdź czy komenda jest używana na właściwym kanale
+  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
+    await interaction.reply({
+      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
       flags: [MessageFlags.Ephemeral]
     });
     return;
