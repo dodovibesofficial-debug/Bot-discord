@@ -8059,7 +8059,7 @@ async function handleHelpCommand(interaction) {
         [
           "> </opinia:1454974442873553113> — Wystaw opinie o naszym sklepie",
           "> </drop:1454974442370240585> — Wylosuj zniżkę",
-          "> </sprawdz-zaproszenia:1454974443179868263> — Wylosuj zniżkę",
+          "> </sprawdz-zaproszenia:1454974443179868263> — Sprawdź swoje zaproszenia",
           "> </help:1455189647054471447> — Pokaż tę wiadomość",
         ].join("\n"),
       )
