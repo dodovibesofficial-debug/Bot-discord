@@ -1024,7 +1024,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("ticket-zakoncz")
     .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption((option) =>
       option
         .setName("typ")
@@ -1112,7 +1112,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("zamknij")
     .setDescription("Zamknij ticket")
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("panelweryfikacja")
@@ -1210,12 +1210,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName("przejmij")
     .setDescription("Przejmij aktualny ticket (admin helper)")
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("odprzejmij")
     .setDescription("Odprzejmij aktualny ticket (admin helper)")
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // UPDATED: sendmessage (interactive flow)
   new SlashCommandBuilder()
@@ -1223,7 +1223,7 @@ const commands = [
     .setDescription(
       "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (admin)",
     )
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addChannelOption((o) =>
       o
         .setName("kanal")
@@ -1242,7 +1242,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczenie")
     .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -1259,7 +1259,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczeniazaplacil")
     .setDescription("Oznacz rozliczenie jako zapłacone (admin only)")
-    .setDefaultMemberPermissions(new PermissionsBitSet(0n))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
