@@ -1024,7 +1024,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("ticket-zakoncz")
     .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption((option) =>
       option
         .setName("typ")
@@ -1112,7 +1112,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("zamknij")
     .setDescription("Zamknij ticket")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("panelweryfikacja")
@@ -1210,12 +1210,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName("przejmij")
     .setDescription("Przejmij aktualny ticket (admin helper)")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("odprzejmij")
     .setDescription("Odprzejmij aktualny ticket (admin helper)")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // UPDATED: sendmessage (interactive flow)
   new SlashCommandBuilder()
@@ -1223,7 +1223,7 @@ const commands = [
     .setDescription(
       "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (admin)",
     )
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addChannelOption((o) =>
       o
         .setName("kanal")
@@ -1242,7 +1242,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczenie")
     .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -1259,7 +1259,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczeniazaplacil")
     .setDescription("Oznacz rozliczenie jako zapłacone (admin only)")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
@@ -3298,14 +3298,13 @@ async function handleRozliczenieCommand(interaction) {
     return;
   }
 
-  // Sprawdź czy właściciel lub ma odpowiednią rolę
-  const isOwner = interaction.user.id === interaction.guild.ownerId;
-  const requiredRoleId = "1350786945944391733";
-  const hasRole = interaction.member.roles.cache.has(requiredRoleId);
+  // Sprawdź czy sprzedawca
+  const SELLER_ROLE_ID = "1350786945944391733";
+  const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
   
-  if (!isOwner && !hasRole) {
+  if (!hasSellerRole) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera lub użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
+      content: "> `❌` × **Tylko** użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -4361,14 +4360,13 @@ async function handleTicketZakonczCommand(interaction) {
     return;
   }
 
-  // Sprawdź czy właściciel lub sprzedawca
-  const isOwner = interaction.user.id === interaction.guild.ownerId;
+  // Sprawdź czy sprzedawca
   const SELLER_ROLE_ID = "1350786945944391733";
   const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
   
-  if (!isOwner && !hasSellerRole) {
+  if (!hasSellerRole) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera lub użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
+      content: "> `❌` × **Tylko** użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
