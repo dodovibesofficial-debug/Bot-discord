@@ -9075,7 +9075,7 @@ async function sendRozliczeniaMessage() {
       .setDescription(
         "> \`ℹ️\` **Jeżeli sprzedajecie coś na shopie, wysyłacie tutaj kwotę, za którą dokonaliście sprzedaży. Na koniec każdego tygodnia w niedzielę rano macie czas do godziny 20:00, aby rozliczyć się i zapłacić 10% od łącznej sumy sprzedaży z __całego tygodnia.__**"
       )
-      .setFooter({ text: "Użyj **komendy** /rozliczenie aby dodać sprzedaż" })
+      .setFooter({ text: "Użyj komendy /rozliczenie aby dodać sprzedaż" })
       .setTimestamp();
 
     await channel.send({ embeds: [embed] });
