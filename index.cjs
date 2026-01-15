@@ -1072,6 +1072,8 @@ const commands = [
         .setMaxValue(9999)
     )
     .toJSON(),
+  new SlashCommandBuilder()
+    .setName("panelkalkulator")
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
