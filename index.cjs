@@ -1049,6 +1049,18 @@ const commands = [
     )
     .toJSON(),
   new SlashCommandBuilder()
+    .setName("legit-rep-ustaw")
+    .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
+    .addIntegerOption((option) =>
+      option
+        .setName("ile")
+        .setDescription("Liczba legit repów (0-9999)")
+        .setRequired(true)
+        .setMinValue(0)
+        .setMaxValue(9999)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
     .setName("help")
     .setDescription("Spis wszystkich komend bota")
     .toJSON(),
@@ -3212,6 +3224,9 @@ async function handleSlashCommand(interaction) {
     case "ticket-zakoncz":
       await handleTicketZakonczCommand(interaction);
       break;
+    case "legit-rep-ustaw":
+      await handleLegitRepUstawCommand(interaction);
+      break;
     case "ticketpanel":
       await handleTicketPanelCommand(interaction);
       break;
@@ -4429,6 +4444,65 @@ async function handleTicketZakonczCommand(interaction) {
   });
 
   console.log(`Ticket ${channel.id} oczekuje na +rep od użytkownika ${ticketOwnerId} (komenda użyta przez ${interaction.user.username})`);
+}
+
+// ----------------- /legit-rep-ustaw handler -----------------
+async function handleLegitRepUstawCommand(interaction) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  const ile = interaction.options.getInteger("ile");
+  
+  if (ile < 0 || ile > 9999) {
+    await interaction.reply({
+      content: "> `❌` × **Podaj** liczbę od 0 do 9999.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  try {
+    // Zaktualizuj licznik
+    legitRepCount = ile;
+    
+    // Zmień nazwę kanału
+    const channelId = "1449840030947217529";
+    const channel = await client.channels.fetch(channelId).catch(() => null);
+    
+    if (!channel) {
+      await interaction.reply({
+        content: "> `❌` × **Nie znaleziono** kanału legit-rep.",
+        flags: [MessageFlags.Ephemeral],
+      });
+      return;
+    }
+
+    const newName = `✅-×┃legit-rep➔${ile}`;
+    await channel.setName(newName);
+    
+    // Wyślij informacyjną wiadomość
+    await interaction.reply({
+      content: `LegitRepy: ${ile}\nLegitChecki: ${ile}`
+    });
+    
+    // Zapisz stan
+    scheduleSavePersistentState();
+    
+    console.log(`Nazwa kanału legit-rep zmieniona na: ${newName} przez ${interaction.user.tag}`);
+    
+  } catch (error) {
+    console.error("Błąd podczas ustawiania legit-rep:", error);
+    await interaction.reply({
+      content: "> `❌` × **Wystąpił** błąd podczas zmiany nazwy kanału.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
 }
 
 async function handleSelectMenu(interaction) {
