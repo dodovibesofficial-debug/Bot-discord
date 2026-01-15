@@ -6289,6 +6289,12 @@ client.on(Events.MessageCreate, async (message) => {
       `• \`❗\` __**Na tym kanale można losować tylko zniżki!**__`,
     );
 
+  const sprawdzZaproszeniaInvalidEmbed = new EmbedBuilder()
+    .setColor(COLOR_RED)
+    .setDescription(
+      `• \`❗\` __**Na tym kanale można sprawdzać tylko zaproszenia!**__`,
+    );
+
   // Enforce drop-channel-only rule (only allow messages starting with "/drop")
   try {
     const guildId = message.guildId;
@@ -6356,6 +6362,44 @@ client.on(Events.MessageCreate, async (message) => {
     }
   } catch (e) {
     console.error("Błąd przy egzekwowaniu reguły kanału opinii:", e);
+  }
+
+  // Enforce sprawdz-zaproszenia-channel-only rule (only allow messages starting with "/sprawdz-zaproszenia")
+  try {
+    const guildId = message.guildId;
+    if (guildId) {
+      const sprawdzZaproszeniaChannelId = "1449159417445482566";
+      if (message.channel.id === sprawdzZaproszeniaChannelId) {
+        const content = (message.content || "").trim();
+        // allow if message begins with "/sprawdz-zaproszenia" (user typed it)
+        if (!content.toLowerCase().startsWith("/sprawdz-zaproszenia")) {
+          // delete and warn
+          try {
+            await message.delete().catch(() => null);
+          } catch (e) {
+            // ignore
+          }
+          try {
+            const warnMsg = await message.channel.send({
+              content: `<@${message.author.id}>`,
+              embeds: [sprawdzZaproszeniaInvalidEmbed],
+            });
+            setTimeout(() => warnMsg.delete().catch(() => { }), 3000);
+          } catch (e) {
+            // ignore
+          }
+          return;
+        } else {
+          // typed the command - allow (but delete to reduce clutter)
+          try {
+            await message.delete().catch(() => null);
+          } catch (e) { }
+          return;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Błąd przy egzekwowaniu reguły kanału sprawdzania zaproszeń:", e);
   }
 
   // If any message is sent in the specific legitcheck-rep channel
