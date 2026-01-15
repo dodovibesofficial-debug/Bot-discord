@@ -1124,10 +1124,6 @@ const commands = [
     )
     .toJSON(),
   new SlashCommandBuilder()
-    .setName("help")
-    .setDescription("Spis wszystkich komend bota")
-    .toJSON(),
-  new SlashCommandBuilder()
     .setName("zaproszeniastats")
     .setDescription("Edytuj statystyki zaproszeń (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -1181,8 +1177,8 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
-    .setName("opinia")
-    .setDescription("Podziel sie opinią o naszym sklepie!")
+    .setName("opinia-admin")
+    .setDescription("Zarządzaj opiniami (admin)")
     .addIntegerOption((option) =>
       option
         .setName("czas_oczekiwania")
@@ -1294,11 +1290,6 @@ const commands = [
         .setRequired(false)
         .addChannelTypes(ChannelType.GuildText),
     )
-    .toJSON(),
-  // RENAMED: sprawdz-zaproszenia (was sprawdz-zapro)
-  new SlashCommandBuilder()
-    .setName("sprawdz-zaproszenia")
-    .setDescription("Sprawdź ile posiadasz zaproszeń ")
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenie")
@@ -3302,6 +3293,9 @@ async function handleSlashCommand(interaction) {
       break;
     case "opinia":
       await handleOpinionCommand(interaction);
+      break;
+    case "opinia-admin":
+      await handleOpinionAdminCommand(interaction);
       break;
     case "wyczysckanal":
       await handleWyczyscKanalCommand(interaction);
@@ -6600,6 +6594,14 @@ client.on(Events.MessageCreate, async (message) => {
     message.reply("Pong!");
   }
 });
+
+// ----------------- OPINIA-ADMIN handler -----------------
+async function handleOpinionAdminCommand(interaction) {
+  await interaction.reply({
+    content: "Komenda w budowie - zarządzanie opiniami",
+    flags: [MessageFlags.Ephemeral]
+  });
+}
 
 // ----------------- OPINIA handler (updated to match provided layout + delete & re-send instruction so it moves to bottom) -----------------
 
