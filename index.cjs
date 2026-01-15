@@ -8054,13 +8054,13 @@ async function handleHelpCommand(interaction) {
   try {
     const embed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setTitle("\`📋\` Spis podstawowych komend bota")
+      .setTitle("\`📋\` × Spis podstawowych komend bota")
       .setDescription(
         [
-          "> </opinia:1454974442873553113> — \`Wystaw opinie o naszym sklepie\`",
-          "> </drop:1454974442370240585> — \`Wylosuj zniżkę\`",
-          "> </sprawdz-zaproszenia:1454974443179868263> — \`Wylosuj zniżkę\`",
-          "> </help:1455189647054471447> — \`Pokaż tę wiadomość\`",
+          "> </opinia:1454974442873553113> — Wystaw opinie o naszym sklepie",
+          "> </drop:1454974442370240585> — Wylosuj zniżkę",
+          "> </sprawdz-zaproszenia:1454974443179868263> — Wylosuj zniżkę",
+          "> </help:1455189647054471447> — Pokaż tę wiadomość",
         ].join("\n"),
       )
 
