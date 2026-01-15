@@ -4366,7 +4366,7 @@ async function handleTicketZakonczCommand(interaction) {
         .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep <@${ticketOwnerId}> sprzedał ${ile} ${serwer}\n\`\`\``
+          `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
         );
       break;
 
@@ -4376,7 +4376,7 @@ async function handleTicketZakonczCommand(interaction) {
         .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep <@${ticketOwnerId}> kupił ${ile} ${serwer}\n\`\`\``
+          `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
         );
       break;
 
@@ -4386,7 +4386,7 @@ async function handleTicketZakonczCommand(interaction) {
         .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep <@${ticketOwnerId}> wręczył nagrodę ${ile} ${serwer}\n\`\`\``
+          `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
         );
       
       // Dodaj informację o brakujących zaproszeniach dla typu "wręczył nagrodę"
@@ -4421,12 +4421,14 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
-    userId: ticketOwnerId,
+    userId: ticketOwnerId, // właściciel ticketu musi wysłać +rep
+    commandUserId: interaction.user.id, // osoba która użyła komendy
+    commandUsername: interaction.user.username, // nick osoby która użyła komendy
     awaitingRep: true,
     ts: Date.now()
   });
 
-  console.log(`Ticket ${channel.id} oczekuje na +rep od użytkownika ${ticketOwnerId}`);
+  console.log(`Ticket ${channel.id} oczekuje na +rep od użytkownika ${ticketOwnerId} (komenda użyta przez ${interaction.user.username})`);
 }
 
 async function handleSelectMenu(interaction) {
@@ -6358,12 +6360,18 @@ client.on(Events.MessageCreate, async (message) => {
 
       // Sprawdź czy istnieje ticket oczekujący na +rep od tego użytkownika
       try {
-        const mentionedUserId = message.content.match(/<@!?(\d+)>/)?.[1];
-        if (mentionedUserId) {
-          // Przeszukaj wszystkie tickety oczekujące na +rep
-          for (const [channelId, ticketData] of pendingTicketClose.entries()) {
-            if (ticketData.awaitingRep && ticketData.userId === mentionedUserId) {
-              console.log(`Znaleziono ticket ${channelId} oczekujący na +rep od ${mentionedUserId}`);
+        const senderId = message.author.id; // ID osoby która wysłała +rep
+        
+        // Przeszukaj wszystkie tickety oczekujące na +rep
+        for (const [channelId, ticketData] of pendingTicketClose.entries()) {
+          if (ticketData.awaitingRep && ticketData.userId === senderId) {
+            // Sprawdź czy w wiadomości +rep jest nick osoby która użyła komendy
+            const expectedUsername = ticketData.commandUsername;
+            const messageContent = message.content.trim();
+            
+            // Sprawdź czy wiadomość zawiera oczekiwany nick
+            if (messageContent.includes(`@${expectedUsername}`)) {
+              console.log(`Znaleziono ticket ${channelId} - twórca ticketu ${senderId} wysłał +rep z nickiem ${expectedUsername}`);
               
               // Pobierz kanał ticketu
               const ticketChannel = await client.channels.fetch(channelId).catch(() => null);
