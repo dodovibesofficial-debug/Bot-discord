@@ -1006,72 +1006,13 @@ const DEFAULT_NAMES = {
   },
 };
 
-// Funkcja do tworzenia dynamicznych opisów komend
-function createCommandForRole(commandName, baseDescription, isAdminCommand = false) {
-  return new SlashCommandBuilder()
-    .setName(commandName)
-    .setDescription(baseDescription)
-    .toJSON();
-}
-
 const commands = [
-  // Komendy dla klienta - na początku
-  createCommandForRole("help", "Spis wszystkich komend bota"),
-  createCommandForRole("drop", "Wylosuj zniżkę na zakupy w sklepie!"),
-  createCommandForRole("opinia", "Podziel sie opinią o naszym sklepie!"),
-  createCommandForRole("sprawdz-zaproszenia", "Sprawdź ile posiadasz zaproszeń"),
-  // Komendy admina i sprzedawcy
+  new SlashCommandBuilder()
+    .setName("drop")
+    .setDescription("Wylosuj zniżkę na zakupy w sklepie!")
+    .toJSON(),
   new SlashCommandBuilder()
     .setName("panelkalkulator")
-    .setDescription("Wyślij panel kalkulatora waluty na kanał")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .toJSON(),
-  new SlashCommandBuilder()
-    .setName("ticketpanel")
-    .setDescription("Wyślij TicketPanel na kanał")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .toJSON(),
-  new SlashCommandBuilder()
-    .setName("ticket-zakoncz")
-    .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
-    .setDefaultMemberPermissions(null)
-    .addStringOption((option) =>
-      option
-        .setName("typ")
-        .setDescription("Typ transakcji")
-        .setRequired(true)
-        .addChoices(
-          { name: "ZAKUP", value: "zakup" },
-          { name: "SPRZEDAŻ", value: "sprzedaż" },
-          { name: "WRĘCZYŁ NAGRODĘ", value: "wręczył nagrodę" }
-        )
-    )
-    .addStringOption((option) =>
-      option
-        .setName("ile")
-        .setDescription("Kwota transakcji (np. 22,5k, 50k, 200k)")
-        .setRequired(true)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("serwer")
-        .setDescription("Nazwa serwera (np. anarchia lf)")
-        .setRequired(true)
-    )
-    .toJSON(),
-  new SlashCommandBuilder()
-    .setName("legit-rep-ustaw")
-    .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addIntegerOption((option) =>
-      option
-        .setName("ile")
-        .setDescription("Liczba legit repów (0-9999)")
-        .setRequired(true)
-        .setMinValue(0)
-        .setMaxValue(9999)
-    )
-    .toJSON(),
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
@@ -1170,12 +1111,12 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("zamknij")
-    .setDescription("Zamknij ticket (sprzedawca)")
+    .setDescription("Zamknij ticket")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("panelweryfikacja")
-    .setDescription("Wyślij panel weryfikacji na kanał (admin)")
+    .setDescription("Wyślij panel weryfikacji na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
@@ -1256,31 +1197,31 @@ const commands = [
   // NEW: /resetlc command - reset legitcheck counter
   new SlashCommandBuilder()
     .setName("resetlc")
-    .setDescription("Reset liczby legitchecków do zera (admin)")
+    .setDescription("Reset liczby legitchecków do zera (admin only)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // NEW: /zresetujczasoczekiwania command - clear cooldowns for drop/opinia/info
   new SlashCommandBuilder()
     .setName("zresetujczasoczekiwania")
-    .setDescription("Resetuje czasy oczekiwania dla /drop i /opinia (admin)")
+    .setDescription("Resetuje czasy oczekiwania dla /drop i /opinia")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // NEW helper admin commands for claiming/unclaiming
   new SlashCommandBuilder()
     .setName("przejmij")
-    .setDescription("Przejmij aktualny ticket (sprzedawca)")
+    .setDescription("Przejmij aktualny ticket (admin helper)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("odprzejmij")
-    .setDescription("Odprzejmij aktualny ticket (sprzedawca)")
+    .setDescription("Odprzejmij aktualny ticket (admin helper)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   // UPDATED: sendmessage (interactive flow)
   new SlashCommandBuilder()
     .setName("sendmessage")
     .setDescription(
-      "Wysyła wiadomośc w embedzie (admin)",
+      "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (admin)",
     )
     .setDefaultMemberPermissions(null)
     .addChannelOption((o) =>
@@ -1296,12 +1237,12 @@ const commands = [
   // RENAMED: sprawdz-zaproszenia (was sprawdz-zapro)
   new SlashCommandBuilder()
     .setName("sprawdz-zaproszenia")
-    .setDescription("Sprawdź ile posiadasz zaproszeń ")
+    .setDescription("Sprawdź ile posiadasz zaproszeń")
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenie")
-    .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń (sprzedawca)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
+    .setDefaultMemberPermissions(null)
     .addIntegerOption((option) =>
       option
         .setName("kwota")
@@ -1318,7 +1259,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczeniazaplacil")
     .setDescription("Oznacz rozliczenie jako zapłacone (admin only)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDefaultMemberPermissions(null)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
@@ -1328,17 +1269,17 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczeniezakoncz")
-    .setDescription("Wyślij podsumowanie rozliczeń (admin)")
+    .setDescription("Wyślij podsumowanie rozliczeń (tylko właściciel)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("statusbota")
-    .setDescription("Pokaż szczegółowy status bota (admin)")
+    .setDescription("Pokaż szczegółowy status bota")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko właściciel
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenieustaw")
-    .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (admin)")
+    .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption((option) =>
       option
@@ -3348,22 +3289,23 @@ async function handleSlashCommand(interaction) {
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
-  // Sprawdź czy sprzedawca - specjalne pozwolenie mimo braku uprawnień Administratora
-  const SELLER_ROLE_ID = "1350786945944391733";
-  const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
-  
-  if (!hasSellerRole) {
+  // Sprawdź czy komenda jest używana na właściwym kanale
+  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
+      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
       flags: [MessageFlags.Ephemeral]
     });
     return;
   }
 
-  // Sprawdź czy komenda jest używana na właściwym kanale
-  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
+  // Sprawdź czy właściciel lub ma odpowiednią rolę
+  const isOwner = interaction.user.id === interaction.guild.ownerId;
+  const requiredRoleId = "1350786945944391733";
+  const hasRole = interaction.member.roles.cache.has(requiredRoleId);
+  
+  if (!isOwner && !hasRole) {
     await interaction.reply({
-      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
+      content: "> `❌` × **Tylko** właściciel serwera lub użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3932,17 +3874,6 @@ async function handleDropCommand(interaction) {
   const user = interaction.user;
   const guildId = interaction.guildId;
 
-  // Sprawdź czy użytkownik ma dostęp do komendy
-  const CLIENT_ID = "1425935544273338532";
-  
-  if (user.id !== CLIENT_ID) {
-    await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
-      flags: [MessageFlags.Ephemeral],
-    });
-    return;
-  }
-
   // Now require guild and configured drop channel
   if (!guildId) {
     await interaction.reply({
@@ -4419,13 +4350,14 @@ async function handleTicketZakonczCommand(interaction) {
     return;
   }
 
-  // Sprawdź czy sprzedawca
+  // Sprawdź czy właściciel lub sprzedawca
+  const isOwner = interaction.user.id === interaction.guild.ownerId;
   const SELLER_ROLE_ID = "1350786945944391733";
   const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
   
-  if (!hasSellerRole) {
+  if (!isOwner && !hasSellerRole) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
+      content: "> `❌` × **Tylko** właściciel serwera lub użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6674,17 +6606,6 @@ client.on(Events.MessageCreate, async (message) => {
 // ----------------- OPINIA handler (updated to match provided layout + delete & re-send instruction so it moves to bottom) -----------------
 
 async function handleOpinionCommand(interaction) {
-  // Sprawdź czy użytkownik ma dostęp do komendy
-  const CLIENT_ID = "1425935544273338532";
-  
-  if (interaction.user.id !== CLIENT_ID) {
-    await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
-      flags: [MessageFlags.Ephemeral],
-    });
-    return;
-  }
-
   const guildId = interaction.guildId;
   if (!guildId || !interaction.guild) {
     await interaction.reply({
@@ -7752,17 +7673,6 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
-  // Sprawdź czy użytkownik ma dostęp do komendy
-  const CLIENT_ID = "1425935544273338532";
-  
-  if (interaction.user.id !== CLIENT_ID) {
-    await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
-      flags: [MessageFlags.Ephemeral]
-    });
-    return;
-  }
-
   // Najpierw sprawdzamy warunki bez defer
   if (!interaction.guild) {
     await interaction.reply({
@@ -8141,18 +8051,6 @@ async function handleZaprosieniaStatsCommand(interaction) {
 // ---------------------------------------------------
 // Pomoc
 async function handleHelpCommand(interaction) {
-  // Sprawdź czy użytkownik ma dostęp do komendy
-  const userId = interaction.user.id;
-  const CLIENT_ID = "1425935544273338532";
-  
-  if (userId !== CLIENT_ID) {
-    await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
-      flags: [MessageFlags.Ephemeral],
-    });
-    return;
-  }
-
   try {
     const embed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
