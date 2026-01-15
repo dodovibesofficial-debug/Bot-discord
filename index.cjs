@@ -1006,13 +1006,72 @@ const DEFAULT_NAMES = {
   },
 };
 
+// Funkcja do tworzenia dynamicznych opisów komend
+function createCommandForRole(commandName, baseDescription, isAdminCommand = false) {
+  return new SlashCommandBuilder()
+    .setName(commandName)
+    .setDescription(baseDescription)
+    .toJSON();
+}
+
 const commands = [
-  new SlashCommandBuilder()
-    .setName("drop")
-    .setDescription("Wylosuj zniżkę na zakupy w sklepie!")
-    .toJSON(),
+  // Komendy dla klienta - na początku
+  createCommandForRole("help", "Spis wszystkich komend bota"),
+  createCommandForRole("drop", "Wylosuj zniżkę na zakupy w sklepie!"),
+  createCommandForRole("opinia", "Podziel sie opinią o naszym sklepie!"),
+  createCommandForRole("sprawdz-zaproszenia", "Sprawdź ile posiadasz zaproszeń"),
+  // Komendy admina i sprzedawcy
   new SlashCommandBuilder()
     .setName("panelkalkulator")
+    .setDescription("Wyślij panel kalkulatora waluty na kanał")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("ticketpanel")
+    .setDescription("Wyślij TicketPanel na kanał")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("ticket-zakoncz")
+    .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
+    .setDefaultMemberPermissions(null)
+    .addStringOption((option) =>
+      option
+        .setName("typ")
+        .setDescription("Typ transakcji")
+        .setRequired(true)
+        .addChoices(
+          { name: "ZAKUP", value: "zakup" },
+          { name: "SPRZEDAŻ", value: "sprzedaż" },
+          { name: "WRĘCZYŁ NAGRODĘ", value: "wręczył nagrodę" }
+        )
+    )
+    .addStringOption((option) =>
+      option
+        .setName("ile")
+        .setDescription("Kwota transakcji (np. 22,5k, 50k, 200k)")
+        .setRequired(true)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("serwer")
+        .setDescription("Nazwa serwera (np. anarchia lf)")
+        .setRequired(true)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("legit-rep-ustaw")
+    .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addIntegerOption((option) =>
+      option
+        .setName("ile")
+        .setDescription("Liczba legit repów (0-9999)")
+        .setRequired(true)
+        .setMinValue(0)
+        .setMaxValue(9999)
+    )
+    .toJSON(),
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
@@ -1111,12 +1170,12 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("zamknij")
-    .setDescription("Zamknij ticket")
+    .setDescription("Zamknij ticket (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("panelweryfikacja")
-    .setDescription("Wyślij panel weryfikacji na kanał")
+    .setDescription("Wyślij panel weryfikacji na kanał (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
@@ -1197,31 +1256,31 @@ const commands = [
   // NEW: /resetlc command - reset legitcheck counter
   new SlashCommandBuilder()
     .setName("resetlc")
-    .setDescription("Reset liczby legitchecków do zera (admin only)")
+    .setDescription("Reset liczby legitchecków do zera (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // NEW: /zresetujczasoczekiwania command - clear cooldowns for drop/opinia/info
   new SlashCommandBuilder()
     .setName("zresetujczasoczekiwania")
-    .setDescription("Resetuje czasy oczekiwania dla /drop i /opinia")
+    .setDescription("Resetuje czasy oczekiwania dla /drop i /opinia (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // NEW helper admin commands for claiming/unclaiming
   new SlashCommandBuilder()
     .setName("przejmij")
-    .setDescription("Przejmij aktualny ticket (admin helper)")
+    .setDescription("Przejmij aktualny ticket (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("odprzejmij")
-    .setDescription("Odprzejmij aktualny ticket (admin helper)")
+    .setDescription("Odprzejmij aktualny ticket (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   // UPDATED: sendmessage (interactive flow)
   new SlashCommandBuilder()
     .setName("sendmessage")
     .setDescription(
-      "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (admin)",
+      "Wysyła wiadomośc w embedzie (admin)",
     )
     .setDefaultMemberPermissions(null)
     .addChannelOption((o) =>
@@ -1237,11 +1296,11 @@ const commands = [
   // RENAMED: sprawdz-zaproszenia (was sprawdz-zapro)
   new SlashCommandBuilder()
     .setName("sprawdz-zaproszenia")
-    .setDescription("Sprawdź ile posiadasz zaproszeń")
+    .setDescription("Sprawdź ile posiadasz zaproszeń ")
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenie")
-    .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
+    .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń (sprzedawca)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addIntegerOption((option) =>
       option
@@ -1259,7 +1318,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczeniazaplacil")
     .setDescription("Oznacz rozliczenie jako zapłacone (admin only)")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
@@ -1269,17 +1328,17 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczeniezakoncz")
-    .setDescription("Wyślij podsumowanie rozliczeń (tylko właściciel)")
+    .setDescription("Wyślij podsumowanie rozliczeń (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("statusbota")
-    .setDescription("Pokaż szczegółowy status bota")
+    .setDescription("Pokaż szczegółowy status bota (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko właściciel
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenieustaw")
-    .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
+    .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (admin)")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption((option) =>
       option
