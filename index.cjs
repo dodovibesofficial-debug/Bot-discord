@@ -4629,28 +4629,28 @@ async function showZakupModal(interaction) {
   const serwerInput = new TextInputBuilder()
     .setCustomId("serwer")
     .setLabel("Na jakim serwerze?")
-    .setPlaceholder("Anarchia, Rapy itd.")
+    .setPlaceholder("Przykład: Anarchia")
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
   const kwotaInput = new TextInputBuilder()
     .setCustomId("kwota")
-    .setLabel("Za ile chcesz kupić? (tylko liczba, np. 40)")
+    .setLabel("Za ile chcesz kupić?")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("np. 40")
+    .setPlaceholder("Przykład: 20zł")
     .setRequired(true);
 
   const platnosInput = new TextInputBuilder()
     .setCustomId("platnosc")
     .setLabel("Jaką metodą płatności płacisz?")
-    .setPlaceholder("PayPal, BLIK, Przelew, PaySafeCard (...)")
+    .setPlaceholder("Przykład: Blik")
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
   const oczekiwanaWalutaInput = new TextInputBuilder()
     .setCustomId("oczekiwana_waluta")
     .setLabel("Co chciałbyś zakupić")
-    .setPlaceholder("np. Elytra")
+    .setPlaceholder("Przykład: Elytra")
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
@@ -4671,9 +4671,9 @@ async function showKonkursOdbiorModal(interaction) {
 
   const infoInput = new TextInputBuilder()
     .setCustomId("konkurs_info")
-    .setLabel("Za jaki konkurs / jaka nagroda?")
+    .setLabel("Za jaki konkurs oraz jaka nagroda?")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("np. konkurs na discordzie / 100k$")
+    .setPlaceholder("Przykład: Wygrałem konkurs na elytre")
     .setRequired(true)
     .setMaxLength(128);
 
@@ -5003,7 +5003,7 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
     }
   } catch (err) {
     console.error("Błąd przy unclaim:", err);
-    await replyEphemeral("❌ Wystąpił błąd podczas odprzejmowania ticketu.");
+    await replyEphemeral("> \`❌\` Wystąpił błąd podczas odprzejmowania ticketu.");
   }
 }
 
@@ -5015,7 +5015,7 @@ async function showSprzedazModal(interaction) {
   const coInput = new TextInputBuilder()
     .setCustomId("co_sprzedac")
     .setLabel("Co chcesz sprzedać?")
-    .setPlaceholder("100k$, rapy box itd.")
+    .setPlaceholder("Przykład: 100k$")
     .setStyle(TextInputStyle.Short)
     .setRequired(true);
 
@@ -5023,14 +5023,14 @@ async function showSprzedazModal(interaction) {
     .setCustomId("serwer")
     .setLabel("Na jakim serwerze?")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("Anarchia, Rapy itd.")
+    .setPlaceholder("Przykład: Anarchia")
     .setRequired(true);
 
   const ileInput = new TextInputBuilder()
     .setCustomId("ile")
     .setLabel("Ile oczekujesz?")
     .setStyle(TextInputStyle.Short)
-    .setPlaceholder("np. 20zł")
+    .setPlaceholder("Przykład: 20zł")
     .setRequired(true);
 
   modal.addComponents(
