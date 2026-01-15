@@ -1024,6 +1024,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("ticket-zakoncz")
     .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption((option) =>
       option
         .setName("typ")
@@ -1051,6 +1052,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("legit-rep-ustaw")
     .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addIntegerOption((option) =>
       option
         .setName("ile")
@@ -4347,6 +4349,19 @@ async function handleTicketZakonczCommand(interaction) {
     return;
   }
 
+  // Sprawdź czy właściciel lub sprzedawca
+  const isOwner = interaction.user.id === interaction.guild.ownerId;
+  const SELLER_ROLE_ID = "1350786945944391733";
+  const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
+  
+  if (!isOwner && !hasSellerRole) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera lub użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   // Pobierz parametry
   const typ = interaction.options.getString("typ");
   const ile = interaction.options.getString("ile");
@@ -4363,12 +4378,6 @@ async function handleTicketZakonczCommand(interaction) {
     });
     return;
   }
-
-  // Ping autora ticketa
-  await interaction.reply({
-    content: `<@${ticketOwnerId}>`,
-    allowedMentions: { users: [ticketOwnerId] }
-  });
 
   // Stwórz embed instrukcji w zależności od typu
   let embed;
@@ -4431,8 +4440,11 @@ async function handleTicketZakonczCommand(interaction) {
       return;
   }
 
-  // Wyślij embed instrukcji
-  await interaction.followUp({ embeds: [embed] });
+  // Wyślij jedną wiadomość z pingiem i embedem
+  await interaction.reply({
+    content: `<@${ticketOwnerId}>`,
+    embeds: [embed]
+  });
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
