@@ -1072,8 +1072,6 @@ const commands = [
         .setMaxValue(9999)
     )
     .toJSON(),
-  new SlashCommandBuilder()
-    .setName("panelkalkulator")
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
@@ -1122,6 +1120,10 @@ const commands = [
         .setMinValue(0)
         .setMaxValue(9999)
     )
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("help")
+    .setDescription("Spis wszystkich komend bota")
     .toJSON(),
   new SlashCommandBuilder()
     .setName("zaproszeniastats")
@@ -1177,8 +1179,8 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
-    .setName("opinia-admin")
-    .setDescription("Zarządzaj opiniami (admin)")
+    .setName("opinia")
+    .setDescription("Podziel sie opinią o naszym sklepie!")
     .addIntegerOption((option) =>
       option
         .setName("czas_oczekiwania")
@@ -1290,6 +1292,11 @@ const commands = [
         .setRequired(false)
         .addChannelTypes(ChannelType.GuildText),
     )
+    .toJSON(),
+  // RENAMED: sprawdz-zaproszenia (was sprawdz-zapro)
+  new SlashCommandBuilder()
+    .setName("sprawdz-zaproszenia")
+    .setDescription("Sprawdź ile posiadasz zaproszeń ")
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenie")
@@ -3294,9 +3301,6 @@ async function handleSlashCommand(interaction) {
     case "opinia":
       await handleOpinionCommand(interaction);
       break;
-    case "opinia-admin":
-      await handleOpinionAdminCommand(interaction);
-      break;
     case "wyczysckanal":
       await handleWyczyscKanalCommand(interaction);
       break;
@@ -3928,6 +3932,17 @@ async function handleDropCommand(interaction) {
   const user = interaction.user;
   const guildId = interaction.guildId;
 
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (user.id !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   // Now require guild and configured drop channel
   if (!guildId) {
     await interaction.reply({
@@ -4406,8 +4421,9 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Sprawdź czy sprzedawca
   const SELLER_ROLE_ID = "1350786945944391733";
+  const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
   
-  if (!interaction.member.roles.cache.has(SELLER_ROLE_ID)) {
+  if (!hasSellerRole) {
     await interaction.reply({
       content: "> `❌` × **Tylko** użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
@@ -4737,6 +4753,21 @@ async function showKonkursOdbiorModal(interaction) {
 async function ticketClaimCommon(interaction, channelId) {
   const isBtn = typeof interaction.isButton === "function" && interaction.isButton();
 
+  if (!isAdminOrSeller(interaction.member)) {
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może przejąć ticket.",
+        flags: [MessageFlags.Ephemeral],
+      });
+    } else {
+      await interaction.followUp({
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może przejąć ticket.",
+        flags: [MessageFlags.Ephemeral],
+      }).catch(() => null);
+    }
+    return;
+  }
+
   if (!interaction.replied && !interaction.deferred) {
     if (isBtn) {
       await interaction.deferUpdate().catch(() => null);
@@ -4755,21 +4786,29 @@ async function ticketClaimCommon(interaction, channelId) {
 
   const ticketData = ticketOwners.get(channelId) || {
     claimedBy: null,
+    locked: false,
     userId: null,
     ticketMessageId: null,
-    originalCategoryId: null, // Dodaj oryginalną kategorię
+    originalCategoryId: null, // Zapisz oryginalną kategorię
   };
+
+  if (ticketData.locked) {
+    await replyEphemeral(
+      "❌ Ten ticket został zablokowany do przejmowania (ustawienia/zmiana nazwy).",
+    );
+    return;
+  }
+
+  if (ticketData && ticketData.claimedBy) {
+    await replyEphemeral(
+      `❌ Ten ticket został już przejęty przez <@${ticketData.claimedBy}>!`,
+    );
+    return;
+  }
 
   const ch = await client.channels.fetch(channelId).catch(() => null);
   if (!ch) {
     await replyEphemeral("❌ Nie mogę znaleźć tego kanału.");
-    return;
-  }
-
-  if (ticketData.claimedBy) {
-    await replyEphemeral(
-      `❌ Ten ticket został już przejęty przez <@${ticketData.claimedBy}>!`,
-    );
     return;
   }
 
@@ -4835,25 +4874,14 @@ async function ticketClaimCommon(interaction, channelId) {
       }
     }
 
-    // Właściciel ticketu już ma dostęp - zawsze musi widzieć
-    if (ticketData && ticketData.userId) {
-      await ch.permissionOverwrites.edit(ticketData.userId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true,
-      }).catch(() => null);
-    }
-
-    // Usuń uprawnienia osoby przejmującej
-    if (ticketData.claimedBy) {
-      await ch.permissionOverwrites.delete(ticketData.claimedBy).catch(() => null);
-    }
+    // Właściciel ticketu już ma dostęp - nie trzeba nic zmieniać
+    // Usuń limity kategorii dla kanału
 
     ticketData.claimedBy = claimerId;
     ticketOwners.set(channelId, ticketData);
     scheduleSavePersistentState();
 
-    if (ticketData.ticketMessageId) {
+    if (ticketData && ticketData.ticketMessageId) {
       await editTicketMessageButtons(ch, ticketData.ticketMessageId, claimerId).catch(() => null);
     }
 
@@ -4873,6 +4901,21 @@ async function ticketClaimCommon(interaction, channelId) {
 
 async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = null) {
   const isBtn = typeof interaction.isButton === "function" && interaction.isButton();
+
+  if (!isAdminOrSeller(interaction.member)) {
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może oddać ticket.",
+        flags: [MessageFlags.Ephemeral],
+      });
+    } else {
+      await interaction.followUp({
+        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może oddać ticket.",
+        flags: [MessageFlags.Ephemeral],
+      }).catch(() => null);
+    }
+    return;
+  }
 
   if (!interaction.replied && !interaction.deferred) {
     if (isBtn) {
@@ -5134,23 +5177,23 @@ async function handleModalSubmit(interaction) {
       const trybSelect = new StringSelectMenuBuilder()
         .setCustomId("kalkulator_tryb")
         .setPlaceholder("Wybierz serwer...")
-        .addOptions([
+        .addOptions(
           { label: "ANARCHIA LIFESTEAL", value: "ANARCHIA_LIFESTEAL", emoji: { id: "1457109250949124258" } },
           { label: "ANARCHIA BOXPVP", value: "ANARCHIA_BOXPVP", emoji: { id: "1457109250949124258" } },
           { label: "PYK MC", value: "PYK_MC", emoji: { id: "1457113144412475635" } }
-        ]);
+        );
 
       const metodaSelect = new StringSelectMenuBuilder()
         .setCustomId("kalkulator_metoda")
         .setPlaceholder("Wybierz metodę płatności...")
-        .addOptions([
+        .addOptions(
           { label: "BLIK", value: "BLIK", description: "Szybki przelew BLIK (0% prowizji)", emoji: { id: "1449354065887756378" } },
           { label: "Kod BLIK", value: "Kod BLIK", description: "Kod BLIK (10% prowizji)", emoji: { id: "1449354065887756378" } },
           { label: "PSC", value: "PSC", description: "Paysafecard (10% prowizji)", emoji: { id: "1449352743591608422" } },
           { label: "PSC bez paragonu", value: "PSC bez paragonu", description: "Paysafecard bez paragonu (20% prowizji)", emoji: { id: "1449352743591608422" } },
           { label: "PayPal", value: "PayPal", description: "PayPal (5% prowizji)", emoji: { id: "1449354427755659444" } },
           { label: "LTC", value: "LTC", description: "Litecoin (5% prowizji)", emoji: { id: "1449186363101548677" } }
-        ]);
+        );
 
       const embed = new EmbedBuilder()
         .setColor(COLOR_BLUE)
@@ -5199,23 +5242,23 @@ async function handleModalSubmit(interaction) {
       const trybSelect = new StringSelectMenuBuilder()
         .setCustomId("kalkulator_tryb")
         .setPlaceholder("Wybierz serwer...")
-        .addOptions([
+        .addOptions(
           { label: "ANARCHIA LIFESTEAL", value: "ANARCHIA_LIFESTEAL", emoji: { id: "1457109250949124258" } },
           { label: "ANARCHIA BOXPVP", value: "ANARCHIA_BOXPVP", emoji: { id: "1457109250949124258" } },
           { label: "PYK MC", value: "PYK_MC", emoji: { id: "1457113144412475635" } }
-        ]);
+        );
 
       const metodaSelect = new StringSelectMenuBuilder()
         .setCustomId("kalkulator_metoda")
         .setPlaceholder("Wybierz metodę płatności...")
-        .addOptions([
+        .addOptions(
           { label: "BLIK", value: "BLIK", description: "Szybki przelew BLIK (0% prowizji)", emoji: { id: "1449354065887756378" } },
           { label: "Kod BLIK", value: "Kod BLIK", description: "Kod BLIK (10% prowizji)", emoji: { id: "1449354065887756378" } },
           { label: "PSC", value: "PSC", description: "Paysafecard (10% prowizji)", emoji: { id: "1449352743591608422" } },
           { label: "PSC bez paragonu", value: "PSC bez paragonu", description: "Paysafecard bez paragonu (20% prowizji)", emoji: { id: "1449352743591608422" } },
           { label: "PayPal", value: "PayPal", description: "PayPal (5% prowizji)", emoji: { id: "1449354427755659444" } },
           { label: "LTC", value: "LTC", description: "Litecoin (5% prowizji)", emoji: { id: "1449186363101548677" } }
-        ]);
+        );
 
       const embed = new EmbedBuilder()
         .setColor(COLOR_BLUE)
@@ -5890,12 +5933,11 @@ async function handleModalSubmit(interaction) {
         const claimButton = new ButtonBuilder()
           .setCustomId(`ticket_claim_${channel.id}`)
           .setLabel("Przejmij")
-          .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Secondary);
-
+          .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Primary);
         const unclaimButton = new ButtonBuilder()
           .setCustomId(`ticket_unclaim_${channel.id}`)
           .setLabel("Odprzejmij")
-          .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Secondary)
+          .setStyle(ticketTypeLabel === "NAGRODA ZA ZAPROSZENIA" ? ButtonStyle.Secondary : ButtonStyle.Danger)
           .setDisabled(true);
 
         const buttonRow = new ActionRowBuilder().addComponents(
@@ -5919,18 +5961,13 @@ async function handleModalSubmit(interaction) {
         });
         scheduleSavePersistentState();
 
-        // LOG: ticket creation in logi-ticket channel (if exists)
-        try {
-          await logTicketCreation(interaction.guild, channel, {
-            openerId: user.id,
-            ticketTypeLabel,
-            formInfo,
-            ticketChannelId: channel.id,
-            ticketMessageId: sentMsg.id,
-          }).catch(() => { });
-        } catch (e) {
-          console.error("Błąd logowania utworzenia ticketu:", e);
-        }
+        await logTicketCreation(interaction.guild, channel, {
+          openerId: user.id,
+          ticketTypeLabel,
+          formInfo,
+          ticketChannelId: channel.id,
+          ticketMessageId: sentMsg.id,
+        }).catch(() => { });
 
         await interaction.reply({
           content: `> \`✅\` **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
@@ -5939,7 +5976,7 @@ async function handleModalSubmit(interaction) {
       } catch (err) {
         console.error("Błąd tworzenia ticketu (odbior):", err);
         await interaction.reply({
-          content: "> `❌` × **Wystąpił** błąd podczas tworzenia **ticketu**.",
+          content: "> `❌` × **Wystąpił** błąd podczas tworzenia **ticketa**.",
           flags: [MessageFlags.Ephemeral],
         });
       }
@@ -6029,7 +6066,7 @@ async function handleModalSubmit(interaction) {
           deny: [PermissionsBitField.Flags.ViewChannel], // @everyone nie widzi ticketów
         },
         {
-          id: user.id,
+          id: interaction.user.id,
           allow: [
             PermissionsBitField.Flags.ViewChannel,
             PermissionsBitField.Flags.SendMessages,
@@ -6177,7 +6214,7 @@ async function handleModalSubmit(interaction) {
     }
 
     await interaction.reply({
-      content: `> \`✅\` **Utworzono ticket! Przejdź do:** <#${channel.id}>.`,
+      content: `> \`✅\` **Utworzono ticket! Przejdź do:** <#${channel.id}>`,
       flags: [MessageFlags.Ephemeral],
     });
   } catch (error) {
@@ -6283,12 +6320,6 @@ client.on(Events.MessageCreate, async (message) => {
       `• \`❗\` __**Na tym kanale można losować tylko zniżki!**__`,
     );
 
-  const sprawdzZaproszeniaInvalidEmbed = new EmbedBuilder()
-    .setColor(COLOR_RED)
-    .setDescription(
-      `• \`❗\` __**Na tym kanale można sprawdzać tylko zaproszenia!**__`,
-    );
-
   // Enforce drop-channel-only rule (only allow messages starting with "/drop")
   try {
     const guildId = message.guildId;
@@ -6346,11 +6377,50 @@ client.on(Events.MessageCreate, async (message) => {
           }
           return;
         } else {
-          // typed the command - allow (but delete to reduce clutter)
-          try {
-            await message.delete().catch(() => null);
-          } catch (e) { }
-          return;
+          // If user typed plain "/opinia" (not using slash command) we should also enforce per-user cooldown here.
+          const last = opinionCooldowns.get(message.author.id) || 0;
+          if (Date.now() - last < OPINION_COOLDOWN_MS) {
+            const remaining = OPINION_COOLDOWN_MS - (Date.now() - last);
+            try {
+              await message.delete().catch(() => null);
+            } catch (e) { }
+            try {
+              const warnMsg = await message.channel.send({
+                content: `<@${message.author.id}>`,
+                embeds: [
+                  new EmbedBuilder()
+                    .setColor(COLOR_BLUE)
+                    .setDescription(
+                      `• \`❗\` Musisz poczekać ${humanizeMs(remaining)}, zanim użyjesz /opinia ponownie.`,
+                    ),
+                ],
+              });
+              setTimeout(() => warnMsg.delete().catch(() => { }), 4000);
+            } catch (e) { }
+            return;
+          } else {
+            // allow typed /opinia but start cooldown
+            opinionCooldowns.set(message.author.id, Date.now());
+            // delete typed /opinia to reduce clutter:
+            try {
+              await message.delete().catch(() => null);
+            } catch (e) { }
+            // Inform user to use slash command properly (instruction should be yellow and mention command id)
+            try {
+              const info = await message.channel.send({
+                content: `<@${message.author.id}>`,
+                embeds: [
+                  new EmbedBuilder()
+                    .setColor(COLOR_YELLOW)
+                    .setDescription(
+                      `Użyj **komendy** × </opinia:1454974442873553113> aby wystawić opinię — post został przyjęty.`,
+                    ),
+                ],
+              });
+              setTimeout(() => info.delete().catch(() => { }), 3000);
+            } catch (e) { }
+            return;
+          }
         }
       }
     }
@@ -6358,42 +6428,48 @@ client.on(Events.MessageCreate, async (message) => {
     console.error("Błąd przy egzekwowaniu reguły kanału opinii:", e);
   }
 
-  // Enforce sprawdz-zaproszenia-channel-only rule (only allow messages starting with "/sprawdz-zaproszenia")
+  // Enforce zaproszenia-check-only channel rule:
   try {
-    const guildId = message.guildId;
-    if (guildId) {
-      const sprawdzZaproszeniaChannelId = "1449159417445482566";
-      if (message.channel.id === sprawdzZaproszeniaChannelId) {
-        const content = (message.content || "").trim();
-        // allow if message begins with "/sprawdz-zaproszenia" (user typed it)
-        if (!content.toLowerCase().startsWith("/sprawdz-zaproszenia")) {
-          // delete and warn
-          try {
-            await message.delete().catch(() => null);
-          } catch (e) {
-            // ignore
-          }
-          try {
-            const warnMsg = await message.channel.send({
-              content: `<@${message.author.id}>`,
-              embeds: [sprawdzZaproszeniaInvalidEmbed],
-            });
-            setTimeout(() => warnMsg.delete().catch(() => { }), 3000);
-          } catch (e) {
-            // ignore
-          }
-          return;
-        } else {
-          // typed the command - allow (but delete to reduce clutter)
-          try {
-            await message.delete().catch(() => null);
-          } catch (e) { }
-          return;
-        }
+    const content = (message.content || "").trim();
+    const zapCh = message.guild
+      ? message.guild.channels.cache.find(
+        (c) =>
+          c.type === ChannelType.GuildText &&
+          (c.name === "❓-×┃sprawdz-zapro" ||
+            c.name.includes("sprawdz-zapro") ||
+            c.name.includes("sprawdz-zaproszenia")),
+      )
+      : null;
+
+    if (zapCh && message.channel.id === zapCh.id) {
+      // allow only if typed command starts with /sprawdz-zaproszenia
+      if (!content.toLowerCase().startsWith("/sprawdz-zaproszenia")) {
+        try {
+          await message.delete().catch(() => null);
+        } catch (e) { }
+        try {
+          const warnEmbed = new EmbedBuilder()
+            .setColor(COLOR_RED)
+            .setDescription(
+              `• \`❗\` __**Na tym kanale można sprawdzać tylko swoje zaproszenia!**__`,
+            );
+          const warn = await message.channel.send({
+            content: `<@${message.author.id}>`,
+            embeds: [warnEmbed],
+          });
+          setTimeout(() => warn.delete().catch(() => { }), 4000);
+        } catch (e) { }
+        return;
+      } else {
+        // typed the command - allow (but delete to reduce clutter)
+        try {
+          await message.delete().catch(() => null);
+        } catch (e) { }
+        return;
       }
     }
   } catch (e) {
-    console.error("Błąd przy egzekwowaniu reguły kanału sprawdzania zaproszeń:", e);
+    console.error("Błąd przy egzekwowaniu reguły kanału zaproszenia:", e);
   }
 
   // If any message is sent in the specific legitcheck-rep channel
@@ -6534,7 +6610,7 @@ client.on(Events.MessageCreate, async (message) => {
       const userID = "1305200545979437129";
 
       let attachment = null;
-      let imageUrl = "https://cdn.discordapp.com/attachments/1449367698374004869/1450192787894046751/standard_1.gif"; // fallback URL
+      let imageUrl = "https://share.creavite.co/693f180207e523c90b19fbf9.gif"; // fallback URL
 
       try {
         const gifPath = path.join(
@@ -6595,17 +6671,20 @@ client.on(Events.MessageCreate, async (message) => {
   }
 });
 
-// ----------------- OPINIA-ADMIN handler -----------------
-async function handleOpinionAdminCommand(interaction) {
-  await interaction.reply({
-    content: "Komenda w budowie - zarządzanie opiniami",
-    flags: [MessageFlags.Ephemeral]
-  });
-}
-
 // ----------------- OPINIA handler (updated to match provided layout + delete & re-send instruction so it moves to bottom) -----------------
 
 async function handleOpinionCommand(interaction) {
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (interaction.user.id !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   const guildId = interaction.guildId;
   if (!guildId || !interaction.guild) {
     await interaction.reply({
@@ -6836,7 +6915,7 @@ async function handleWyczyscKanalCommand(interaction) {
     return;
   }
 
-  // Defer reply to avoid timeout and allow multiple replies
+  // Defer to avoid timeout and allow multiple replies
   await interaction.deferReply({ flags: [MessageFlags.Ephemeral] }).catch(() => null);
 
   // permissions check (member)
@@ -6844,8 +6923,10 @@ async function handleWyczyscKanalCommand(interaction) {
   const hasManage =
     (member &&
       member.permissions &&
-      (member.permissions.has(PermissionFlagsBits.ManageMessages) ||
-        member.permissions.has(PermissionFlagsBits.Administrator)));
+      member.permissions.has(PermissionFlagsBits.ManageMessages)) ||
+    (member &&
+      member.permissions &&
+      member.permissions.has(PermissionFlagsBits.Administrator));
 
   if (!hasManage) {
     try {
@@ -7054,7 +7135,6 @@ async function scheduleRepChannelRename(channel, count) {
       try {
         await channel.setName(newName);
         lastChannelRename = Date.now();
-        pendingRename = false;
         console.log(`Zaplanowana zmiana nazwy wykonana: ${newName}`);
       } catch (err) {
         console.error("Błąd zmiany nazwy kanału (zaplanowana próba):", err);
@@ -7095,7 +7175,8 @@ async function handleResetLCCommand(interaction) {
   if (!isAdmin) {
     try {
       await interaction.reply({
-        content: "❌ Nie masz uprawnień administracyjnych, aby zresetować licznik.",
+        content:
+          "❌ Nie masz uprawnień administracyjnych, aby zresetować licznik.",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) {
@@ -7356,28 +7437,28 @@ client.on(Events.GuildMemberAdd, async (member) => {
     if (inviterId) {
       // Ensure all maps exist
       if (!inviteCounts.has(member.guild.id))
-        inviteCounts.set(member.guildId, new Map());
+        inviteCounts.set(member.guild.id, new Map());
       if (!inviteRewards.has(member.guild.id))
-        inviteRewards.set(member.guildId, new Map());
+        inviteRewards.set(member.guild.id, new Map());
       if (!inviteRewardsGiven.has(member.guild.id))
-        inviteRewardsGiven.set(member.guildId, new Map());
+        inviteRewardsGiven.set(member.guild.id, new Map());
       if (!inviteLeaves.has(member.guild.id))
-        inviteLeaves.set(member.guildId, new Map());
+        inviteLeaves.set(member.guild.id, new Map());
       if (!inviteTotalJoined.has(member.guild.id))
-        inviteTotalJoined.set(member.guildId, new Map());
+        inviteTotalJoined.set(member.guild.id, new Map());
       if (!inviteFakeAccounts.has(member.guild.id))
-        inviteFakeAccounts.set(member.guildId, new Map());
+        inviteFakeAccounts.set(member.guild.id, new Map());
       if (!inviteBonusInvites.has(member.guild.id))
-        inviteBonusInvites.set(member.guildId, new Map());
+        inviteBonusInvites.set(member.guild.id, new Map());
 
-      const gMap = inviteCounts.get(member.guildId); // prawdziwe zaproszenia
-      const totalMap = inviteTotalJoined.get(member.guildId); // wszystkie dołączenia
-      const fakeMap = inviteFakeAccounts.get(member.guildId); // fake
+      const gMap = inviteCounts.get(member.guild.id); // prawdziwe zaproszenia
+      const totalMap = inviteTotalJoined.get(member.guild.id); // wszystkie joiny
+      fakeMap = inviteFakeAccounts.get(member.guild.id); // fake
 
       // Always increment totalJoined (wszystkie dołączenia przypisane do zapraszającego)
       const prevTotal = totalMap.get(inviterId) || 0;
       totalMap.set(inviterId, prevTotal + 1);
-      inviteTotalJoined.set(member.guildId, totalMap);
+      inviteTotalJoined.set(member.guild.id, totalMap);
       scheduleSavePersistentState();
 
       // Liczymy zaproszenia tylko jeśli nie jest właścicielem
@@ -7386,16 +7467,16 @@ client.on(Events.GuildMemberAdd, async (member) => {
         if (!isFakeAccount) {
           const prev = gMap.get(inviterId) || 0;
           gMap.set(inviterId, prev + 1);
-          inviteCounts.set(member.guildId, gMap);
+          inviteCounts.set(member.guild.id, gMap);
           scheduleSavePersistentState(true); // Natychmiastowy zapis
         }
       }
 
       // --- Nagrody za zaproszenia ---
-      let rewardsGivenMap = inviteRewardsGiven.get(member.guildId);
+      let rewardsGivenMap = inviteRewardsGiven.get(member.guild.id);
       if (!rewardsGivenMap) {
         rewardsGivenMap = new Map();
-        inviteRewardsGiven.set(member.guildId, rewardsGivenMap);
+        inviteRewardsGiven.set(member.guild.id, rewardsGivenMap);
       }
 
       const alreadyGiven = rewardsGivenMap.get(inviterId) || 0;
@@ -7409,7 +7490,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
       if (toGive > 0) {
         rewardsGivenMap.set(inviterId, alreadyGiven + toGive);
-        inviteRewardsGiven.set(member.guildId, rewardsGivenMap);
+        inviteRewardsGiven.set(member.guild.id, rewardsGivenMap);
         scheduleSavePersistentState(true); // Natychmiastowy zapis
 
         // Przygotuj kanał zaproszeń
@@ -7425,9 +7506,10 @@ client.on(Events.GuildMemberAdd, async (member) => {
         // Dla każdej nagrody
         for (let i = 0; i < toGive; i++) {
           const rewardCode = generateCode();
-          const CODE_EXPIRES_MS = 24 * 60 * 60 * 1000;
-          const expiresAt = Date.now() + CODE_EXPIRES_MS;
+          const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 godziny
+          const expiryTs = Math.floor(expiresAt / 1000);
 
+          // Zapisz kod
           activeCodes.set(rewardCode, {
             oderId: inviterId,
             rewardAmount: 50000,
@@ -7454,9 +7536,9 @@ client.on(Events.GuildMemberAdd, async (member) => {
                 rewardCode +
                 "\n```\n" +
                 `\`💰\` × **Wartość:** \`50k\$\`\n` +
-                `\`🕑\` × **Kod wygaśnie za:** <t:${Math.floor(expiresAt / 1000)}:R>\n\n` +
+                `\`🕑\` × **Kod wygaśnie za:** <t:${expiryTs}:R>\n\n` +
                 `\`❔\` × Aby zrealizować kod utwórz nowy ticket, wybierz kategorię\n` +
-                `\`Odbiór nagrody\` i w polu wpisz otrzymany kod.`,
+                `\`Odbiór nagrody\` i w polu wpisz otrzymany kod.`
               )
               .setTimestamp();
 
@@ -7496,7 +7578,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
     const zapChannel = member.guild.channels.cache.get(zapChannelId);
 
     if (zapChannel && inviterId) {
-      const gMap = inviteCounts.get(member.guildId) || new Map();
+      const gMap = inviteCounts.get(member.guild.id) || new Map();
       const currentInvites = gMap.get(inviterId) || 0;
       const inviteWord = getInviteWord(currentInvites);
       const ownerId = "1305200545979437129";
@@ -7585,8 +7667,8 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
     // decrement inviteCounts for inviter (if present AND if this invite was counted)
     if (!inviteCounts.has(member.guild.id))
-      inviteCounts.set(member.guildId, new Map());
-    const gMap = inviteCounts.get(member.guildId);
+      inviteCounts.set(member.guild.id, new Map());
+    const gMap = inviteCounts.get(member.guild.id);
     const ownerId = "1305200545979437129";
     
     // Odejmujemy zaproszenia tylko jeśli nie jest właścicielem
@@ -7594,33 +7676,33 @@ client.on(Events.GuildMemberRemove, async (member) => {
       const prev = gMap.get(inviterId) || 0;
       const newCount = Math.max(0, prev - 1);
       gMap.set(inviterId, newCount);
-      inviteCounts.set(member.guildId, gMap);
+      inviteCounts.set(member.guild.id, gMap);
       scheduleSavePersistentState(true); // Natychmiastowy zapis
     }
 
     // decrement totalJoined (since we incremented it on join unconditionally)
-    if (!inviteTotalJoined.has(member.guildId))
-      inviteTotalJoined.set(member.guildId, new Map());
-    const totalMap = inviteTotalJoined.get(member.guildId);
+    if (!inviteTotalJoined.has(member.guild.id))
+      inviteTotalJoined.set(member.guild.id, new Map());
+    const totalMap = inviteTotalJoined.get(member.guild.id);
     const prevTotal = totalMap.get(inviterId) || 0;
     totalMap.set(inviterId, Math.max(0, prevTotal - 1));
 
     // If it was marked as fake on join, decrement fake counter
     if (wasFake) {
-      if (!inviteFakeAccounts.has(member.guildId))
-        inviteFakeAccounts.set(member.guildId, new Map());
-      const fMap = inviteFakeAccounts.get(member.guildId);
+      if (!inviteFakeAccounts.has(member.guild.id))
+        inviteFakeAccounts.set(member.guild.id, new Map());
+      const fMap = inviteFakeAccounts.get(member.guild.id);
       const prevFake = fMap.get(inviterId) || 0;
       fMap.set(inviterId, Math.max(0, prevFake - 1));
     }
 
     // increment leaves count
-    if (!inviteLeaves.has(member.guildId))
-      inviteLeaves.set(member.guildId, new Map());
-    const lMap = inviteLeaves.get(member.guildId);
+    if (!inviteLeaves.has(member.guild.id))
+      inviteLeaves.set(member.guild.id, new Map());
+    const lMap = inviteLeaves.get(member.guild.id);
     const prevLeft = lMap.get(inviterId) || 0;
     lMap.set(inviterId, prevLeft + 1);
-    inviteLeaves.set(member.guildId, lMap);
+    inviteLeaves.set(member.guild.id, lMap);
 
     // Zapisz do leaveRecords na wypadek powrotu
     leaveRecords.set(key, inviterId);
@@ -7670,6 +7752,17 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (interaction.user.id !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral]
+    });
+    return;
+  }
+
   // Najpierw sprawdzamy warunki bez defer
   if (!interaction.guild) {
     await interaction.reply({
@@ -8048,6 +8141,18 @@ async function handleZaprosieniaStatsCommand(interaction) {
 // ---------------------------------------------------
 // Pomoc
 async function handleHelpCommand(interaction) {
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const userId = interaction.user.id;
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (userId !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   try {
     const embed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
