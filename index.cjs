@@ -3874,6 +3874,17 @@ async function handleDropCommand(interaction) {
   const user = interaction.user;
   const guildId = interaction.guildId;
 
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (user.id !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   // Now require guild and configured drop channel
   if (!guildId) {
     await interaction.reply({
@@ -6606,6 +6617,17 @@ client.on(Events.MessageCreate, async (message) => {
 // ----------------- OPINIA handler (updated to match provided layout + delete & re-send instruction so it moves to bottom) -----------------
 
 async function handleOpinionCommand(interaction) {
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (interaction.user.id !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   const guildId = interaction.guildId;
   if (!guildId || !interaction.guild) {
     await interaction.reply({
@@ -7673,6 +7695,17 @@ client.on(Events.GuildMemberRemove, async (member) => {
 
 // ----------------- /sprawdz-zaproszenia command handler -----------------
 async function handleSprawdzZaproszeniaCommand(interaction) {
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (interaction.user.id !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral]
+    });
+    return;
+  }
+
   // Najpierw sprawdzamy warunki bez defer
   if (!interaction.guild) {
     await interaction.reply({
@@ -8051,6 +8084,18 @@ async function handleZaprosieniaStatsCommand(interaction) {
 // ---------------------------------------------------
 // Pomoc
 async function handleHelpCommand(interaction) {
+  // Sprawdź czy użytkownik ma dostęp do komendy
+  const userId = interaction.user.id;
+  const CLIENT_ID = "1425935544273338532";
+  
+  if (userId !== CLIENT_ID) {
+    await interaction.reply({
+      content: "> `❌` × **Nie masz** uprawnień do użycia tej **komendy**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   try {
     const embed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
