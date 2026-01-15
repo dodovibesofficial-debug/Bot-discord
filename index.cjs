@@ -7372,7 +7372,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
 
       const gMap = inviteCounts.get(member.guildId); // prawdziwe zaproszenia
       const totalMap = inviteTotalJoined.get(member.guildId); // wszystkie dołączenia
-      fakeMap = inviteFakeAccounts.get(member.guildId); // fake
+      const fakeMap = inviteFakeAccounts.get(member.guildId); // fake
 
       // Always increment totalJoined (wszystkie dołączenia przypisane do zapraszającego)
       const prevTotal = totalMap.get(inviterId) || 0;
