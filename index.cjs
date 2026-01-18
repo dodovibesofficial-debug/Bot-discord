@@ -4393,7 +4393,7 @@ async function handleTicketZakonczCommand(interaction) {
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
         )
-        .setImage("attachment://standard (5).gif");
+        .setImage("attachment://standard_5.gif");
       break;
 
     case "sprzedaż":
@@ -4404,7 +4404,7 @@ async function handleTicketZakonczCommand(interaction) {
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
         )
-        .setImage("attachment://standard (5).gif");
+        .setImage("attachment://standard_5.gif");
       break;
 
     case "wręczył nagrodę":
@@ -4415,7 +4415,7 @@ async function handleTicketZakonczCommand(interaction) {
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
         )
-        .setImage("attachment://standard (5).gif");
+        .setImage("attachment://standard_5.gif");
       
       // Dodaj informację o brakujących zaproszeniach dla typu "wręczył nagrodę"
       try {
@@ -4446,7 +4446,7 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Wyślij jedną wiadomość z pingiem i embedem
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
-  const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard (5).gif" });
+  const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
   
   await interaction.reply({
     content: `<@${ticketOwnerId}>`,
