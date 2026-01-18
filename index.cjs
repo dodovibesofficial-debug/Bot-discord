@@ -4445,8 +4445,8 @@ async function handleTicketZakonczCommand(interaction) {
   }
 
   // Wyślij jedną wiadomość z pingiem i embedem
-  const gifPath = path.join(__dirname, "attached_assets", "standard (4).gif");
-  const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard (4).gif" });
+  const gifPath = path.join(__dirname, "attached_assets", "(5).gif");
+  const gifAttachment = new AttachmentBuilder(gifPath, { name: "(5).gif" });
   
   await interaction.reply({
     content: `<@${ticketOwnerId}>`,
