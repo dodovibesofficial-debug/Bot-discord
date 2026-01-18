@@ -4393,7 +4393,7 @@ async function handleTicketZakonczCommand(interaction) {
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
         )
-        .setImage("attachment://standard (4).gif");
+        .setImage("attachment://(5).gif");
       break;
 
     case "sprzedaż":
@@ -4404,7 +4404,7 @@ async function handleTicketZakonczCommand(interaction) {
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
         )
-        .setImage("attachment://standard (4).gif");
+        .setImage("attachment://(5).gif");
       break;
 
     case "wręczył nagrodę":
@@ -4415,7 +4415,7 @@ async function handleTicketZakonczCommand(interaction) {
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
         )
-        .setImage("attachment://standard (4).gif");
+        .setImage("attachment://(5).gif");
       
       // Dodaj informację o brakujących zaproszeniach dla typu "wręczył nagrodę"
       try {
