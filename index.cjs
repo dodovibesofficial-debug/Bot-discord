@@ -1050,6 +1050,14 @@ const commands = [
     )
     .toJSON(),
   new SlashCommandBuilder()
+    .setName("zamknij-z-powodem")
+    .setDescription("Zamknij ticket z powodem (tylko właściciel)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addStringOption((option) =>
+      option.setName("powod").setDescription("Powód zamknięcia").setRequired(true)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
     .setName("legit-rep-ustaw")
     .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -3227,6 +3235,9 @@ async function handleSlashCommand(interaction) {
     case "ticket-zakoncz":
       await handleTicketZakonczCommand(interaction);
       break;
+    case "zamknij-z-powodem":
+      await handleZamknijZPowodemCommand(interaction);
+      break;
     case "legit-rep-ustaw":
       await handleLegitRepUstawCommand(interaction);
       break;
@@ -4464,6 +4475,84 @@ async function handleTicketZakonczCommand(interaction) {
   });
 
   console.log(`Ticket ${channel.id} oczekuje na +rep od użytkownika ${ticketOwnerId} (komenda użyta przez ${interaction.user.username})`);
+}
+
+// ----------------- /zamknij-z-powodem handler -----------------
+async function handleZamknijZPowodemCommand(interaction) {
+  const channel = interaction.channel;
+
+  // Sprawdź czy komenda jest używana w tickecie
+  if (!isTicketChannel(channel)) {
+    await interaction.reply({
+      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  // Pobierz powód
+  const powod = interaction.options.getString("powod");
+
+  // Pobierz właściciela ticketu
+  const ticketData = ticketOwners.get(channel.id);
+  const ticketOwnerId = ticketData?.userId;
+
+  if (!ticketOwnerId) {
+    await interaction.reply({
+      content: "> `❌` × **Nie udało się** zidentyfikować właściciela ticketu.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  try {
+    // Wyślij embed do właściciela ticketu
+    const embed = new EmbedBuilder()
+      .setColor(COLOR_BLUE)
+      .setTitle("**TICKET ZOSTAŁ ZAMKNIĘTY**")
+      .setDescription(`\`powód:\` **${powod}**`)
+      .setTimestamp();
+
+    // Wyślij DM do właściciela ticketu
+    const ticketOwner = await client.users.fetch(ticketOwnerId).catch(() => null);
+    if (ticketOwner) {
+      await ticketOwner.send({ embeds: [embed] });
+    }
+
+    // Wyślij potwierdzenie na kanał
+    await interaction.reply({
+      content: "✅ **Ticket został zamknięty!** Właściciel otrzymał powód w wiadomości prywatnej."
+    });
+
+    // Zamknij ticket po 2 sekundach
+    setTimeout(async () => {
+      try {
+        await channel.delete(`Ticket zamknięty przez właściciela z powodem: ${powod}`);
+        ticketOwners.delete(channel.id);
+        pendingTicketClose.delete(channel.id);
+        
+        console.log(`Ticket ${channel.id} został zamknięty przez właściciela z powodem: ${powod}`);
+      } catch (closeErr) {
+        console.error(`Błąd zamykania ticketu ${channel.id}:`, closeErr);
+      }
+    }, 2000);
+
+  } catch (error) {
+    console.error("Błąd podczas zamykania ticketu z powodem:", error);
+    await interaction.reply({
+      content: "> `❌` × **Wystąpił** błąd podczas zamykania ticketu.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
 }
 
 // ----------------- /legit-rep-ustaw handler -----------------
@@ -6475,39 +6564,34 @@ client.on(Events.MessageCreate, async (message) => {
               // Pobierz kanał ticketu
               const ticketChannel = await client.channels.fetch(channelId).catch(() => null);
               if (ticketChannel) {
-                // Wyślij wiadomość o zamknięciu ticketu za 5 sekund
+                // Wyślij wiadomość o zamknięciu ticketu
                 try {
-                  const closeMessage = await ticketChannel.send({
-                    content: `✅ **Otrzymano +rep!** Ticket zostanie zamknięty za **5 sekund**...`
+                  await ticketChannel.send({
+                    content: `✅ **Otrzymano +rep!** Ticket zostanie zamknięty **natychmiast**...`
                   });
                   
-                  // Zamknij ticket po 5 sekundach
-                  setTimeout(async () => {
+                  // Zamknij ticket ODRAZU
+                  try {
+                    // Spróbuj zamknąć kanał
+                    await ticketChannel.delete('Ticket zamknięty po otrzymaniu +rep');
+                    
+                    // Usuń z mapy oczekujących ticketów
+                    pendingTicketClose.delete(channelId);
+                    ticketOwners.delete(channelId);
+                    
+                    console.log(`Ticket ${channelId} został zamknięty po otrzymaniu +rep`);
+                  } catch (closeErr) {
+                    console.error(`Błąd zamykania ticketu ${channelId}:`, closeErr);
+                    
+                    // Jeśli nie udało się zamknąć kanału, wyślij wiadomość o błędzie
                     try {
-                      // Spróbuj zamknąć kanał
-                      await ticketChannel.delete('Ticket zamknięty po otrzymaniu +rep');
-                      
-                      // Usuń z mapy oczekujących ticketów
-                      pendingTicketClose.delete(channelId);
-                      ticketOwners.delete(channelId);
-                      
-                      console.log(`Ticket ${channelId} został zamknięty po otrzymaniu +rep`);
-                    } catch (closeErr) {
-                      console.error(`Błąd zamykania ticketu ${channelId}:`, closeErr);
-                      
-                      // Jeśli nie udało się zamknąć kanału, wyślij wiadomość o błędzie
-                      try {
-                        await ticketChannel.send({
-                          content: "> `❌` × **Wystąpił** błąd podczas zamykania ticketu. Skontaktuj się z **administracją**."
-                        });
-                      } catch (msgErr) {
-                        console.error("Błąd wysyłania wiadomości o błędzie:", msgErr);
-                      }
+                      await ticketChannel.send({
+                        content: "> `❌` × **Wystąpił** błąd podczas zamykania ticketu. Skontaktuj się z **administracją**."
+                      });
+                    } catch (msgErr) {
+                      console.error("Błąd wysyłania wiadomości o błędzie:", msgErr);
                     }
-                  }, 5000);
-                  
-                } catch (msgErr) {
-                  console.error("Błąd wysyłania wiadomości o zamknięciu ticketu:", msgErr);
+                  }
                 }
               }
               
