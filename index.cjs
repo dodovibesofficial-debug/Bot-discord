@@ -6564,34 +6564,39 @@ client.on(Events.MessageCreate, async (message) => {
               // Pobierz kanał ticketu
               const ticketChannel = await client.channels.fetch(channelId).catch(() => null);
               if (ticketChannel) {
-                // Wyślij wiadomość o zamknięciu ticketu
+                // Wyślij wiadomość o zamknięciu ticketu za 5 sekund
                 try {
-                  await ticketChannel.send({
-                    content: `✅ **Otrzymano +rep!** Ticket zostanie zamknięty **natychmiast**...`
+                  const closeMessage = await ticketChannel.send({
+                    content: `✅ **Otrzymano +rep!** Ticket zostanie zamknięty za **5 sekund**...`
                   });
                   
-                  // Zamknij ticket ODRAZU
-                  try {
-                    // Spróbuj zamknąć kanał
-                    await ticketChannel.delete('Ticket zamknięty po otrzymaniu +rep');
-                    
-                    // Usuń z mapy oczekujących ticketów
-                    pendingTicketClose.delete(channelId);
-                    ticketOwners.delete(channelId);
-                    
-                    console.log(`Ticket ${channelId} został zamknięty po otrzymaniu +rep`);
-                  } catch (closeErr) {
-                    console.error(`Błąd zamykania ticketu ${channelId}:`, closeErr);
-                    
-                    // Jeśli nie udało się zamknąć kanału, wyślij wiadomość o błędzie
+                  // Zamknij ticket po 5 sekundach
+                  setTimeout(async () => {
                     try {
-                      await ticketChannel.send({
-                        content: "> `❌` × **Wystąpił** błąd podczas zamykania ticketu. Skontaktuj się z **administracją**."
-                      });
-                    } catch (msgErr) {
-                      console.error("Błąd wysyłania wiadomości o błędzie:", msgErr);
+                      // Spróbuj zamknąć kanał
+                      await ticketChannel.delete('Ticket zamknięty po otrzymaniu +rep');
+                      
+                      // Usuń z mapy oczekujących ticketów
+                      pendingTicketClose.delete(channelId);
+                      ticketOwners.delete(channelId);
+                      
+                      console.log(`Ticket ${channelId} został zamknięty po otrzymaniu +rep`);
+                    } catch (closeErr) {
+                      console.error(`Błąd zamykania ticketu ${channelId}:`, closeErr);
+                      
+                      // Jeśli nie udało się zamknąć kanału, wyślij wiadomość o błędzie
+                      try {
+                        await ticketChannel.send({
+                          content: "> `❌` × **Wystąpił** błąd podczas zamykania ticketu. Skontaktuj się z **administracją**."
+                        });
+                      } catch (msgErr) {
+                        console.error("Błąd wysyłania wiadomości o błędzie:", msgErr);
+                      }
                     }
-                  }
+                  }, 5000);
+                  
+                } catch (msgErr) {
+                  console.error("Błąd wysyłania wiadomości o zamknięciu ticketu:", msgErr);
                 }
               }
               
