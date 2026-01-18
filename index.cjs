@@ -10,7 +10,7 @@ const {
   ChannelType,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  ModalBuilder,
+  ModalBuilder, 
   TextInputBuilder,
   TextInputStyle,
   PermissionsBitField,
@@ -4392,7 +4392,8 @@ async function handleTicketZakonczCommand(interaction) {
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
-        );
+        )
+        .setImage("attachment://standard (4).gif");
       break;
 
     case "sprzedaż":
@@ -4402,7 +4403,8 @@ async function handleTicketZakonczCommand(interaction) {
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
-        );
+        )
+        .setImage("attachment://standard (4).gif");
       break;
 
     case "wręczył nagrodę":
@@ -4412,7 +4414,8 @@ async function handleTicketZakonczCommand(interaction) {
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
-        );
+        )
+        .setImage("attachment://standard (4).gif");
       
       // Dodaj informację o brakujących zaproszeniach dla typu "wręczył nagrodę"
       try {
@@ -4442,9 +4445,13 @@ async function handleTicketZakonczCommand(interaction) {
   }
 
   // Wyślij jedną wiadomość z pingiem i embedem
+  const gifPath = path.join(__dirname, "attached_assets", "standard (4).gif");
+  const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard (4).gif" });
+  
   await interaction.reply({
     content: `<@${ticketOwnerId}>`,
-    embeds: [embed]
+    embeds: [embed],
+    files: [gifAttachment]
   });
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
