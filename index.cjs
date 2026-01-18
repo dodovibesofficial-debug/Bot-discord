@@ -4388,7 +4388,7 @@ async function handleTicketZakonczCommand(interaction) {
     case "zakup":
       embed = new EmbedBuilder()
         .setColor(COLOR_BLUE) // 🔵 niebieski
-        .setTitle("## 😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
+        .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
@@ -4399,7 +4399,7 @@ async function handleTicketZakonczCommand(interaction) {
     case "sprzedaż":
       embed = new EmbedBuilder()
         .setColor(COLOR_BLUE) // 🔵 niebieski
-        .setTitle("## 💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
+        .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zamknąć ten ticket wyślij wiadomość +rep na kanał \n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
