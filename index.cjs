@@ -4387,7 +4387,7 @@ async function handleTicketZakonczCommand(interaction) {
   switch (typ.toLowerCase()) {
     case "zakup":
       embed = new EmbedBuilder()
-        .setColor(0x00ff00) // 🟢 zielony
+        .setColor(COLOR_BLUE) // 🔵 niebieski
         .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
@@ -4398,7 +4398,7 @@ async function handleTicketZakonczCommand(interaction) {
 
     case "sprzedaż":
       embed = new EmbedBuilder()
-        .setColor(0xffa500) // 🟠 pomarańczowy
+        .setColor(COLOR_BLUE) // 🔵 niebieski
         .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
@@ -4409,7 +4409,7 @@ async function handleTicketZakonczCommand(interaction) {
 
     case "wręczył nagrodę":
       embed = new EmbedBuilder()
-        .setColor(0xffff00) // 🟡 żółty
+        .setColor(COLOR_BLUE) // 🔵 niebieski
         .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
@@ -6417,6 +6417,7 @@ client.on(Events.MessageCreate, async (message) => {
     message.channel.id === REP_CHANNEL_ID &&
     !message.author.bot
   ) {
+    console.log(`[+rep] Otrzymano wiadomość na kanale legit-rep: ${message.content} od ${message.author.tag}`);
     try {
       // ignore empty messages or slash-like content
       if (!message.content || message.content.trim().length === 0) return;
@@ -6427,6 +6428,8 @@ client.on(Events.MessageCreate, async (message) => {
       // Pattern: +rep @user [action] [amount] [server]
       const repPattern = /^\+rep\s+<@!?(\d+)>\s+\S+\s+\S+\s+.+$/i;
       const isValidRep = repPattern.test(message.content.trim());
+      
+      console.log(`[+rep] Pattern validation: ${isValidRep} for message: "${message.content}"`);
 
       if (!isValidRep) {
         // Delete invalid message and send warning
@@ -6455,9 +6458,11 @@ client.on(Events.MessageCreate, async (message) => {
       // Sprawdź czy istnieje ticket oczekujący na +rep od tego użytkownika
       try {
         const senderId = message.author.id; // ID osoby która wysłała +rep
+        console.log(`[+rep] Sprawdzam tickety oczekujące na +rep od użytkownika ${senderId}`);
         
         // Przeszukaj wszystkie tickety oczekujące na +rep
         for (const [channelId, ticketData] of pendingTicketClose.entries()) {
+          console.log(`[+rep] Sprawdzam ticket ${channelId}: awaitingRep=${ticketData.awaitingRep}, userId=${ticketData.userId}`);
           if (ticketData.awaitingRep && ticketData.userId === senderId) {
             // Sprawdź czy w wiadomości +rep jest nick osoby która użyła komendy
             const expectedUsername = ticketData.commandUsername;
