@@ -4631,47 +4631,15 @@ async function handleSprawdzKogoZaprosilCommand(interaction) {
       if (invite.uses > 0) {
         totalInvited += invite.uses;
         
-        // Spróbuj pobrać informacje o tym kto użył zaproszenie
-        try {
-          // Pobierz logi z serwera aby znaleźć kto użył zaproszenia
-          const auditLogs = await guild.fetchAuditLogs({
-            limit: 100,
-            type: AuditLogEvent.MemberAdd
-          });
-          
-          const memberAddLogs = auditLogs.entries.filter(entry => 
-            entry.target && entry.target.id && 
-            entry.extra && entry.extra.invite && 
-            entry.extra.invite.code === invite.code
-          );
-
-          for (const logEntry of memberAddLogs.values()) {
-            const invitedMember = logEntry.target;
-            
-            // Sprawdź czy użytkownik nadal jest na serwerze i czy konto ma więcej niż 2 miesiące
-            try {
-              const member = await guild.members.fetch(invitedMember.id);
-              const accountAge = invitedMember.createdAt;
-              const twoMonthsAgo = new Date(Date.now() - (60 * 24 * 60 * 60 * 1000)); // 60 dni w milisekundach
-              
-              if (member && accountAge && accountAge > twoMonthsAgo) {
-                const createdAt = logEntry.createdAt.toLocaleDateString('pl-PL');
-                invitedList.push({
-                  user: member.user,
-                  date: createdAt
-                });
-              }
-            } catch (err) {
-              // Użytkownik opuścił serwer lub konto za młode - nie dodajemy do listy
-              continue;
-            }
-          }
-        } catch (auditErr) {
-          console.error("Błąd pobierania audit logs:", auditErr);
-          // Jeśli nie uda się pobrać logów, dodajemy podstawowe informacje
+        // Dodajemy informacje o zaproszeniu
+        const createdAt = invite.createdAt ? invite.createdAt.toLocaleDateString('pl-PL') : 'Nieznana data';
+        
+        // Sprawdź czy zaproszenie jest nadal aktywne
+        if (!invite.expiresAt || invite.expiresAt > new Date()) {
           invitedList.push({
-            user: null,
-            date: invite.expiresAt ? invite.expiresAt.toLocaleDateString('pl-PL') : 'Nieznana data'
+            user: null, // Nie możemy łatwo sprawdzić kto użył, ale wiemy że zaprosił
+            date: createdAt,
+            uses: invite.uses
           });
         }
       }
@@ -4686,7 +4654,7 @@ async function handleSprawdzKogoZaprosilCommand(interaction) {
         name: "--=--=--=--=LISTA=--=--=--=--=--=",
         value: invitedList.length > 0 
           ? invitedList.map(item => 
-              item.user ? `@${item.user.username} (${item.date})` : `Nieznany użytkownik (${item.date})`
+              `Zaproszenie użyte ${item.uses} razy (${item.date})`
             ).join('\n')
           : "Brak aktywnych zaproszeń na serwerze"
       })
