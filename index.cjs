@@ -18,6 +18,7 @@ const {
   ButtonStyle,
   AttachmentBuilder,
   MessageFlags,
+  AuditLogEvent,
 } = require("discord.js");
 const { createClient } = require("@supabase/supabase-js");
 const fs = require("fs");
@@ -1055,6 +1056,14 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption((option) =>
       option.setName("powod").setDescription("Powód zamknięcia").setRequired(true)
+    )
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("sprawdz-kogo-zaprosil")
+    .setDescription("Sprawdź kogo zaprosiła dana osoba (tylko właściciel)")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addUserOption((option) =>
+      option.setName("kto").setDescription("Użytkownik do sprawdzenia").setRequired(true)
     )
     .toJSON(),
   new SlashCommandBuilder()
@@ -3238,6 +3247,9 @@ async function handleSlashCommand(interaction) {
     case "zamknij-z-powodem":
       await handleZamknijZPowodemCommand(interaction);
       break;
+    case "sprawdz-kogo-zaprosil":
+      await handleSprawdzKogoZaprosilCommand(interaction);
+      break;
     case "legit-rep-ustaw":
       await handleLegitRepUstawCommand(interaction);
       break;
@@ -4555,6 +4567,120 @@ async function handleZamknijZPowodemCommand(interaction) {
   }
 }
 
+// ----------------- /sprawdz-kogo-zaprosil handler -----------------
+async function handleSprawdzKogoZaprosilCommand(interaction) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  const targetUser = interaction.options.getUser("kto");
+  if (!targetUser) {
+    await interaction.reply({
+      content: "> `❌` × **Nie udało się** zidentyfikować użytkownika.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  try {
+    const guild = interaction.guild;
+    
+    // Pobierz wszystkie zaproszenia z serwera
+    const invites = await guild.invites.fetch();
+    
+    // Filtruj zaproszenia stworzone przez danego użytkownika
+    const userInvites = invites.filter(invite => invite.inviter && invite.inviter.id === targetUser.id);
+    
+    if (userInvites.size === 0) {
+      await interaction.reply({
+        content: `> \`ℹ️\` × **Użytkownik** <@${targetUser.id}> **nie ma żadnych aktywnych zaproszeń**.`,
+        flags: [MessageFlags.Ephemeral],
+      });
+      return;
+    }
+
+    // Twórz listę zaproszonych osób
+    let invitedList = [];
+    let totalInvited = 0;
+
+    for (const invite of userInvites.values()) {
+      if (invite.uses > 0) {
+        totalInvited += invite.uses;
+        
+        // Spróbuj pobrać informacje o tym kto użył zaproszenie
+        try {
+          // Pobierz logi z serwera aby znaleźć kto użył zaproszenia
+          const auditLogs = await guild.fetchAuditLogs({
+            limit: 100,
+            type: AuditLogEvent.MemberAdd
+          });
+          
+          const memberAddLogs = auditLogs.entries.filter(entry => 
+            entry.target && entry.target.id && 
+            entry.extra && entry.extra.invite && 
+            entry.extra.invite.code === invite.code
+          );
+
+          for (const logEntry of memberAddLogs.values()) {
+            const invitedMember = logEntry.target;
+            
+            // Sprawdź czy użytkownik nadal jest na serwerze
+            try {
+              const member = await guild.members.fetch(invitedMember.id);
+              if (member) {
+                const createdAt = logEntry.createdAt.toLocaleDateString('pl-PL');
+                invitedList.push({
+                  user: member.user,
+                  date: createdAt
+                });
+              }
+            } catch (err) {
+              // Użytkownik opuścił serwer - nie dodajemy do listy
+              continue;
+            }
+          }
+        } catch (auditErr) {
+          console.error("Błąd pobierania audit logs:", auditErr);
+          // Jeśli nie uda się pobrać logów, dodajemy podstawowe informacje
+          invitedList.push({
+            user: null,
+            date: invite.expiresAt ? invite.expiresAt.toLocaleDateString('pl-PL') : 'Nieznana data'
+          });
+        }
+      }
+    }
+
+    // Twórz embed
+    const embed = new EmbedBuilder()
+      .setColor(COLOR_BLUE)
+      .setTitle(`,,New Shop x Logi"`)
+      .setDescription(`**Sprawdzasz:** <@${targetUser.id}>\nUżytkownik zaprosił **${totalInvited}** osób`)
+      .addFields({
+        name: "--=--=--=--=LISTA=--=--=--=--=--=",
+        value: invitedList.length > 0 
+          ? invitedList.map(item => 
+              item.user ? `@${item.user.username} (${item.date})` : `Nieznany użytkownik (${item.date})`
+            ).join('\n')
+          : "Brak aktywnych zaproszeń na serwerze"
+      })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [embed] });
+
+  } catch (error) {
+    console.error("Błąd podczas sprawdzania zaproszonych osób:", error);
+    await interaction.reply({
+      content: "> `❌` × **Wystąpił** błąd podczas sprawdzania zaproszeń.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
+}
+
 // ----------------- /legit-rep-ustaw handler -----------------
 async function handleLegitRepUstawCommand(interaction) {
   // Sprawdź czy właściciel
@@ -5045,24 +5171,18 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
           { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         ]);
       }
-      // Sprzedaż - wszystkie rangi widzą
+      // Sprzedaż - tylko rola sprzedawcy
       else if (categoryId === "1449455848043708426") {
         await ch.permissionOverwrites.set([
           { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+          { id: "1449448708155379884", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] } // rola sprzedawcy
         ]);
       }
-      // Inne - wszystkie rangi widzą
+      // Inne - tylko właściciel
       else if (categoryId === "1449527585271976131") {
         await ch.permissionOverwrites.set([
           { id: interaction.guild.roles.everyone, deny: [PermissionsBitField.Flags.ViewChannel] },
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+          { id: interaction.guild.ownerId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] } // tylko właściciel
         ]);
       }
     }
