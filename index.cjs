@@ -1059,14 +1059,6 @@ const commands = [
     )
     .toJSON(),
   new SlashCommandBuilder()
-    .setName("sprawdz-kogo-zaprosil")
-    .setDescription("Sprawdź kogo zaprosiła dana osoba (tylko właściciel)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-    .addUserOption((option) =>
-      option.setName("kto").setDescription("Użytkownik do sprawdzenia").setRequired(true)
-    )
-    .toJSON(),
-  new SlashCommandBuilder()
     .setName("legit-rep-ustaw")
     .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -1596,6 +1588,33 @@ async function registerCommands() {
     } catch (e) {
       console.warn(
         "Nie udało się zarejestrować komend na serwerze:",
+        e.message || e,
+      );
+    }
+
+    // Rejestruj komendę tylko dla właściciela (niewidoczna w menu)
+    try {
+      const ownerCommands = [
+        new SlashCommandBuilder()
+          .setName("sprawdz-kogo-zaprosil")
+          .setDescription("Sprawdź kogo zaprosiła dana osoba (tylko właściciel)")
+          .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+          .addUserOption((option) =>
+            option.setName("kto").setDescription("Użytkownik do sprawdzenia").setRequired(true)
+          )
+          .toJSON()
+      ];
+
+      await rest.put(
+        Routes.applicationGuildCommands(BOT_ID, DEFAULT_GUILD_ID),
+        {
+          body: ownerCommands,
+        },
+      );
+      console.log(`Komendy właściciela zarejestrowane dla guild ${DEFAULT_GUILD_ID}`);
+    } catch (e) {
+      console.warn(
+        "Nie udało się zarejestrować komend właściciela:",
         e.message || e,
       );
     }
@@ -3247,11 +3266,11 @@ async function handleSlashCommand(interaction) {
     case "zamknij-z-powodem":
       await handleZamknijZPowodemCommand(interaction);
       break;
-    case "sprawdz-kogo-zaprosil":
-      await handleSprawdzKogoZaprosilCommand(interaction);
-      break;
     case "legit-rep-ustaw":
       await handleLegitRepUstawCommand(interaction);
+      break;
+    case "sprawdz-kogo-zaprosil":
+      await handleSprawdzKogoZaprosilCommand(interaction);
       break;
     case "ticketpanel":
       await handleTicketPanelCommand(interaction);
@@ -4629,10 +4648,13 @@ async function handleSprawdzKogoZaprosilCommand(interaction) {
           for (const logEntry of memberAddLogs.values()) {
             const invitedMember = logEntry.target;
             
-            // Sprawdź czy użytkownik nadal jest na serwerze
+            // Sprawdź czy użytkownik nadal jest na serwerze i czy konto ma więcej niż 2 miesiące
             try {
               const member = await guild.members.fetch(invitedMember.id);
-              if (member) {
+              const accountAge = invitedMember.createdAt;
+              const twoMonthsAgo = new Date(Date.now() - (60 * 24 * 60 * 60 * 1000)); // 60 dni w milisekundach
+              
+              if (member && accountAge && accountAge > twoMonthsAgo) {
                 const createdAt = logEntry.createdAt.toLocaleDateString('pl-PL');
                 invitedList.push({
                   user: member.user,
@@ -4640,7 +4662,7 @@ async function handleSprawdzKogoZaprosilCommand(interaction) {
                 });
               }
             } catch (err) {
-              // Użytkownik opuścił serwer - nie dodajemy do listy
+              // Użytkownik opuścił serwer lub konto za młode - nie dodajemy do listy
               continue;
             }
           }
