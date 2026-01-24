@@ -2031,117 +2031,40 @@ async function handleModalSubmit(interaction) {
       return;
     }
 
-    const entered = interaction.fields
-      .getTextInputValue("verify_answer")
-      .trim();
-    const numeric = parseInt(entered.replace(/[^0-9\-]/g, ""), 10);
+    const answer = interaction.fields.getTextInputValue("verification_answer");
+    const isCorrect = answer.toLowerCase().trim() === record.correctAnswer.toLowerCase().trim();
 
-    if (Number.isNaN(numeric)) {
-      await interaction.reply({
-        content: "> `❌` × **Nieprawidłowa** odpowiedź (powinna być **liczbą**).",
-        flags: [MessageFlags.Ephemeral],
-      });
-      return;
-    }
-
-    if (numeric !== record.answer) {
-      await interaction.reply({
-        content: "> `❌` × **Źle**! Nieprawidłowy wynik. Spróbuj jeszcze **raz**.",
-        flags: [MessageFlags.Ephemeral],
-      });
-      // remove record so they can request a new puzzle
-      pendingVerifications.delete(modalId);
-      return;
-    }
-
-    // correct answer
-    pendingVerifications.delete(modalId);
-
-    let roleId = record.roleId;
-    const guild = interaction.guild;
-
-    // if no roleId recorded, try to find dynamically in guild and cache it
-    if (!roleId && guild) {
-      const normalize = (s = "") =>
-        s
-          .toString()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/[^a-z0-9 ]/gi, "")
-          .trim()
-          .toLowerCase();
-
-      let role =
-        guild.roles.cache.find(
-          (r) => r.name === DEFAULT_NAMES.verificationRoleName,
-        ) ||
-        guild.roles.cache.find((r) =>
-          normalize(r.name).includes(normalize("klient")),
-        );
-
-      if (role) {
-        roleId = role.id;
-        verificationRoles.set(guild.id, roleId);
-        scheduleSavePersistentState();
-        console.log(
-          `Dynamicznie ustawiono rolę weryfikacji dla guild ${guild.id}: ${role.name} (${roleId})`,
-        );
-      } else {
-        console.log(
-          `Nie znaleziono roli weryfikacji w guild ${guild.id} podczas nadawania roli.`,
-        );
-      }
-    }
-
-    if (!roleId) {
-      await interaction.reply({
-        content:
-          "✅ Poprawnie! Niestety rola weryfikacji nie została znaleziona. Skontaktuj się z administracją.",
-        flags: [MessageFlags.Ephemeral],
-      });
-      return;
-    }
-
-    try {
-      // give role
-      const member = await guild.members.fetch(interaction.user.id);
-      await member.roles.add(roleId, "Przejście weryfikacji");
-
-      // prepare DM embed (as requested)
-      const dmEmbed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setDescription(
-          "```\n" +
-          "🛒 New Shop × WERYFIKACJA\n" +
-          "```\n" +
-          "`✨` Gratulacje!\n\n" +
-          "`📝` Pomyślnie przeszedłeś weryfikacje na naszym serwerze discord życzymy udanych zakupów!",
-        )
-        .setTimestamp();
-
-      // send DM to user
+    if (isCorrect) {
       try {
-        await interaction.user.send({ embeds: [dmEmbed] });
-        // ephemeral confirmation (not public)
+        // Dodaj rolę weryfikacji
+        const member = await interaction.guild.members.fetch(interaction.user.id);
+        await member.roles.add(record.roleId);
+
+        // Wyślij embed potwierdzający
+        const embed = new EmbedBuilder()
+          .setColor(0x00ff00)
+          .setTitle("✅ Weryfikacja pomyślna!")
+          .setDescription(`Gratulacje! Pomyślnie przeszedłeś weryfikację.`)
+          .setTimestamp();
+
+        await interaction.reply({ embeds: [embed] });
+
+        // Usuń z oczekujących
+        pendingVerifications.delete(modalId);
+
+        console.log(
+          `Użytkownik ${interaction.user.username} przeszedł weryfikację na serwerze ${interaction.guild.id}`,
+        );
+      } catch (error) {
+        console.error("Błąd przy nadawaniu roli po weryfikacji:", error);
         await interaction.reply({
-          content: "> `✅` **Pomyślnie zweryfikowano**",
-          flags: [MessageFlags.Ephemeral],
-        });
-      } catch (dmError) {
-        console.error("Nie udało się wysłać DM po weryfikacji:", dmError);
-        await interaction.reply({
-          content: "> `✅` **Pomyślnie zweryfikowano**",
+          content: "> `❌` **Wystąpił błąd przy nadawaniu roli.**",
           flags: [MessageFlags.Ephemeral],
         });
       }
-
-      console.log(
-        `Użytkownik ${interaction.user.username} przeszedł weryfikację na serwerze ${guild.id}`,
-      );
-    } catch (error) {
-      console.error("Błąd przy nadawaniu roli po weryfikacji:", error);
+    } else {
       await interaction.reply({
-        content: "> `❌` **Wystąpił błąd przy nadawaniu roli.**",
+        content: "> `❌` **Niepoprawna odpowiedź.** Spróbuj ponownie.",
         flags: [MessageFlags.Ephemeral],
       });
     }
@@ -3273,6 +3196,9 @@ async function handleSlashCommand(interaction) {
       break;
     case "sprawdz-zaproszenia":
       await handleSprawdzZaproszeniaCommand(interaction);
+      break;
+    case "sprawdz-kogo-zaprosil":
+      await handleSprawdzKogoZaprosilCommand(interaction);
       break;
     case "rozliczenie":
       await handleRozliczenieCommand(interaction);
@@ -4609,6 +4535,112 @@ async function handleLegitRepUstawCommand(interaction) {
     console.error("Błąd podczas ustawiania legit-rep:", error);
     await interaction.reply({
       content: "> `❌` × **Wystąpił** błąd podczas zmiany nazwy kanału.",
+      flags: [MessageFlags.Ephemeral],
+    });
+  }
+}
+
+// ----------------- /sprawdz-kogo-zaprosil handler -----------------
+async function handleSprawdzKogoZaprosilCommand(interaction) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  const targetUser = interaction.options.getUser("kto");
+  if (!targetUser) {
+    await interaction.reply({
+      content: "> `❌` × **Nie udało się** zidentyfikować użytkownika.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  try {
+    const guild = interaction.guild;
+    const targetUserId = targetUser.id;
+    
+    // Pobierz zaproszenia z Supabase
+    const invitedUsers = await db.getInvitedUsersByInviter(guild.id, targetUserId);
+    
+    if (invitedUsers.length === 0) {
+      await interaction.reply({
+        content: `> \`ℹ️\` × **Użytkownik** <@${targetUserId}> **nie ma żadnych aktywnych zaproszeń**.`,
+        flags: [MessageFlags.Ephemeral],
+      });
+      return;
+    }
+
+    // Pobierz aktualnych członków serwera
+    const guildMembers = await guild.members.fetch();
+    const currentMemberIds = new Set(guildMembers.keys());
+
+    // Filtruj tylko osoby które są nadal na serwerze
+    let invitedList = [];
+    
+    for (const invitedUser of invitedUsers) {
+      try {
+        // Sprawdź czy użytkownik jest nadal na serwerze
+        if (currentMemberIds.has(invitedUser.invited_user_id)) {
+          const member = guildMembers.get(invitedUser.invited_user_id);
+          
+          // Sprawdź czy konto ma więcej niż 2 miesiące
+          const accountAge = member.user.createdAt;
+          const twoMonthsAgo = new Date(Date.now() - (60 * 24 * 60 * 60 * 1000)); // 60 dni
+          
+          if (accountAge && accountAge > twoMonthsAgo) {
+            const joinedDate = invitedUser.created_at ? 
+              new Date(invitedUser.created_at).toLocaleDateString('pl-PL') : 
+              'Nieznana data';
+            
+            invitedList.push({
+              user: member.user,
+              date: joinedDate
+            });
+          }
+        }
+      } catch (err) {
+        // Użytkownik opuścił serwer lub konto za młode - nie dodajemy do listy
+        continue;
+      }
+    }
+
+    // Usuń duplikaty z listy
+    const uniqueInvites = [];
+    const seenUsers = new Set();
+    
+    for (const item of invitedList) {
+      if (item.user && !seenUsers.has(item.user.id)) {
+        seenUsers.add(item.user.id);
+        uniqueInvites.push(item);
+      }
+    }
+
+    // Twórz embed
+    const embed = new EmbedBuilder()
+      .setColor(COLOR_BLUE)
+      .setTitle("New Shop x Logi")
+      .setDescription(`**Sprawdzasz:** <@${targetUserId}>\nUżytkownik zaprosił **${uniqueInvites.length}** osób`)
+      .addFields({
+        name: "--=--=--=--=LISTA=--=--=--=--=--=",
+        value: uniqueInvites.length > 0 
+          ? uniqueInvites.map(item => 
+              `@${item.user.username} (${item.date})`
+            ).join('\n')
+          : "Brak aktywnych zaproszeń na serwerze"
+      })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [embed] });
+
+  } catch (error) {
+    console.error("Błąd podczas sprawdzania zaproszonych osób:", error);
+    await interaction.reply({
+      content: "> `❌` × **Wystąpił** błąd podczas sprawdzania zaproszeń.",
       flags: [MessageFlags.Ephemeral],
     });
   }
