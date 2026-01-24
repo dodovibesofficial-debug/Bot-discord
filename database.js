@@ -481,6 +481,22 @@ async function getInviteRewardLevels(guildId) {
   return result;
 }
 
+// Get invited users by inviter
+async function getInvitedUsersByInviter(guildId, inviterId) {
+  const { data, error } = await supabase
+    .from("invites")
+    .select("*")
+    .eq("guild_id", guildId)
+    .eq("inviter_id", inviterId)
+    .eq("status", "joined"); // Tylko osoby które dołączyły
+  
+  if (error) {
+    console.error("[Supabase] Błąd odczytu invites:", error);
+    return [];
+  }
+  return data;
+}
+
 module.exports = {
   saveWeeklySale,
   getWeeklySales,
@@ -503,6 +519,7 @@ module.exports = {
   getActiveCodes,
   updateActiveCode,
   deleteActiveCode,
+  getInvitedUsersByInviter,
   saveContest,
   getContests,
   saveContestParticipant,
