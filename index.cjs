@@ -4286,169 +4286,140 @@ function legitHeader() {
   return "```\n🛒 New Shop × LEGIT CHECK\n```\n\n";
 }
 
-// ===== KOMENDA /ticket-zakoncz =====
 async function handleTicketZakonczCommand(interaction) {
   const channel = interaction.channel;
 
+  // Sprawdź czy komenda jest używana w tickecie
   if (!isTicketChannel(channel)) {
     await interaction.reply({
-      content: "> `❌` Ta komenda działa tylko w ticketach.",
+      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
+  // Sprawdź czy właściciel lub sprzedawca
   const isOwner = interaction.user.id === interaction.guild.ownerId;
   const SELLER_ROLE_ID = "1350786945944391733";
   const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
 
   if (!isOwner && !hasSellerRole) {
     await interaction.reply({
-      content: "> `❌` Brak uprawnień.",
+      content: "> `❌` × **Tylko** właściciel serwera lub użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
+  // Pobierz parametry
   const typ = interaction.options.getString("typ");
   const ile = interaction.options.getString("ile");
   const serwer = interaction.options.getString("serwer");
 
+  // Pobierz właściciela ticketu
   const ticketData = ticketOwners.get(channel.id);
   const ticketOwnerId = ticketData?.userId;
 
   if (!ticketOwnerId) {
     await interaction.reply({
-      content: "> `❌` Nie udało się ustalić właściciela ticketu.",
+      content: "> `❌` × **Nie udało się** zidentyfikować właściciela ticketu.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
-  const legitRepChannelId = "1449840030947217529";
   let embed;
-  let repText;
+  const legitRepChannelId = "1449840030947217529";
 
   switch (typ.toLowerCase()) {
     case "zakup":
-      repText = `+rep @${interaction.user.username} sprzedał ${ile} ${serwer}`;
+      embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE)
+        .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
+        )
+        .setImage("attachment://standard_5.gif");
       break;
 
     case "sprzedaż":
-      repText = `+rep @${interaction.user.username} kupił ${ile} ${serwer}`;
+      embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE)
+        .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
+        )
+        .setImage("attachment://standard_5.gif");
       break;
 
     case "wręczył nagrodę":
-      repText = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
+      embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE)
+        .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
+        )
+        .setImage("attachment://standard_5.gif");
+
+      try {
+        const guildId = interaction.guildId;
+        const gMap = inviteCounts.get(guildId) || new Map();
+        const userInvites = gMap.get(ticketOwnerId) || 0;
+        const requiredInvites = 10;
+        const missing = Math.max(0, requiredInvites - userInvites);
+
+        if (missing > 0) {
+          embed.addFields({
+            name: "ℹ️ Informacja o zaproszeniach",
+            value: `Brakuje ci **${missing}** zaproszeń, aby otrzymać kolejną nagrodę **50k$**.`
+          });
+        }
+      } catch (e) {
+        console.error("Błąd sprawdzania zaproszeń:", e);
+      }
       break;
 
     default:
       await interaction.reply({
-        content: "> `❌` Nieprawidłowy typ.",
+        content: "> `❌` × **Nieprawidłowy** typ. Wybierz: **zakup**, **sprzedaż** lub **wręczył nagrodę**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
   }
 
-  // ===== TWORZENIE EMBEDA =====
-  embed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setDescription(
-      legitHeader() +
-      `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-      `\`\`\`\n${repText}\n\`\`\``
-    )
-    .setImage("attachment://standard_5.gif");
-
+  // Cicha odpowiedź na komendę (NIEWIDOCZNA)
   await interaction.reply({
-    content: "> `✅` **Instrukcja została wysłana**",
+    content: "Zamykanie ticketu...",
     flags: [MessageFlags.Ephemeral],
   });
 
+  // Wyślij WIADOMOŚĆ JAKO BOT (bez info kto użył komendy)
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
   const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
 
-  // ===== WYŚLIJ EMBED + GIF =====
   await channel.send({
     content: `<@${ticketOwnerId}>`,
     embeds: [embed],
     files: [gifAttachment],
   });
 
-  // ===== WYŚLIJ +REP POD EMBED =====
-  await channel.send({
-    content: repText,
+  // Zapis oczekiwania na +rep
+  pendingTicketClose.set(channel.id, {
+    userId: ticketOwnerId,
+    commandUserId: interaction.user.id,
+    commandUsername: interaction.user.username,
+    awaitingRep: true,
+    ts: Date.now(),
   });
 
-  // ===== ZAPIS DO PENDING (AUTO-CLOSE) =====
-  pendingTicketClose.set(channel.id, {
-    ticketOwnerId,
-    guildId: interaction.guildId,
-    awaitingRep: true,
-  });
+  console.log(
+    `Ticket ${channel.id} oczekuje na +rep od ${ticketOwnerId} (komenda: ${interaction.user.username})`
+  );
 }
 
-// ===== LISTENER +REP → AUTO CLOSE =====
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith("+rep")) return;
-  if (message.channel.id !== "1449840030947217529") return;
-
-  for (const [ticketChannelId, data] of pendingTicketClose.entries()) {
-    if (!data.awaitingRep) continue;
-    if (message.author.id !== data.ticketOwnerId) continue;
-
-    const guild = message.guild;
-    const ticketChannel = await guild.channels.fetch(ticketChannelId).catch(() => null);
-    if (!ticketChannel) continue;
-
-    data.awaitingRep = false;
-
-    await ticketChannel.send("`🔒` Ticket zostanie zamknięty za **5 sekund**.");
-
-    setTimeout(async () => {
-      try {
-        await ticketChannel.delete("Ticket zakończony po +rep");
-        pendingTicketClose.delete(ticketChannelId);
-      } catch (err) {
-        console.error("Błąd zamykania ticketu:", err);
-      }
-    }, 5000);
-
-    break;
-  }
-});
-
-
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith("+rep")) return;
-  if (message.channel.id !== "1449840030947217529") return;
-
-  for (const [ticketChannelId, data] of pendingTicketClose.entries()) {
-    if (!data.awaitingRep) continue;
-    if (message.author.id !== data.ticketOwnerId) continue;
-
-    const guild = message.guild;
-    const ticketChannel = await guild.channels.fetch(ticketChannelId).catch(() => null);
-    if (!ticketChannel) continue;
-
-    data.awaitingRep = false;
-
-    await ticketChannel.send("`🔒` Ticket zostanie zamknięty za **5 sekund**.");
-
-    setTimeout(async () => {
-      try {
-        await ticketChannel.delete("Ticket zakończony po +rep");
-        pendingTicketClose.delete(ticketChannelId);
-      } catch (err) {
-        console.error("Błąd zamykania ticketu:", err);
-      }
-    }, 5000);
-
-    break;
-  }
-});
 
 
 // ----------------- /zamknij-z-powodem handler -----------------
