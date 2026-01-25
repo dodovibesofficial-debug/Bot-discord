@@ -4291,7 +4291,7 @@ async function handleTicketZakonczCommand(interaction) {
   const isOwner = interaction.user.id === interaction.guild.ownerId;
   const SELLER_ROLE_ID = "1350786945944391733";
   const hasSellerRole = interaction.member.roles.cache.has(SELLER_ROLE_ID);
-
+  
   if (!isOwner && !hasSellerRole) {
     await interaction.reply({
       content: "> `❌` × **Tylko** właściciel serwera lub użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
@@ -4317,32 +4317,56 @@ async function handleTicketZakonczCommand(interaction) {
     return;
   }
 
+  // Stwórz embed instrukcji w zależności od typu
   let embed;
   const legitRepChannelId = "1449840030947217529";
-  let repLine = null;
 
   switch (typ.toLowerCase()) {
     case "zakup":
-      repLine = `+rep @${interaction.user.username} sprzedał ${ile} ${serwer}`;
+      embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE) // 🔵 niebieski
+        .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
+        )
+        .setImage("attachment://standard_5.gif");
       break;
 
     case "sprzedaż":
-      repLine = `+rep @${interaction.user.username} kupił ${ile} ${serwer}`;
+      embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE) // 🔵 niebieski
+        .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
+        .setDescription(
+          `Aby zamknąć ten ticket wyślij wiadomość +rep na kanał \n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
+        )
+        .setImage("attachment://standard_5.gif");
       break;
 
     case "wręczył nagrodę":
-      repLine = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
-
+      embed = new EmbedBuilder()
+        .setColor(COLOR_BLUE) // 🔵 niebieski
+        .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
+        .setDescription(
+          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+          `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
+        )
+        .setImage("attachment://standard_5.gif");
+      
+      // Dodaj informację o brakujących zaproszeniach dla typu "wręczył nagrodę"
       try {
         const guildId = interaction.guildId;
         const gMap = inviteCounts.get(guildId) || new Map();
         const userInvites = gMap.get(ticketOwnerId) || 0;
-        const requiredInvites = 10;
+        const requiredInvites = 10; // zakładam 10 zaproszeń na nagrodę
         const missing = Math.max(0, requiredInvites - userInvites);
-
-        // fields będą dodane po utworzeniu embeda
+        
         if (missing > 0) {
-          interaction.__ticketZakonczMissingInvites = missing;
+          embed.addFields({
+            name: "ℹ️ Informacja o zaproszeniach",
+            value: `Brakuje ci **${missing}** zaproszeń, aby otrzymać kolejną nagrodę 50k$.`
+          });
         }
       } catch (e) {
         console.error("Błąd sprawdzania zaproszeń:", e);
@@ -4350,67 +4374,33 @@ async function handleTicketZakonczCommand(interaction) {
       break;
 
     default:
-      await interaction.reply({
+      await interaction.followUp({
         content: "> `❌` × **Nieprawidłowy** typ. Wybierz: **zakup**, **sprzedaż** lub **wręczył nagrodę**.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
   }
 
-  const instructionText =
-    "```\n" +
-    "🛒 New Shop × LEGIT CHECK\n" +
-    "```\n\n" +
-    `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-    `\`\`\`\n${repLine}\n\`\`\``;
-
-  embed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setDescription(instructionText)
-    .setImage("attachment://standard_5.gif");
-
-  const missingInvites = interaction.__ticketZakonczMissingInvites;
-  if (typeof missingInvites === "number" && missingInvites > 0) {
-    embed.addFields({
-      name: "ℹ️ Informacja o zaproszeniach",
-      value: `Brakuje ci **${missingInvites}** zaproszeń, aby otrzymać kolejną nagrodę **50k$**.`,
-    });
-    delete interaction.__ticketZakonczMissingInvites;
-  }
-
-  // Cicha odpowiedź na komendę (NIEWIDOCZNA)
-  await interaction.reply({
-    content: "> `✅` wysłano wzór legit checka.",
-    flags: [MessageFlags.Ephemeral],
-  });
-
-  // Wyślij WIADOMOŚĆ JAKO BOT (bez info kto użył komendy)
+  // Wyślij jedną wiadomość z pingiem i embedem
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
   const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
-
-  await channel.send({
+  
+  await interaction.reply({
     content: `<@${ticketOwnerId}>`,
     embeds: [embed],
-    files: [gifAttachment],
+    files: [gifAttachment]
   });
 
-  // Wyślij kopię +rep jako zwykły tekst (pod embedem i GIF-em)
-  await channel.send({
-    content: repLine,
-  });
-
-  // Zapis oczekiwania na +rep
+  // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
-    userId: ticketOwnerId,
-    commandUserId: interaction.user.id,
-    commandUsername: interaction.user.username,
+    userId: ticketOwnerId, // właściciel ticketu musi wysłać +rep
+    commandUserId: interaction.user.id, // osoba która użyła komendy
+    commandUsername: interaction.user.username, // nick osoby która użyła komendy
     awaitingRep: true,
-    ts: Date.now(),
+    ts: Date.now()
   });
 
-  console.log(
-    `Ticket ${channel.id} oczekuje na +rep od ${ticketOwnerId} (komenda: ${interaction.user.username})`
-  );
+  console.log(`Ticket ${channel.id} oczekuje na +rep od użytkownika ${ticketOwnerId} (komenda użyta przez ${interaction.user.username})`);
 }
 
 // ----------------- /zamknij-z-powodem handler -----------------
@@ -6556,8 +6546,8 @@ client.on(Events.MessageCreate, async (message) => {
 
       const channel = message.channel;
 
-      // Pattern: +rep @user|<@id> [action] [amount] [server]
-      const repPattern = /^\+rep\s+(?:<@!?\d+>|@\S+)\s+\S+\s+\S+\s+.+$/i;
+      // Pattern: +rep @user [action] [amount] [server]
+      const repPattern = /^\+rep\s+<@!?(\d+)>\s+\S+\s+\S+\s+.+$/i;
       const isValidRep = repPattern.test(message.content.trim());
       
       console.log(`[+rep] Pattern validation: ${isValidRep} for message: "${message.content}"`);
@@ -6597,18 +6587,10 @@ client.on(Events.MessageCreate, async (message) => {
           if (ticketData.awaitingRep && ticketData.userId === senderId) {
             // Sprawdź czy w wiadomości +rep jest nick osoby która użyła komendy
             const expectedUsername = ticketData.commandUsername;
-            const expectedUserId = ticketData.commandUserId;
             const messageContent = message.content.trim();
-
-            const mentionRe = expectedUserId
-              ? new RegExp(`<@!?${expectedUserId}>`)
-              : null;
-            const matchesSeller =
-              (expectedUsername && messageContent.includes(`@${expectedUsername}`)) ||
-              (mentionRe && mentionRe.test(messageContent));
-
-            // Sprawdź czy wiadomość zawiera oczekiwanego sprzedawcę (nick lub mention)
-            if (matchesSeller) {
+            
+            // Sprawdź czy wiadomość zawiera oczekiwany nick
+            if (messageContent.includes(`@${expectedUsername}`)) {
               console.log(`Znaleziono ticket ${channelId} - twórca ticketu ${senderId} wysłał +rep z nickiem ${expectedUsername}`);
               
               // Pobierz kanał ticketu
