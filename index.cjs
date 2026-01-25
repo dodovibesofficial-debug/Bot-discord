@@ -4274,18 +4274,7 @@ async function handleCloseTicketCommand(interaction) {
   }
 }
 
-// ===== IMPORTY TYLKO RAZ NA GÓRZE PLIKU =====
-const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder, MessageFlags } = require("discord.js");
-const path = require("path");
-
-// ===== MAPA OCZEKUJĄCYCH TICKETÓW =====
-const pendingTicketClose = new Map();
-
-// ===== FUNKCJA HEADER =====
-function legitHeader() {
-  return "```\n🛒 New Shop × LEGIT CHECK\n```\n\n";
-}
-
+// ----------------- /ticket-zakoncz handler -----------------
 async function handleTicketZakonczCommand(interaction) {
   const channel = interaction.channel;
 
@@ -4333,10 +4322,10 @@ async function handleTicketZakonczCommand(interaction) {
 
   switch (typ.toLowerCase()) {
     case "zakup":
-      embed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
-        .setDescription(
+embed = new EmbedBuilder()
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```🛒 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️```\n\n" +
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
         )
@@ -4345,9 +4334,9 @@ async function handleTicketZakonczCommand(interaction) {
 
     case "sprzedaż":
       embed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
-        .setDescription(
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```🛒 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️```\n\n" +
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
         )
@@ -4356,9 +4345,9 @@ async function handleTicketZakonczCommand(interaction) {
 
     case "wręczył nagrodę":
       embed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
-        .setDescription(
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```🛒 NAGRODA ZOSTAŁA NADANA! ❤️```\n\n" +
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
         )
@@ -4392,7 +4381,7 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Cicha odpowiedź na komendę (NIEWIDOCZNA)
   await interaction.reply({
-    content: "Zamykanie ticketu...",
+    content: "> `✅` wysłano wzór legit checka.",
     flags: [MessageFlags.Ephemeral],
   });
 
@@ -4419,8 +4408,6 @@ async function handleTicketZakonczCommand(interaction) {
     `Ticket ${channel.id} oczekuje na +rep od ${ticketOwnerId} (komenda: ${interaction.user.username})`
   );
 }
-
-
 
 // ----------------- /zamknij-z-powodem handler -----------------
 async function handleZamknijZPowodemCommand(interaction) {
