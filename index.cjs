@@ -4322,10 +4322,10 @@ async function handleTicketZakonczCommand(interaction) {
 
   switch (typ.toLowerCase()) {
     case "zakup":
-      embed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
-        .setDescription(
+embed = new EmbedBuilder()
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```🛒 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️```\n\n" +
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
         )
@@ -4334,9 +4334,9 @@ async function handleTicketZakonczCommand(interaction) {
 
     case "sprzedaż":
       embed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
-        .setDescription(
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```🛒 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️```\n\n" +
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
         )
@@ -4345,9 +4345,9 @@ async function handleTicketZakonczCommand(interaction) {
 
     case "wręczył nagrodę":
       embed = new EmbedBuilder()
-        .setColor(COLOR_BLUE)
-        .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
-        .setDescription(
+  .setColor(COLOR_BLUE)
+  .setDescription(
+    "```🛒 NAGRODA ZOSTAŁA NADANA! ❤️```\n\n" +
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
           `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
         )
