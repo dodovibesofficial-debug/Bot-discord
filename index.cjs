@@ -4274,18 +4274,19 @@ async function handleCloseTicketCommand(interaction) {
   }
 }
 
-// ----------------- /ticket-zakoncz handler -----------------
-const { EmbedBuilder, AttachmentBuilder, MessageFlags } = require("discord.js");
+// ===== IMPORTY TYLKO RAZ NA GÓRZE PLIKU =====
+const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder, MessageFlags } = require("discord.js");
 const path = require("path");
 
-// MAPA OCZEKUJĄCYCH TICKETÓW
+// ===== MAPA OCZEKUJĄCYCH TICKETÓW =====
 const pendingTicketClose = new Map();
 
-// WSPÓLNY HEADER
+// ===== FUNKCJA HEADER =====
 function legitHeader() {
   return "```\n🛒 New Shop × LEGIT CHECK\n```\n\n";
 }
 
+// ===== KOMENDA /ticket-zakoncz =====
 async function handleTicketZakonczCommand(interaction) {
   const channel = interaction.channel;
 
@@ -4349,6 +4350,7 @@ async function handleTicketZakonczCommand(interaction) {
       return;
   }
 
+  // ===== TWORZENIE EMBEDA =====
   embed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
     .setDescription(
@@ -4366,19 +4368,19 @@ async function handleTicketZakonczCommand(interaction) {
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
   const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
 
-  // EMBED + GIF
+  // ===== WYŚLIJ EMBED + GIF =====
   await channel.send({
     content: `<@${ticketOwnerId}>`,
     embeds: [embed],
     files: [gifAttachment],
   });
 
-  // ZWYKŁA WIADOMOŚĆ +REP (DRUGIE MIEJSCE)
+  // ===== WYŚLIJ +REP POD EMBED =====
   await channel.send({
     content: repText,
   });
 
-  // ZAPIS DO AUTO-ZAMKNIĘCIA
+  // ===== ZAPIS DO PENDING (AUTO-CLOSE) =====
   pendingTicketClose.set(channel.id, {
     ticketOwnerId,
     guildId: interaction.guildId,
@@ -4386,9 +4388,37 @@ async function handleTicketZakonczCommand(interaction) {
   });
 }
 
-/* =========================
-   LISTENER +REP → AUTO CLOSE
-========================= */
+// ===== LISTENER +REP → AUTO CLOSE =====
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (!message.content.startsWith("+rep")) return;
+  if (message.channel.id !== "1449840030947217529") return;
+
+  for (const [ticketChannelId, data] of pendingTicketClose.entries()) {
+    if (!data.awaitingRep) continue;
+    if (message.author.id !== data.ticketOwnerId) continue;
+
+    const guild = message.guild;
+    const ticketChannel = await guild.channels.fetch(ticketChannelId).catch(() => null);
+    if (!ticketChannel) continue;
+
+    data.awaitingRep = false;
+
+    await ticketChannel.send("`🔒` Ticket zostanie zamknięty za **5 sekund**.");
+
+    setTimeout(async () => {
+      try {
+        await ticketChannel.delete("Ticket zakończony po +rep");
+        pendingTicketClose.delete(ticketChannelId);
+      } catch (err) {
+        console.error("Błąd zamykania ticketu:", err);
+      }
+    }, 5000);
+
+    break;
+  }
+});
+
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
