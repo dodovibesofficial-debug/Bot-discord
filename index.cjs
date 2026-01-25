@@ -4394,9 +4394,9 @@ async function handleTicketZakonczCommand(interaction) {
     files: [gifAttachment],
   });
 
-  // Wyślij tę samą wiadomość również jako zwykły tekst (pod embedem i GIF-em)
+  // Wyślij kopię +rep jako zwykły tekst (pod embedem i GIF-em)
   await channel.send({
-    content: instructionText,
+    content: repLine,
   });
 
   // Zapis oczekiwania na +rep
