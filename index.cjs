@@ -4319,39 +4319,19 @@ async function handleTicketZakonczCommand(interaction) {
 
   let embed;
   const legitRepChannelId = "1449840030947217529";
+  let repLine = null;
 
   switch (typ.toLowerCase()) {
     case "zakup":
-embed = new EmbedBuilder()
-  .setColor(COLOR_BLUE)
-  .setDescription(
-    "```🛒 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️```\n\n" +
-          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
-        )
-        .setImage("attachment://standard_5.gif");
+      repLine = `+rep @${interaction.user.username} sprzedał ${ile} ${serwer}`;
       break;
 
     case "sprzedaż":
-      embed = new EmbedBuilder()
-  .setColor(COLOR_BLUE)
-  .setDescription(
-    "```🛒 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️```\n\n" +
-          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
-        )
-        .setImage("attachment://standard_5.gif");
+      repLine = `+rep @${interaction.user.username} kupił ${ile} ${serwer}`;
       break;
 
     case "wręczył nagrodę":
-      embed = new EmbedBuilder()
-  .setColor(COLOR_BLUE)
-  .setDescription(
-    "```🛒 NAGRODA ZOSTAŁA NADANA! ❤️```\n\n" +
-          `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
-        )
-        .setImage("attachment://standard_5.gif");
+      repLine = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
 
       try {
         const guildId = interaction.guildId;
@@ -4360,11 +4340,9 @@ embed = new EmbedBuilder()
         const requiredInvites = 10;
         const missing = Math.max(0, requiredInvites - userInvites);
 
+        // fields będą dodane po utworzeniu embeda
         if (missing > 0) {
-          embed.addFields({
-            name: "ℹ️ Informacja o zaproszeniach",
-            value: `Brakuje ci **${missing}** zaproszeń, aby otrzymać kolejną nagrodę **50k$**.`
-          });
+          interaction.__ticketZakonczMissingInvites = missing;
         }
       } catch (e) {
         console.error("Błąd sprawdzania zaproszeń:", e);
@@ -4377,6 +4355,27 @@ embed = new EmbedBuilder()
         flags: [MessageFlags.Ephemeral],
       });
       return;
+  }
+
+  const instructionText =
+    "```\n" +
+    "🛒 New Shop × LEGIT CHECK\n" +
+    "```\n\n" +
+    `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
+    `\`\`\`\n${repLine}\n\`\`\``;
+
+  embed = new EmbedBuilder()
+    .setColor(COLOR_BLUE)
+    .setDescription(instructionText)
+    .setImage("attachment://standard_5.gif");
+
+  const missingInvites = interaction.__ticketZakonczMissingInvites;
+  if (typeof missingInvites === "number" && missingInvites > 0) {
+    embed.addFields({
+      name: "ℹ️ Informacja o zaproszeniach",
+      value: `Brakuje ci **${missingInvites}** zaproszeń, aby otrzymać kolejną nagrodę **50k$**.`,
+    });
+    delete interaction.__ticketZakonczMissingInvites;
   }
 
   // Cicha odpowiedź na komendę (NIEWIDOCZNA)
@@ -4393,6 +4392,11 @@ embed = new EmbedBuilder()
     content: `<@${ticketOwnerId}>`,
     embeds: [embed],
     files: [gifAttachment],
+  });
+
+  // Wyślij tę samą wiadomość również jako zwykły tekst (pod embedem i GIF-em)
+  await channel.send({
+    content: instructionText,
   });
 
   // Zapis oczekiwania na +rep
@@ -6552,8 +6556,8 @@ client.on(Events.MessageCreate, async (message) => {
 
       const channel = message.channel;
 
-      // Pattern: +rep @user [action] [amount] [server]
-      const repPattern = /^\+rep\s+<@!?(\d+)>\s+\S+\s+\S+\s+.+$/i;
+      // Pattern: +rep @user|<@id> [action] [amount] [server]
+      const repPattern = /^\+rep\s+(?:<@!?\d+>|@\S+)\s+\S+\s+\S+\s+.+$/i;
       const isValidRep = repPattern.test(message.content.trim());
       
       console.log(`[+rep] Pattern validation: ${isValidRep} for message: "${message.content}"`);
@@ -6593,10 +6597,18 @@ client.on(Events.MessageCreate, async (message) => {
           if (ticketData.awaitingRep && ticketData.userId === senderId) {
             // Sprawdź czy w wiadomości +rep jest nick osoby która użyła komendy
             const expectedUsername = ticketData.commandUsername;
+            const expectedUserId = ticketData.commandUserId;
             const messageContent = message.content.trim();
-            
-            // Sprawdź czy wiadomość zawiera oczekiwany nick
-            if (messageContent.includes(`@${expectedUsername}`)) {
+
+            const mentionRe = expectedUserId
+              ? new RegExp(`<@!?${expectedUserId}>`)
+              : null;
+            const matchesSeller =
+              (expectedUsername && messageContent.includes(`@${expectedUsername}`)) ||
+              (mentionRe && mentionRe.test(messageContent));
+
+            // Sprawdź czy wiadomość zawiera oczekiwanego sprzedawcę (nick lub mention)
+            if (matchesSeller) {
               console.log(`Znaleziono ticket ${channelId} - twórca ticketu ${senderId} wysłał +rep z nickiem ${expectedUsername}`);
               
               // Pobierz kanał ticketu
