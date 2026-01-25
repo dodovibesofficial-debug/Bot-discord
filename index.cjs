@@ -4381,7 +4381,7 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Cicha odpowiedź na komendę (NIEWIDOCZNA)
   await interaction.reply({
-    content: "Zamykanie ticketu...",
+    content: "> `✅` wysłano wzór legit checka.",
     flags: [MessageFlags.Ephemeral],
   });
 
