@@ -2305,7 +2305,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2316,7 +2316,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2361,7 +2361,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2416,7 +2416,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2427,7 +2427,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2984,7 +2984,7 @@ const nickInput = new TextInputBuilder()
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3055,7 +3055,7 @@ const nickInput = new TextInputBuilder()
 
     if (interaction.user.id !== ticketUserId) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3093,7 +3093,7 @@ const nickInput = new TextInputBuilder()
     // Only administrator or seller can use settings
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3242,15 +3242,6 @@ async function handleSlashCommand(interaction) {
 
 // Handler dla komendy /rozliczenie
 async function handleRozliczenieCommand(interaction) {
-  // Sprawdź czy komenda jest używana na właściwym kanale
-  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
-    await interaction.reply({
-      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
-      flags: [MessageFlags.Ephemeral]
-    });
-    return;
-  }
-
   // Sprawdź czy właściciel lub ma odpowiednią rolę
   const isOwner = interaction.user.id === interaction.guild.ownerId;
   const requiredRoleId = "1350786945944391733";
@@ -3258,7 +3249,16 @@ async function handleRozliczenieCommand(interaction) {
   
   if (!isOwner && !hasRole) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
+      flags: [MessageFlags.Ephemeral]
+    });
+    return;
+  }
+
+  // Sprawdź czy komenda jest używana na właściwym kanale
+  if (interaction.channelId !== ROZLICZENIA_CHANNEL_ID) {
+    await interaction.reply({
+      content: `❌ Ta komenda może być użyta tylko na kanale rozliczeń! <#${ROZLICZENIA_CHANNEL_ID}>`,
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3302,7 +3302,7 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3353,7 +3353,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3480,7 +3480,7 @@ async function handleStatusBotaCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3519,7 +3519,7 @@ async function handleRozliczenieUstawCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3575,6 +3575,15 @@ async function handleRozliczenieUstawCommand(interaction) {
 }
 
 async function handleAdminPrzejmij(interaction) {
+  // Sprawdź uprawnienia przed sprawdzaniem kanału
+  if (!isAdminOrSeller(interaction.member)) {
+    await interaction.reply({
+      content: "> `❗` × Brak wymaganych uprawnień.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   const channel = interaction.channel;
   if (!isTicketChannel(channel)) {
     await interaction.reply({
@@ -3597,7 +3606,7 @@ async function handlePanelKalkulatorCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3636,6 +3645,15 @@ async function handlePanelKalkulatorCommand(interaction) {
 }
 
 async function handleAdminOdprzejmij(interaction) {
+  // Sprawdź uprawnienia przed sprawdzaniem kanału
+  if (!isAdminOrSeller(interaction.member)) {
+    await interaction.reply({
+      content: "> `❗` × Brak wymaganych uprawnień.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   const channel = interaction.channel;
   if (!isTicketChannel(channel)) {
     await interaction.reply({
@@ -3659,7 +3677,7 @@ async function handleSendMessageCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4026,7 +4044,7 @@ async function handlePanelWeryfikacjaCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4164,7 +4182,7 @@ async function handleTicketPanelCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4232,7 +4250,7 @@ async function handleCloseTicketCommand(interaction) {
   // only admins / sellers
   if (!isAdminOrSeller(interaction.member)) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4309,7 +4327,7 @@ async function handleTicketZakonczCommand(interaction) {
   
   if (!isOwner && !hasSellerRole) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4434,7 +4452,7 @@ async function handleZamknijZPowodemCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4501,7 +4519,7 @@ async function handleLegitRepUstawCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4560,7 +4578,7 @@ async function handleSprawdzKogoZaprosilCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4831,12 +4849,12 @@ async function ticketClaimCommon(interaction, channelId) {
   if (!isAdminOrSeller(interaction.member)) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
     } else {
       await interaction.followUp({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       }).catch(() => null);
     }
@@ -4980,12 +4998,12 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
   if (!isAdminOrSeller(interaction.member)) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
     } else {
       await interaction.followUp({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       }).catch(() => null);
     }
@@ -5604,7 +5622,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5615,7 +5633,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5660,7 +5678,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5671,7 +5689,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5728,7 +5746,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5739,7 +5757,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -6991,7 +7009,7 @@ async function handleWyczyscKanalCommand(interaction) {
   if (interaction.user.id !== interaction.guild.ownerId) {
     try {
       await interaction.editReply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
       });
     } catch (e) {
       // ignore
@@ -7228,7 +7246,7 @@ async function handleResetLCCommand(interaction) {
   if (interaction.user.id !== interaction.guild.ownerId) {
     try {
       await interaction.reply({
-        content: "> `❗` Brak wymaganych uprawnień.",
+        content: "> `❗` × Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) {
@@ -7334,7 +7352,7 @@ async function handleZresetujCzasCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7949,7 +7967,7 @@ async function handleZaprosieniaStatsCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8262,7 +8280,7 @@ async function handleDodajKonkursCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8464,7 +8482,7 @@ async function handleDodajKonkursCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❗` Brak wymaganych uprawnień.",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
