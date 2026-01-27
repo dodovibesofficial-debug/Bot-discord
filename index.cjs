@@ -4444,9 +4444,12 @@ async function handleTicketZakonczCommand(interaction) {
     files: [gifAttachment]
   });
 
-  // Wyślij +rep jako osobną wiadomość pod embedem (natychmiast)
+  // Wyślij +rep jako followUp aby pojawiło się natychmiast po embedzie
   try {
-    await interaction.channel.send(repMessage);
+    await interaction.followUp({
+      content: repMessage,
+      flags: [] // nie ephemeral - widoczne dla wszystkich
+    });
   } catch (err) {
     console.error("Błąd wysyłania wiadomości +rep:", err);
   }
