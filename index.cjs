@@ -8686,14 +8686,24 @@ async function handleKonkursJoinModal(interaction, msgId) {
   const contest = contests.get(msgId);
   if (!contest) {
     await interaction.reply({
-      content: "> `❌` × **Konkurs** nie został znaleziony.",
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR_BLUE)
+          .setDescription("> `❌` × **Konkurs** nie został znaleziony.")
+          .setTimestamp(),
+      ],
       flags: [MessageFlags.Ephemeral],
     });
     return;
   }
   if (Date.now() >= contest.endsAt) {
     await interaction.reply({
-      content: "> `❌` × **Konkurs** już się zakończył.",
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR_BLUE)
+          .setDescription("> `❌` × **Konkurs** już się zakończył.")
+          .setTimestamp(),
+      ],
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8704,7 +8714,14 @@ async function handleKonkursJoinModal(interaction, msgId) {
     const userInvites = gMap.get(interaction.user.id) || 0;
     if (userInvites < contest.invitesRequired) {
       await interaction.reply({
-        content: `❌ Nie masz wystarczającej liczby zaproszeń. Wymagane: ${contest.invitesRequired}`,
+        embeds: [
+          new EmbedBuilder()
+            .setColor(COLOR_BLUE)
+            .setDescription(
+              `❌ Nie masz wystarczającej liczby zaproszeń. Wymagane: ${contest.invitesRequired}`,
+            )
+            .setTimestamp(),
+        ],
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -8740,7 +8757,12 @@ async function handleKonkursJoinModal(interaction, msgId) {
     const row = new ActionRowBuilder().addComponents(leaveButton, cancelButton);
 
     await interaction.reply({
-      content: "❓ Czy chcesz opuścić konkurs?",
+      embeds: [
+        new EmbedBuilder()
+          .setColor(COLOR_BLUE)
+          .setDescription("❓ Czy chcesz opuścić konkurs?")
+          .setTimestamp(),
+      ],
       components: [row],
       flags: [MessageFlags.Ephemeral],
     });
@@ -8793,8 +8815,16 @@ async function handleKonkursJoinModal(interaction, msgId) {
     console.warn("Nie udało się zaktualizować embed/btn konkursu:", e);
   }
 
+  const joinEmbed = new EmbedBuilder()
+    .setColor(COLOR_BLUE)
+    .setDescription(
+      `✅ Jesteś zapisany do konkursu. Uczestników: ${participantsCount}`,
+    )
+    .setImage(REP_EMBED_BANNER_URL)
+    .setTimestamp();
+
   await interaction.reply({
-    content: `✅ Jesteś zapisany do konkursu. Uczestników: ${participantsCount}`,
+    embeds: [joinEmbed],
     flags: [MessageFlags.Ephemeral],
   });
 }
