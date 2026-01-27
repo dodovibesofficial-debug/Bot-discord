@@ -8760,7 +8760,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
     // Użytkownik już bierze udział - pytamy czy chce opuścić konkurs
     const leaveButton = new ButtonBuilder()
       .setCustomId(`konkurs_leave_${msgId}`)
-      .setLabel("Opuść")
+      .setLabel("Opuść Konkurs")
       .setStyle(ButtonStyle.Danger);
 
     const cancelButton = new ButtonBuilder()
@@ -8771,7 +8771,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
     const row = new ActionRowBuilder().addComponents(leaveButton, cancelButton);
 
     await interaction.reply({
-      content: "> `❓` Czy chcesz opuścić konkurs?",
+      content: "> `❓` Już wziąłeś udział w tym konkursie!",
       components: [row],
       flags: [MessageFlags.Ephemeral],
     });
@@ -9072,7 +9072,7 @@ async function handleKonkursLeave(interaction, msgId) {
   }
 
   await interaction.update({
-    content: "> `🚪` Opuściłeś konkurs.",
+    content: "> `🚪` × Opuściłeś konkurs.",
     components: [],
   });
 }
@@ -9080,7 +9080,7 @@ async function handleKonkursLeave(interaction, msgId) {
 // --- Obsługa anulowania opuszczenia konkursu ---
 async function handleKonkursCancelLeave(interaction, msgId) {
   await interaction.update({
-    content: "> `❌` × **Anulowano**. Nadal bierzesz udział w **konkursie**.",
+    content: "> `📋` × Anulowano, dalej bierzesz udział w konkursie.",
     components: [],
   });
 }
