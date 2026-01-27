@@ -8195,10 +8195,11 @@ async function handleHelpCommand(interaction) {
       .setTitle("\`📋\` × Spis komend")
       .setDescription(
         [
-          "**`Komendy ogólne:`**!",
-          "> 🎁 × </drop:1464015494876102748>, Wylosuj zniżke na zakupy!",
-          "> 📩 × </sprawdz-zaproszenia:1464015495932940398>, Sprawdź swoje zaproszenia",
-          "> 📋 × </help:1464015495392133316> — Pokaż tę wiadomość",
+          "**`Komendy ogólne:`**",
+          "> \`🎁\` × </drop:1464015494876102748> Wylosuj zniżke na zakupy!",
+          "> \`📩\` × </sprawdz-zaproszenia:1464015495932940398> Sprawdź swoje zaproszenia",
+          "> \`⭐\` × </opinia:1464015495392133321> Podziel się opinią o naszym sklepie",
+          "> \`📋\` × </help:1464015495392133316> — Pokaż tę wiadomość",
         ].join("\n"),
       )
 
