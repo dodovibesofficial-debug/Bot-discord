@@ -4446,11 +4446,9 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Wyślij +rep jako osobną wiadomość pod embedem (natychmiast)
   try {
-    console.log(`[TICKET-ZAKONCZ-DEBUG] Próbuję wysłać wiadomość +rep: "${repMessage}"`);
-    const sentMessage = await interaction.channel.send(repMessage);
-    console.log(`[TICKET-ZAKONCZ-DEBUG] Wiadomość +rep wysłana pomyślnie, ID: ${sentMessage.id}`);
+    await interaction.channel.send(repMessage);
   } catch (err) {
-    console.error("[TICKET-ZAKONCZ-DEBUG] Błąd wysyłania wiadomości +rep:", err);
+    console.error("Błąd wysyłania wiadomości +rep:", err);
   }
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
@@ -6440,19 +6438,12 @@ client.on(Events.MessageCreate, async (message) => {
     const mentionRegex = /<@!?(\d+)>|@here|@everyone|<@&(\d+)>/g;
     const mentions = content.match(mentionRegex) || [];
     
-    console.log(`[MASS-PING-DEBUG] Sprawdzam wiadomość od ${message.author.tag}: ${mentions.length} oznaczeń (łącznie)`);
-    console.log(`[MASS-PING-DEBUG] Znalezione oznaczenia: ${mentions.join(', ')}`);
-    console.log(`[MASS-PING-DEBUG] Treść wiadomości: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`);
-    
     if (mentions.length >= 5) {
-      console.log(`[MASS-PING-DEBUG] Wykryto masowy ping! Usuwam wiadomość i daję mute na 1h...`);
-      
       // delete message first
       try {
         await message.delete();
-        console.log(`[MASS-PING-DEBUG] Wiadomość usunięta pomyślnie`);
       } catch (e) {
-        console.error(`[MASS-PING-DEBUG] Błąd usuwania wiadomości:`, e);
+        // ignore
       }
       
       // attempt to timeout the member for 1 hour (3600 seconds)
@@ -6460,39 +6451,28 @@ client.on(Events.MessageCreate, async (message) => {
         const member = message.member;
         const guild = message.guild;
         
-        console.log(`[MASS-PING-DEBUG] Próba timeout dla ${member.user.tag}...`);
-        console.log(`[MASS-PING-DEBUG] Bot permissions: ${guild.members.me.permissions.has(PermissionsBitField.Flags.ModerateMembers)}`);
-        console.log(`[MASS-PING-DEBUG] Member manageable: ${member.manageable}`);
-        
         if (member && typeof member.timeout === "function") {
           const ms = 60 * 60 * 1000; // 1 hour
           await member.timeout(ms, "Masowy ping - 5+ oznaczeń w jednej wiadomości");
-          console.log(`[MASS-PING-DEBUG] Timeout pomyślnie nadany na 1h dla ${member.user.tag}`);
         } else {
-          console.log(`[MASS-PING-DEBUG] Timeout niedostępny, próbuję z rolą Muted...`);
-          
           // fallback: try to add a muted role named 'Muted' (best-effort)
           let mutedRole = guild.roles.cache.find(
             (r) => r.name.toLowerCase() === "muted",
           );
           if (!mutedRole) {
-            console.log(`[MASS-PING-DEBUG] Tworzę rolę Muted...`);
             try {
               mutedRole = await guild.roles.create({ 
                 name: "Muted", 
                 permissions: [],
                 reason: "Rola dla masowego pingowania"
               });
-              console.log(`[MASS-PING-DEBUG] Rola Muted utworzona: ${mutedRole.id}`);
             } catch (e) {
-              console.error(`[MASS-PING-DEBUG] Błąd tworzenia roli Muted:`, e);
               mutedRole = null;
             }
           }
           
           if (mutedRole) {
             await member.roles.add(mutedRole, "Masowy ping - 5+ oznaczeń");
-            console.log(`[MASS-PING-DEBUG] Rola Muted dodana do ${member.user.tag}`);
             
             // schedule removal in 1 hour
             setTimeout(async () => {
@@ -6500,16 +6480,15 @@ client.on(Events.MessageCreate, async (message) => {
                 const guildMember = await guild.members.fetch(member.id).catch(() => null);
                 if (guildMember) {
                   await guildMember.roles.remove(mutedRole, "Automatyczne usunięcie mute po 1h");
-                  console.log(`[MASS-PING-DEBUG] Rola Muted usunięta z ${guildMember.user.tag} po 1h`);
                 }
               } catch (e) {
-                console.error(`[MASS-PING-DEBUG] Błąd usuwania roli Muted:`, e);
+                // ignore
               }
             }, 60 * 60 * 1000);
           }
         }
       } catch (err) {
-        console.error("[MASS-PING-DEBUG] Nie udało się dać muta/timeout po masowym pingu:", err);
+        console.error("Nie udało się dać muta/timeout po masowym pingu:", err);
       }
 
       // notify channel briefly
@@ -6520,19 +6499,18 @@ client.on(Events.MessageCreate, async (message) => {
             new EmbedBuilder()
               .setColor(COLOR_RED)
               .setDescription(
-                "• `❗`  **__Masowy ping jest niedozwolony otrzymujesz mute na 1 godzine__**",
+                "• `❗`  __Masowy ping jest niedozwolony otrzymujesz mute na 1 godzine__",
               ),
           ],
         });
         setTimeout(() => warn.delete().catch(() => null), 6_000);
-        console.log(`[MASS-PING-DEBUG] Wiadomość ostrzegawcza wysłana`);
       } catch (e) {
-        console.error("[MASS-PING-DEBUG] Błąd wysyłania ostrzeżenia:", e);
+        // ignore
       }
       return;
     }
   } catch (e) {
-    console.error("[MASS-PING-DEBUG] Błąd podczas sprawdzania masowych pingów:", e);
+    console.error("Błąd podczas sprawdzania masowych pingów:", e);
   }
 
   // Invalid-channel embeds (customized)
