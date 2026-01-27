@@ -4444,6 +4444,13 @@ async function handleTicketZakonczCommand(interaction) {
     files: [gifAttachment]
   });
 
+  // Wyślij +rep jako osobną wiadomość pod embedem (natychmiast)
+  try {
+    await interaction.channel.send(repMessage);
+  } catch (err) {
+    console.error("Błąd wysyłania wiadomości +rep:", err);
+  }
+
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
     userId: ticketOwnerId, // właściciel ticketu musi wysłać +rep
@@ -6491,7 +6498,7 @@ client.on(Events.MessageCreate, async (message) => {
             }
           }
           
-          if (mutedRole && member.manageable) {
+          if (mutedRole) {
             await member.roles.add(mutedRole, "Masowy ping - 5+ oznaczeń");
             console.log(`[MASS-PING-DEBUG] Rola Muted dodana do ${member.user.tag}`);
             
