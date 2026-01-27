@@ -3847,7 +3847,7 @@ async function handleDropCommand(interaction) {
 
   if (interaction.channelId !== dropChannelId) {
     await interaction.reply({
-      content: `> \`❌\`  Komendę /drop można użyć tylko na kanale <#${dropChannelId}>`,
+      content: `> \`❌\` × Użyj tej **komendy** na kanale <#${dropChannelId}>`,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3859,7 +3859,7 @@ async function handleDropCommand(interaction) {
   if (now - lastDrop < DROP_COOLDOWN_MS) {
     const remaining = DROP_COOLDOWN_MS - (now - lastDrop);
     await interaction.reply({
-      content: `> \`❌\` Możesz użyć /drop ponownie za \`${humanizeMs(remaining)}\``,
+      content: `> \`❌\` × Możesz użyć komendy </drop:1464015494876102748> ponownie za \`${humanizeMs(remaining)}\``,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6786,7 +6786,7 @@ async function handleOpinionCommand(interaction) {
   if (Date.now() - lastUsed < OPINION_COOLDOWN_MS) {
     const remaining = OPINION_COOLDOWN_MS - (Date.now() - lastUsed);
     await interaction.reply({
-      content: `> \`❌\` Możesz użyć /opinia ponownie za \`${humanizeMs(remaining)}\``,
+      content: `> \`❌\` × Możesz użyć komendy </opinia:1464015495392133321> ponownie za \`${humanizeMs(remaining)}\``,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7840,7 +7840,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   if (nowTs - lastTs < 30_000) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
     await interaction.reply({
-      content: `> \`❌\` × **Poczekaj** jeszcze ${remain}s zanim użyjesz \`/sprawdz-zaproszenia\` **ponownie**.`,
+      content: `> \`❌\` × Możesz użyć komendy </sprawdz-zaproszenia:1464015495932940398> ponownie za ${remain}s `,
       flags: [MessageFlags.Ephemeral]
     });
     return;
