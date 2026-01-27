@@ -4430,6 +4430,29 @@ async function handleTicketZakonczCommand(interaction) {
     files: [gifAttachment]
   });
 
+  // Wyślij duplikat +rep jako zwykłą wiadomość pod embedem
+  let repMessage;
+  switch (typ.toLowerCase()) {
+    case "zakup":
+      repMessage = `+rep @${interaction.user.username} sprzedał ${ile} ${serwer}`;
+      break;
+    case "sprzedaż":
+      repMessage = `+rep @${interaction.user.username} kupił ${ile} ${serwer}`;
+      break;
+    case "wręczył nagrodę":
+      repMessage = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
+      break;
+  }
+
+  // Wyślij wiadomość z +rep po krótkim opóźnieniu
+  setTimeout(async () => {
+    try {
+      await interaction.channel.send(repMessage);
+    } catch (err) {
+      console.error("Błąd wysyłania wiadomości +rep:", err);
+    }
+  }, 1000); // 1 sekunda opóźnienia
+
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
     userId: ticketOwnerId, // właściciel ticketu musi wysłać +rep
