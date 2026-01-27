@@ -1220,9 +1220,7 @@ const commands = [
   // UPDATED: embed (interactive flow)
   new SlashCommandBuilder()
     .setName("embed")
-    .setDescription(
-      "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (tylko właściciel)",
-    )
+    .setDescription("Wyślij wiadomość przez bota (tylko właściciel)")
     .setDefaultMemberPermissions(null)
     .addChannelOption((o) =>
       o
