@@ -4420,17 +4420,11 @@ async function handleTicketZakonczCommand(interaction) {
       return;
   }
 
-  // Wyślij jedną wiadomość z pingiem i embedem
+  // Wyślij jedną wiadomość z pingiem, embedem i +rep pod embedem
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
   const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
   
-  await interaction.reply({
-    content: `<@${ticketOwnerId}>`,
-    embeds: [embed],
-    files: [gifAttachment]
-  });
-
-  // Wyślij duplikat +rep jako zwykłą wiadomość pod embedem
+  // Przygotuj wiadomość +rep
   let repMessage;
   switch (typ.toLowerCase()) {
     case "zakup":
@@ -4443,15 +4437,13 @@ async function handleTicketZakonczCommand(interaction) {
       repMessage = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
       break;
   }
-
-  // Wyślij wiadomość z +rep po krótkim opóźnieniu
-  setTimeout(async () => {
-    try {
-      await interaction.channel.send(repMessage);
-    } catch (err) {
-      console.error("Błąd wysyłania wiadomości +rep:", err);
-    }
-  }, 1000); // 1 sekunda opóźnienia
+  
+  // Wyślij wszystko w jednej wiadomości
+  await interaction.reply({
+    content: `<@${ticketOwnerId}>\n\n${repMessage}`,
+    embeds: [embed],
+    files: [gifAttachment]
+  });
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
