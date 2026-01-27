@@ -2837,7 +2837,7 @@ async function handleButtonInteraction(interaction) {
 
 const nickInput = new TextInputBuilder()
   .setCustomId("konkurs_nick")
-  .setLabel("Twój nick w Minecraft (opcjonalnie)")
+  .setLabel("Twój nick z Minecraft (opcjonalnie)")
   .setStyle(TextInputStyle.Short)
   .setRequired(false) // <- to sprawia, że pole jest opcjonalne
   .setMaxLength(20)
