@@ -6818,7 +6818,7 @@ async function handleOpinionCommand(interaction) {
 
   if (!allowedChannelId || interaction.channelId !== allowedChannelId) {
     await interaction.reply({
-      content: `> \`❌\` Komendę </opinia:1464015495392133321> można użyć tylko na kanale <#${allowedChannelId || "⭐-×┃opinie-klientow"}>.`,
+      content: `> \`❌\` × Użyj tej **komendy** na kanale <#${allowedChannelId || "⭐-×┃opinie-klientow"}>.`,
       flags: [MessageFlags.Ephemeral],
     });
     return;
