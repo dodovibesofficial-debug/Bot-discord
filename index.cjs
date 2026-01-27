@@ -8379,10 +8379,10 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `Liczba zwycięzców: ${winnersCount}\n` +
-    `Czas do końca konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `Liczba uczestników: 0\n` +
-    `Nagroda: ${prize}`;
+    `\`🎁\` **• Nagroda:** ${prize}\n` +
+    `\`🕐\` **• Czas do końca konkursu:** ${formatTimeDelta(timeMs)}\n` +
+    `\`👑\` **• Liczba zwycięzców:** ${winnersCount}\n` +
+    `\`👥\` **• Liczba uczestników:** 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8588,14 +8588,14 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `Liczba zwycięzców: ${winnersCount}\n` +
-    `Czas do końca konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `Liczba uczestników: 0\n` +
-    `Nagroda: ${prize}`;
+    `\`🎁\` **• Nagroda:** ${prize}\n` +
+    `\`🕐\` **• Czas do końca konkursu:** ${formatTimeDelta(timeMs)}\n` +
+    `\`👑\` **• Liczba zwycięzców:** ${winnersCount}\n` +
+    `\`👥\` **• Liczba uczestników:** 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
-    description += `\n\n⚠️ Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer`;
+    description += `\n\n \`❗\` **Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer**`;
   }
 
   // Początkowy embed
@@ -8791,10 +8791,12 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-          `Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `Czas do końca konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `Liczba uczestników: ${participantsCount}\n` +
-          `Nagroda: ${contest.prize}`;
+              `\`🎁\` **• Nagroda:** ${contest.prize}\n`
+    `\`🕐\` **• Czas do końca konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+    `\`👑\` **• Liczba zwycięzców:** ${contest.winnersCount}\n` +
+    `\`👥\` **• Liczba uczestników:** ${participantsCount}`;
+        
+        
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
