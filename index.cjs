@@ -8393,19 +8393,12 @@ async function handleKonkursCreateModal(interaction) {
 
   // Dodaj GIF przy tworzeniu konkursu
   try {
-    const gifPath = path.join(
-      __dirname,
-      "attached_assets",
-      "standard (4).gif",
-    );
-    const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
-    embed.setImage("attachment://konkurs_start.gif");
+    embed.setImage(REP_EMBED_BANNER_URL);
     
     const row = new ActionRowBuilder().addComponents(joinBtn);
     sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
-      files: [attachment]  // ✅ Pierwsze wysłanie - musi mieć files
     });
   } catch (err) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
@@ -8602,19 +8595,12 @@ async function handleKonkursCreateModal(interaction) {
 
   // Dodaj GIF przy tworzeniu konkursu
   try {
-    const gifPath = path.join(
-      __dirname,
-      "attached_assets",
-      "standard (4).gif",
-    );
-    const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
-    embed.setImage("attachment://konkurs_start.gif");
+    embed.setImage(REP_EMBED_BANNER_URL);
     
     const row = new ActionRowBuilder().addComponents(joinBtn);
     sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
-      files: [attachment]
     });
   } catch (err) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
@@ -8807,7 +8793,8 @@ async function handleKonkursJoinModal(interaction, msgId) {
         // Edytuj wiadomość BEZ files - zostaw embed taki jaki jest (z GIFem)
         await origMsg.edit({ 
           embeds: [existingEmbed], 
-          components: [row] 
+          components: [row],
+          attachments: [],
         }).catch(() => null);
       }
     }
@@ -8902,20 +8889,8 @@ async function endContestByMessageId(messageId) {
           `**🎁 • Nagroda:** ${meta.prize}\n\n` +
           `**🏆 • Zwycięzcy:**\n${publicWinners}`,
         )
-        .setTimestamp();
-
-      // Dodaj GIF przy zakończeniu konkursu
-      try {
-        const gifPath = path.join(
-          __dirname,
-          "attached_assets",
-          "standard (3).gif",
-        );
-        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
-        finalEmbed.setImage("attachment://konkurs_end.gif");
-      } catch (err) {
-        console.warn("Nie udało się załadować GIFa przy zakończeniu konkursu:", err);
-      }
+        .setTimestamp()
+        .setImage(REP_EMBED_BANNER_URL);
 
       const personForm = getPersonForm(participants.length);
       let buttonLabel;
@@ -8939,29 +8914,9 @@ async function endContestByMessageId(messageId) {
 
       const row = new ActionRowBuilder().addComponents(joinButton);
 
-      // Dodaj GIF na zakończenie konkursu
-      try {
-        const gifPath = path.join(
-          __dirname,
-          "attached_assets",
-          "standard (3).gif",
-        );
-        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
-        finalEmbed.setImage("attachment://konkurs_start.gif");
-        await origMsg
-          .edit({ embeds: [finalEmbed], components: [row], files: [attachment] })
-          .catch(() => null);
-      } catch (err) {
-        console.warn("Nie udało się załadować GIFa na zakończenie konkursu:", err);
-        try {
-          finalEmbed.setImage(null);
-        } catch (e) {
-          // ignore
-        }
-        await origMsg
-          .edit({ embeds: [finalEmbed], components: [row] })
-          .catch(() => null);
-      }
+      await origMsg
+        .edit({ embeds: [finalEmbed], components: [row], attachments: [] })
+        .catch(() => null);
     }
   } catch (err) {
     console.warn("Nie udało się zedytować wiadomości konkursu na końcu:", err);
@@ -9034,7 +8989,7 @@ async function handleKonkursLeave(interaction, msgId) {
         const row = new ActionRowBuilder().addComponents(joinButton);
 
         await origMsg
-          .edit({ embeds: [embed], components: [row] })
+          .edit({ embeds: [embed], components: [row], attachments: [] })
           .catch(() => null);
       }
     }
