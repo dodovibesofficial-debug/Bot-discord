@@ -7840,7 +7840,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
   if (nowTs - lastTs < 30_000) {
     const remain = Math.ceil((30_000 - (nowTs - lastTs)) / 1000);
     await interaction.reply({
-      content: `> \`❌\` × Możesz użyć komendy </sprawdz-zaproszenia:1464015495932940398> ponownie za ${remain}s `,
+      content: `> \`❌\` × Możesz użyć komendy </sprawdz-zaproszenia:1464015495932940398> ponownie za \`${remain}s\` `,
       flags: [MessageFlags.Ephemeral]
     });
     return;
