@@ -1072,7 +1072,7 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("help")
-    .setDescription("Spis wszystkich komend bota")
+    .setDescription("Spis podstawowych komend bota")
     .toJSON(),
   new SlashCommandBuilder()
     .setName("zaproszeniastats")
