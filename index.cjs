@@ -8392,7 +8392,7 @@ async function handleKonkursCreateModal(interaction) {
   // Początkowy embed
   const embed = new EmbedBuilder()
     .setTitle(`${prize}`)
-    .setColor(0xffa500)
+    .setColor(COLOR_BLUE)
     .setDescription(description)
     .setTimestamp();
 
@@ -8601,7 +8601,7 @@ async function handleKonkursCreateModal(interaction) {
   // Początkowy embed
   const embed = new EmbedBuilder()
     .setTitle(`${prize}`)
-    .setColor(0xffa500)
+    .setColor(COLOR_BLUE)
     .setDescription(description)
     .setTimestamp();
 
@@ -8791,10 +8791,10 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-              `\`🎁\` **• Nagroda:** ${contest.prize}\n`
-    `\`🕐\` **• Czas do końca konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-    `\`👑\` **• Liczba zwycięzców:** ${contest.winnersCount}\n` +
-    `\`👥\` **• Liczba uczestników:** ${participantsCount}`;
+          `\`🎁\` **• Nagroda:** ${contest.prize}\n` +
+          `\`🕐\` **• Czas do końca konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `\`👑\` **• Liczba zwycięzców:** ${contest.winnersCount}\n` +
+          `\`👥\` **• Liczba uczestników:** ${participantsCount}`;
         
         
 
@@ -9024,9 +9024,10 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `🏆Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `Czas do końca konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `Nagroda: ${contest.prize}`;
+          `\`🎁\` **• Nagroda:** ${contest.prize}\n` +
+          `\`🕐\` **• Czas do końca konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `\`👑\` **• Liczba zwycięzców:** ${contest.winnersCount}\n` +
+          `\`👥\` **• Liczba uczestników:** ${participantsCount}`;
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
