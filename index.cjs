@@ -2536,15 +2536,6 @@ async function handleModalSubmit(interaction) {
       break;
     }
     case "modal_inne": {
-      // Sprawdź czy właściciel - tylko on może tworzyć tickety "INNE"
-      if (interaction.user.id !== interaction.guild.ownerId) {
-        await interaction.reply({
-          content: "> `❗` × Brak wymaganych uprawnień.",
-          flags: [MessageFlags.Ephemeral],
-        });
-        return;
-      }
-      
       const sprawa = interaction.fields.getTextInputValue("sprawa");
 
       categoryId = categories["inne"];
@@ -2599,8 +2590,14 @@ async function handleModalSubmit(interaction) {
     if (parentToUse) {
       const categoryId = parentToUse;
       
+      // Specjalna obsługa dla kategorii "inne" - tylko właściciel i właściciel ticketu widzą
+      if (categoryId === categories["inne"]) {
+        createOptions.permissionOverwrites.push(
+          { id: interaction.guild.ownerId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] } // właściciel serwera
+        );
+      }
       // Zakup 0-20 - wszystkie rangi widzą
-      if (categoryId === "1449526840942268526") {
+      else if (categoryId === "1449526840942268526") {
         createOptions.permissionOverwrites.push(
           { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
           { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
@@ -6008,6 +6005,13 @@ async function handleModalSubmit(interaction) {
         };
         if (parentToUse) createOptions.parent = parentToUse;
 
+        // Specjalna obsługa dla kategorii "inne" - dodaj uprawnienia dla właściciela
+        if (parentToUse && parentToUse === categories["inne"]) {
+          createOptions.permissionOverwrites.push(
+            { id: interaction.guild.ownerId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] } // właściciel serwera
+          );
+        }
+
         const channel = await interaction.guild.channels.create(createOptions);
 
         const embed = new EmbedBuilder()
@@ -6094,15 +6098,6 @@ async function handleModalSubmit(interaction) {
       break;
     }
     case "modal_inne": {
-      // Sprawdź czy właściciel - tylko on może tworzyć tickety "INNE"
-      if (interaction.user.id !== interaction.guild.ownerId) {
-        await interaction.reply({
-          content: "> `❗` × Brak wymaganych uprawnień.",
-          flags: [MessageFlags.Ephemeral],
-        });
-        return;
-      }
-      
       const sprawa = interaction.fields.getTextInputValue("sprawa");
 
       categoryId = categories["inne"];
@@ -6230,13 +6225,10 @@ async function handleModalSubmit(interaction) {
           { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
         );
       }
-      // Inne - wszystkie rangi widzą
+      // Inne - tylko właściciel serwera widzi (oprócz właściciela ticketu)
       else if (categoryId === "1449527585271976131") {
         createOptions.permissionOverwrites.push(
-          { id: "1449448705563557918", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 20
-          { id: "1449448702925209651", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 50
-          { id: "1449448686156255333", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }, // limit 100
-          { id: "1449448860517798061", allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] }  // limit 200
+          { id: interaction.guild.ownerId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory] } // właściciel serwera
         );
       }
     }
