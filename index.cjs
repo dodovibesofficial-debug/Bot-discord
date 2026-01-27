@@ -1264,8 +1264,8 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczeniazaplacil")
-    .setDescription("Oznacz rozliczenie jako zapłacone (admin only)")
-    .setDefaultMemberPermissions(null)
+    .setDescription("Oznacz rozliczenie jako zapłacone (tylko właściciel)")
+    .setDefaultMemberPermissions(0)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
