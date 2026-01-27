@@ -6437,11 +6437,24 @@ client.on(Events.MessageCreate, async (message) => {
   // ANTI-MASS-PING: delete message and timeout user for 1 hour if 5+ pings in one message
   try {
     const content = message.content || "";
-    const mentionRegex = /<@!?(\d+)>/g;
+    // Catch all types of mentions: @user, @!user, @here, @everyone, and role mentions
+    const mentionRegex = /<@!?(\d+)>|@here|@everyone|<@&(\d+)>/g;
     const mentions = content.match(mentionRegex) || [];
-    const uniqueMentions = new Set(mentions.map(m => m.match(/<@!?(\d+)>/)[1]));
+    const uniqueMentions = new Set();
+    
+    // Extract unique IDs from mentions
+    for (const mention of mentions) {
+      if (mention.startsWith('<@') && mention.endsWith('>')) {
+        const idMatch = mention.match(/(\d+)/);
+        if (idMatch) uniqueMentions.add(idMatch[1]);
+      } else if (mention === '@here' || mention === '@everyone') {
+        uniqueMentions.add(mention); // Add @here/@everyone as unique mentions
+      }
+    }
     
     console.log(`[MASS-PING-DEBUG] Sprawdzam wiadomość od ${message.author.tag}: ${uniqueMentions.size} unikalnych oznaczeń`);
+    console.log(`[MASS-PING-DEBUG] Znalezione oznaczenia: ${Array.from(uniqueMentions).join(', ')}`);
+    console.log(`[MASS-PING-DEBUG] Treść wiadomości: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`);
     
     if (uniqueMentions.size >= 5) {
       console.log(`[MASS-PING-DEBUG] Wykryto masowy ping! Usuwam wiadomość i daję mute na 1h...`);
