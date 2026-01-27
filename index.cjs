@@ -1014,16 +1014,14 @@ const commands = [
   new SlashCommandBuilder()
     .setName("panelkalkulator")
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("ticketpanel")
     .setDescription("Wyślij TicketPanel na kanał")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("ticket-zakoncz")
-    .setDescription("Wyświetl instrukcję zakończenia ticketu i czekaj na +rep")
+    .setDescription("Użyj tej komendy jeżeli będziesz chciał zakończyć ticket (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .addStringOption((option) =>
       option
@@ -1052,7 +1050,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName("zamknij-z-powodem")
     .setDescription("Zamknij ticket z powodem (tylko właściciel)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addStringOption((option) =>
       option.setName("powod").setDescription("Powód zamknięcia").setRequired(true)
     )
@@ -1060,7 +1057,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName("legit-rep-ustaw")
     .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addIntegerOption((option) =>
       option
         .setName("ile")
@@ -1076,8 +1072,7 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("zaproszeniastats")
-    .setDescription("Edytuj statystyki zaproszeń (admin)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDescription("Edytuj statystyki zaproszeń")
     .addStringOption((o) =>
       o
         .setName("kategoria")
@@ -1125,7 +1120,6 @@ const commands = [
   new SlashCommandBuilder()
     .setName("panelweryfikacja")
     .setDescription("Wyślij panel weryfikacji na kanał")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("opinia")
@@ -1205,31 +1199,29 @@ const commands = [
   // NEW: /resetlc command - reset legitcheck counter
   new SlashCommandBuilder()
     .setName("resetlc")
-    .setDescription("Reset liczby legitchecków do zera (admin only)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDescription("Reset liczby legitchecków do zera")
     .toJSON(),
   // NEW: /zresetujczasoczekiwania command - clear cooldowns for drop/opinia/info
   new SlashCommandBuilder()
     .setName("zresetujczasoczekiwania")
     .setDescription("Resetuje czasy oczekiwania dla /drop i /opinia")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   // NEW helper admin commands for claiming/unclaiming
   new SlashCommandBuilder()
     .setName("przejmij")
-    .setDescription("Przejmij aktualny ticket (admin helper)")
+    .setDescription("Przejmij aktualny ticket (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("odprzejmij")
-    .setDescription("Odprzejmij aktualny ticket (admin helper)")
+    .setDescription("Zwolnij aktualny ticket (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .toJSON(),
-  // UPDATED: sendmessage (interactive flow)
+  // UPDATED: embed (interactive flow)
   new SlashCommandBuilder()
-    .setName("sendmessage")
+    .setName("embed")
     .setDescription(
-      "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (admin)",
+      "Interaktywnie wyślij wiadomość przez bota: po użyciu komendy bot poprosi Cię o treść (tylko właściciel)",
     )
     .setDefaultMemberPermissions(null)
     .addChannelOption((o) =>
@@ -1249,7 +1241,7 @@ const commands = [
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenie")
-    .setDescription("Dodaj kwotę sprzedaży do cotygodniowych rozliczeń")
+    .setDescription("Dodaj kwote do rozliczeń (sprzedawca)")
     .setDefaultMemberPermissions(null)
     .addIntegerOption((option) =>
       option
@@ -1278,17 +1270,14 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczeniezakoncz")
     .setDescription("Wyślij podsumowanie rozliczeń (tylko właściciel)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("statusbota")
     .setDescription("Pokaż szczegółowy status bota")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // Tylko właściciel
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenieustaw")
     .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
@@ -1320,7 +1309,6 @@ const commands = [
     .setDescription(
       "Utwórz konkurs z przyciskiem do udziału i losowaniem zwycięzców",
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
     .toJSON(),
 ];
 
@@ -1788,7 +1776,7 @@ client.once(Events.ClientReady, async (c) => {
               (emb) =>
                 typeof emb.description === "string" &&
                 (emb.description.includes(
-                  "Użyj **komendy** </opinia:1454974442873553113>",
+                  "Użyj **komendy** </opinia:1464015495392133321>",
                 ) ||
                   emb.description.includes("Użyj **komendy** `/opinia`")),
             );
@@ -1818,7 +1806,7 @@ client.once(Events.ClientReady, async (c) => {
                   "Użyj **komendy** </drop:1454974442370240585>",
                 ) ||
                   emb.description.includes(
-                    "`🎁` Użyj **komendy** </drop:1454974442370240585>",
+                    "`🎁` Użyj **komendy** </drop:1464015494876102748>",
                   ) ||
                   emb.description.includes("Użyj **komendy** `/drop`")),
             );
@@ -3210,7 +3198,7 @@ async function handleSlashCommand(interaction) {
     case "odprzejmij":
       await handleAdminOdprzejmij(interaction);
       break;
-    case "sendmessage":
+    case "embed":
       await handleSendMessageCommand(interaction);
       break;
     case "sprawdz-zaproszenia":
@@ -3302,10 +3290,10 @@ async function handleRozliczenieCommand(interaction) {
 
 // Handler dla komendy /rozliczeniazaplacil
 async function handleRozliczenieZaplacilCommand(interaction) {
-  // Sprawdź czy admin
-  if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**!",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3597,15 +3585,10 @@ async function handlePanelKalkulatorCommand(interaction) {
     return;
   }
 
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4001,7 +3984,7 @@ async function handleDropCommand(interaction) {
       const instructionDropEmbed = new EmbedBuilder()
         .setColor(COLOR_YELLOW)
         .setDescription(
-          "`🎁` × Użyj **komendy** </drop:1454974442370240585>, aby wylosować zniżkę na zakupy!",
+          "`🎁` × Użyj **komendy** </drop:1464015494876102748>, aby wylosować zniżkę na zakupy!",
         );
 
       try {
@@ -4040,6 +4023,15 @@ async function handlePanelWeryfikacjaCommand(interaction) {
   if (!guildId) {
     await interaction.reply({
       content: "> `❌` × **Ta komenda** działa tylko na **serwerze**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4174,6 +4166,15 @@ async function handleTicketCommand(interaction) {
 }
 
 async function handleTicketPanelCommand(interaction) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
   const botName = client.user?.username || "NEWSHOP";
 
   const embed = new EmbedBuilder()
@@ -6492,7 +6493,7 @@ client.on(Events.MessageCreate, async (message) => {
                   new EmbedBuilder()
                     .setColor(COLOR_YELLOW)
                     .setDescription(
-                      `Użyj **komendy** × </opinia:1454974442873553113> aby wystawić opinię — post został przyjęty.`,
+                      `Użyj **komendy** × </opinia:1464015495392133321> aby wystawić opinię — post został przyjęty.`,
                     ),
                 ],
               });
@@ -6804,7 +6805,7 @@ async function handleOpinionCommand(interaction) {
 
   if (!allowedChannelId || interaction.channelId !== allowedChannelId) {
     await interaction.reply({
-      content: `> \`❌\` Komendę </opinia:1454974442873553113> można użyć tylko na kanale <#${allowedChannelId || "⭐-×┃opinie-klientow"}>.`,
+      content: `> \`❌\` Komendę </opinia:1464015495392133321> można użyć tylko na kanale <#${allowedChannelId || "⭐-×┃opinie-klientow"}>.`,
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -6859,7 +6860,7 @@ async function handleOpinionCommand(interaction) {
   const instructionEmbed = new EmbedBuilder()
     .setColor(0xffd700)
     .setDescription(
-      "`📊` × Użyj **komendy** </opinia:1454974442873553113>, aby podzielić się opinią o naszym serwerze!",
+      "`📊` × Użyj **komendy** </opinia:1464015495392133321>, aby podzielić się opinią o naszym serwerze!",
     );
   try {
     const channel = interaction.channel;
@@ -6919,7 +6920,7 @@ async function handleOpinionCommand(interaction) {
         (emb) =>
           typeof emb.description === "string" &&
           (emb.description.includes(
-            "Użyj **komendy** </opinia:1454974442873553113>",
+            "Użyj **komendy** </opinia:1464015495392133321>",
           ) ||
             emb.description.includes("Użyj **komendy** `/opinia`")),
       );
@@ -6991,21 +6992,11 @@ async function handleWyczyscKanalCommand(interaction) {
   // Defer to avoid timeout and allow multiple replies
   await interaction.deferReply({ flags: [MessageFlags.Ephemeral] }).catch(() => null);
 
-  // permissions check (member)
-  const member = interaction.member;
-  const hasManage =
-    (member &&
-      member.permissions &&
-      member.permissions.has(PermissionFlagsBits.ManageMessages)) ||
-    (member &&
-      member.permissions &&
-      member.permissions.has(PermissionFlagsBits.Administrator));
-
-  if (!hasManage) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     try {
       await interaction.editReply({
-        content:
-          "❌ Nie masz uprawnień do zarządzania wiadomościami (MANAGE_MESSAGES).",
+        content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       });
     } catch (e) {
       // ignore
@@ -7238,18 +7229,11 @@ async function handleResetLCCommand(interaction) {
     return;
   }
 
-  // permission check BEFORE deferring (fast)
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     try {
       await interaction.reply({
-        content:
-          "❌ Nie masz uprawnień administracyjnych, aby zresetować licznik.",
+        content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) {
@@ -7352,16 +7336,10 @@ async function handleZresetujCzasCommand(interaction) {
     return;
   }
 
-  // permission check
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7935,7 +7913,7 @@ async function handleSprawdzZaproszeniaCommand(interaction) {
         const instructionInviteEmbed = new EmbedBuilder()
           .setColor(0xffffff)
           .setDescription(
-            "`📩` × Użyj **komendy** </sprawdz-zaproszenia:1454974443179868263>, aby sprawdzić swoje **zaproszenia**"
+            "`📩` × Użyj **komendy** </sprawdz-zaproszenia:1464015495932940398>, aby sprawdzić swoje **zaproszenia**"
           );
 
         const sent = await zapCh.send({ embeds: [instructionInviteEmbed] });
@@ -7973,15 +7951,10 @@ async function handleZaprosieniaStatsCommand(interaction) {
     return;
   }
 
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8209,10 +8182,9 @@ async function handleHelpCommand(interaction) {
       .setTitle("\`📋\` × Spis podstawowych komend bota")
       .setDescription(
         [
-          "> </opinia:1454974442873553113> — Wystaw opinie o naszym sklepie",
-          "> </drop:1454974442370240585> — Wylosuj zniżkę",
-          "> </sprawdz-zaproszenia:1454974443179868263> — Sprawdź swoje zaproszenia",
-          "> </help:1455189647054471447> — Pokaż tę wiadomość",
+          "> 🎁 × Użyj komendy </drop:1464015494876102748>, aby wylosować zniżkę na zakupy!",
+          "> 📩 × Użyj komendy </sprawdz-zaproszenia:1464015495932940398>, aby sprawdzić swoje zaproszenia",
+          "> 📋・ꜱᴘɪꜱ ᴋᴏᴍᴇɴᴅ: </help:1464015495392133316> — Pokaż tę wiadomość",
         ].join("\n"),
       )
 
@@ -8292,16 +8264,10 @@ async function handleDodajKonkursCommand(interaction) {
     });
     return;
   }
-  // permission check
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8500,16 +8466,10 @@ async function handleDodajKonkursCommand(interaction) {
     });
     return;
   }
-  // permission check
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
+      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
