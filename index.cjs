@@ -2869,8 +2869,13 @@ async function handleButtonInteraction(interaction) {
   }
 
   if (customId.startsWith("cancel_leave_")) {
+    const cancelEmbed = new EmbedBuilder()
+      .setColor(COLOR_BLUE)
+      .setDescription("> `📋` × Anulowano")
+      .setTimestamp();
+    
     await interaction.update({
-      content: "> `📋` Anulowano.",
+      embeds: [cancelEmbed],
       components: [],
     });
     return;
@@ -8391,7 +8396,7 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy embed
   const embed = new EmbedBuilder()
-    .setTitle(`${prize}`)
+    .setTitle(`\`\`\`\n🎁\n\`\`\`\n**${prize}**`)
     .setColor(COLOR_BLUE)
     .setDescription(description)
     .setTimestamp();
@@ -8600,7 +8605,7 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy embed
   const embed = new EmbedBuilder()
-    .setTitle(`${prize}`)
+    .setTitle(`\`\`\`\n🎁\n\`\`\`\n**${prize}**`)
     .setColor(COLOR_BLUE)
     .setDescription(description)
     .setTimestamp();
@@ -8757,21 +8762,26 @@ async function handleKonkursJoinModal(interaction, msgId) {
 
   const userId = interaction.user.id;
   if (participantsMap.has(userId)) {
-    // Użytkownik już bierze udział - pytamy czy chce opuścić konkurs
-    const leaveButton = new ButtonBuilder()
-      .setCustomId(`konkurs_leave_${msgId}`)
-      .setLabel("Opuść Konkurs")
+    // Użytkownik już jest zapisany - pytaj czy chce opuścić
+    const leaveBtn = new ButtonBuilder()
+      .setCustomId(`confirm_leave_${msgId}`)
+      .setLabel("Tak")
       .setStyle(ButtonStyle.Danger);
 
-    const cancelButton = new ButtonBuilder()
-      .setCustomId(`konkurs_cancel_leave_${msgId}`)
+    const cancelBtn = new ButtonBuilder()
+      .setCustomId(`cancel_leave_${msgId}`)
       .setLabel("Anuluj")
       .setStyle(ButtonStyle.Secondary);
 
-    const row = new ActionRowBuilder().addComponents(leaveButton, cancelButton);
+    const row = new ActionRowBuilder().addComponents(leaveBtn, cancelBtn);
+
+    const questionEmbed = new EmbedBuilder()
+      .setColor(COLOR_BLUE)
+      .setDescription("> `❓` × Już wziąłeś udział w tym konkursie!")
+      .setTimestamp();
 
     await interaction.reply({
-      content: "> `❓` × Już wziąłeś udział w tym konkursie!",
+      embeds: [questionEmbed],
       components: [row],
       flags: [MessageFlags.Ephemeral],
     });
@@ -8846,8 +8856,13 @@ async function handleKonkursJoinModal(interaction, msgId) {
   }
 
   // Prosta odpowiedź dla nowego uczestnika
+  const joinEmbed = new EmbedBuilder()
+    .setColor(COLOR_BLUE)
+    .setDescription("> `✅` × Poprawnie dołączyłeś do konkursu.")
+    .setTimestamp();
+
   await interaction.reply({
-    content: "> `✅` × Poprawnie dołączyłeś do konkursu.",
+    embeds: [joinEmbed],
     flags: [MessageFlags.Ephemeral],
   });
 }
@@ -9074,8 +9089,13 @@ async function handleKonkursLeave(interaction, msgId) {
     console.warn("Nie udało się zaktualizować embed/btn konkursu:", e);
   }
 
+  const leaveEmbed = new EmbedBuilder()
+    .setColor(COLOR_BLUE)
+    .setDescription("> `🚪` × Opuściłeś konkurs.")
+    .setTimestamp();
+
   await interaction.update({
-    content: "> `🚪` × Opuściłeś konkurs.",
+    embeds: [leaveEmbed],
     components: [],
   });
 }
