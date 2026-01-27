@@ -8808,7 +8808,6 @@ async function handleKonkursJoinModal(interaction, msgId) {
         await origMsg.edit({ 
           embeds: [existingEmbed], 
           components: [row],
-          attachments: [],
         }).catch(() => null);
       }
     }
@@ -9022,7 +9021,7 @@ async function handleKonkursLeave(interaction, msgId) {
         const row = new ActionRowBuilder().addComponents(joinButton);
 
         await origMsg
-          .edit({ embeds: [embed], components: [row], attachments: [] })
+          .edit({ embeds: [embed], components: [row] })
           .catch(() => null);
       }
     }
