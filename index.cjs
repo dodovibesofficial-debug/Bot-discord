@@ -6520,7 +6520,7 @@ client.on(Events.MessageCreate, async (message) => {
             new EmbedBuilder()
               .setColor(COLOR_RED)
               .setDescription(
-                "• `❗`  __Masowy ping jest niedozwolony otrzymujesz mute na 1 godzine__",
+                "• `❗`  **__Masowy ping jest niedozwolony otrzymujesz mute na 1 godzine__**",
               ),
           ],
         });
