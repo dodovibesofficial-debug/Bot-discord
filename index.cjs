@@ -1014,10 +1014,12 @@ const commands = [
   new SlashCommandBuilder()
     .setName("panelkalkulator")
     .setDescription("Wyślij panel kalkulatora waluty na kanał")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("ticketpanel")
     .setDescription("Wyślij TicketPanel na kanał")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("ticket-zakoncz")
@@ -1050,6 +1052,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("zamknij-z-powodem")
     .setDescription("Zamknij ticket z powodem (tylko właściciel)")
+    .setDefaultMemberPermissions(0)
     .addStringOption((option) =>
       option.setName("powod").setDescription("Powód zamknięcia").setRequired(true)
     )
@@ -1057,6 +1060,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("legit-rep-ustaw")
     .setDescription("Ustaw licznik legit repów i zmień nazwę kanału")
+    .setDefaultMemberPermissions(0)
     .addIntegerOption((option) =>
       option
         .setName("ile")
@@ -1073,6 +1077,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("zaproszeniastats")
     .setDescription("Edytuj statystyki zaproszeń")
+    .setDefaultMemberPermissions(0)
     .addStringOption((o) =>
       o
         .setName("kategoria")
@@ -1120,6 +1125,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("panelweryfikacja")
     .setDescription("Wyślij panel weryfikacji na kanał")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("opinia")
@@ -1176,7 +1182,7 @@ const commands = [
     .setDescription(
       "Wyczyść wiadomości na kanale (wszystko / ilosc-wiadomosci)",
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
+    .setDefaultMemberPermissions(0)
     .addStringOption((option) =>
       option
         .setName("tryb")
@@ -1200,11 +1206,13 @@ const commands = [
   new SlashCommandBuilder()
     .setName("resetlc")
     .setDescription("Reset liczby legitchecków do zera")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   // NEW: /zresetujczasoczekiwania command - clear cooldowns for drop/opinia/info
   new SlashCommandBuilder()
     .setName("zresetujczasoczekiwania")
     .setDescription("Resetuje czasy oczekiwania dla /drop i /opinia")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   // NEW helper admin commands for claiming/unclaiming
   new SlashCommandBuilder()
@@ -1221,7 +1229,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("embed")
     .setDescription("Wyślij wiadomość przez bota (tylko właściciel)")
-    .setDefaultMemberPermissions(null)
+    .setDefaultMemberPermissions(0)
     .addChannelOption((o) =>
       o
         .setName("kanal")
@@ -1268,14 +1276,17 @@ const commands = [
   new SlashCommandBuilder()
     .setName("rozliczeniezakoncz")
     .setDescription("Wyślij podsumowanie rozliczeń (tylko właściciel)")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("statusbota")
     .setDescription("Pokaż szczegółowy status bota")
+    .setDefaultMemberPermissions(0)
     .toJSON(),
   new SlashCommandBuilder()
     .setName("rozliczenieustaw")
     .setDescription("Ustaw tygodniową sumę rozliczenia dla użytkownika (tylko właściciel)")
+    .setDefaultMemberPermissions(0)
     .addUserOption((option) =>
       option
         .setName("uzytkownik")
@@ -1307,6 +1318,7 @@ const commands = [
     .setDescription(
       "Utwórz konkurs z przyciskiem do udziału i losowaniem zwycięzców",
     )
+    .setDefaultMemberPermissions(0)
     .toJSON(),
 ];
 
