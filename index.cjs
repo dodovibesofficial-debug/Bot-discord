@@ -4446,9 +4446,11 @@ async function handleTicketZakonczCommand(interaction) {
 
   // Wyślij +rep jako osobną wiadomość pod embedem (natychmiast)
   try {
-    await interaction.channel.send(repMessage);
+    console.log(`[TICKET-ZAKONCZ-DEBUG] Próbuję wysłać wiadomość +rep: "${repMessage}"`);
+    const sentMessage = await interaction.channel.send(repMessage);
+    console.log(`[TICKET-ZAKONCZ-DEBUG] Wiadomość +rep wysłana pomyślnie, ID: ${sentMessage.id}`);
   } catch (err) {
-    console.error("Błąd wysyłania wiadomości +rep:", err);
+    console.error("[TICKET-ZAKONCZ-DEBUG] Błąd wysyłania wiadomości +rep:", err);
   }
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
@@ -6437,23 +6439,12 @@ client.on(Events.MessageCreate, async (message) => {
     // Catch all types of mentions: @user, @!user, @here, @everyone, and role mentions
     const mentionRegex = /<@!?(\d+)>|@here|@everyone|<@&(\d+)>/g;
     const mentions = content.match(mentionRegex) || [];
-    const uniqueMentions = new Set();
     
-    // Extract unique IDs from mentions
-    for (const mention of mentions) {
-      if (mention.startsWith('<@') && mention.endsWith('>')) {
-        const idMatch = mention.match(/(\d+)/);
-        if (idMatch) uniqueMentions.add(idMatch[1]);
-      } else if (mention === '@here' || mention === '@everyone') {
-        uniqueMentions.add(mention); // Add @here/@everyone as unique mentions
-      }
-    }
-    
-    console.log(`[MASS-PING-DEBUG] Sprawdzam wiadomość od ${message.author.tag}: ${uniqueMentions.size} unikalnych oznaczeń`);
-    console.log(`[MASS-PING-DEBUG] Znalezione oznaczenia: ${Array.from(uniqueMentions).join(', ')}`);
+    console.log(`[MASS-PING-DEBUG] Sprawdzam wiadomość od ${message.author.tag}: ${mentions.length} oznaczeń (łącznie)`);
+    console.log(`[MASS-PING-DEBUG] Znalezione oznaczenia: ${mentions.join(', ')}`);
     console.log(`[MASS-PING-DEBUG] Treść wiadomości: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`);
     
-    if (uniqueMentions.size >= 5) {
+    if (mentions.length >= 5) {
       console.log(`[MASS-PING-DEBUG] Wykryto masowy ping! Usuwam wiadomość i daję mute na 1h...`);
       
       // delete message first
@@ -6471,6 +6462,7 @@ client.on(Events.MessageCreate, async (message) => {
         
         console.log(`[MASS-PING-DEBUG] Próba timeout dla ${member.user.tag}...`);
         console.log(`[MASS-PING-DEBUG] Bot permissions: ${guild.members.me.permissions.has(PermissionsBitField.Flags.ModerateMembers)}`);
+        console.log(`[MASS-PING-DEBUG] Member manageable: ${member.manageable}`);
         
         if (member && typeof member.timeout === "function") {
           const ms = 60 * 60 * 1000; // 1 hour
