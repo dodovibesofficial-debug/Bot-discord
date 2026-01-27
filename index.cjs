@@ -8771,7 +8771,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
     const row = new ActionRowBuilder().addComponents(leaveButton, cancelButton);
 
     await interaction.reply({
-      content: "> `❓` Już wziąłeś udział w tym konkursie!",
+      content: "> `❓` × Już wziąłeś udział w tym konkursie!",
       components: [row],
       flags: [MessageFlags.Ephemeral],
     });
@@ -8845,7 +8845,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
 
   // Prosta odpowiedź dla nowego uczestnika
   await interaction.reply({
-    content: "> `✅` Dołączyłeś do konkursu.",
+    content: "> `✅` × Poprawnie dołączyłeś do konkursu.",
     flags: [MessageFlags.Ephemeral],
   });
 }
@@ -9080,7 +9080,7 @@ async function handleKonkursLeave(interaction, msgId) {
 // --- Obsługa anulowania opuszczenia konkursu ---
 async function handleKonkursCancelLeave(interaction, msgId) {
   await interaction.update({
-    content: "> `📋` × Anulowano, dalej bierzesz udział w konkursie.",
+    content: "> `📋` × Anulowano",
     components: [],
   });
 }
