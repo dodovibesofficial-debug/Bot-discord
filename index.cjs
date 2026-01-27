@@ -2536,6 +2536,15 @@ async function handleModalSubmit(interaction) {
       break;
     }
     case "modal_inne": {
+      // Sprawdź czy właściciel - tylko on może tworzyć tickety "INNE"
+      if (interaction.user.id !== interaction.guild.ownerId) {
+        await interaction.reply({
+          content: "> `❗` × Brak wymaganych uprawnień.",
+          flags: [MessageFlags.Ephemeral],
+        });
+        return;
+      }
+      
       const sprawa = interaction.fields.getTextInputValue("sprawa");
 
       categoryId = categories["inne"];
@@ -2976,7 +2985,7 @@ const nickInput = new TextInputBuilder()
     const channel = interaction.channel;
     if (!isTicketChannel(channel)) {
       await interaction.reply({
-        content: "> `❌` × **Ta komenda** działa tylko w kanałach **ticketów**!",
+        content: "> `❌` × Ta **komenda** działa jedynie na **ticketach**!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3084,7 +3093,7 @@ const nickInput = new TextInputBuilder()
     const channel = interaction.channel;
     if (!isTicketChannel(channel)) {
       await interaction.reply({
-        content: "> `❌` × **Ta funkcja** działa tylko w kanałach **ticketów**!",
+        content: "> `❌` × **Ta funkcja** działa jedynie na **ticketach**!",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -4237,20 +4246,20 @@ async function handleTicketPanelCommand(interaction) {
 }
 
 async function handleCloseTicketCommand(interaction) {
-  const channel = interaction.channel;
-
-  if (!isTicketChannel(channel)) {
+  // Sprawdź uprawnienia przed sprawdzaniem kanału
+  if (!isAdminOrSeller(interaction.member)) {
     await interaction.reply({
-      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
+      content: "> `❗` × Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
-  // only admins / sellers
-  if (!isAdminOrSeller(interaction.member)) {
+  const channel = interaction.channel;
+
+  if (!isTicketChannel(channel)) {
     await interaction.reply({
-      content: "> `❗` × Brak wymaganych uprawnień.",
+      content: "> `❌` × Ta **komenda** działa jedynie na **ticketach**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4309,17 +4318,6 @@ async function handleCloseTicketCommand(interaction) {
 
 // ----------------- /ticket-zakoncz handler -----------------
 async function handleTicketZakonczCommand(interaction) {
-  const channel = interaction.channel;
-
-  // Sprawdź czy komenda jest używana w tickecie
-  if (!isTicketChannel(channel)) {
-    await interaction.reply({
-      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
-      flags: [MessageFlags.Ephemeral],
-    });
-    return;
-  }
-
   // Sprawdź czy właściciel lub sprzedawca
   const isOwner = interaction.user.id === interaction.guild.ownerId;
   const SELLER_ROLE_ID = "1350786945944391733";
@@ -4328,6 +4326,17 @@ async function handleTicketZakonczCommand(interaction) {
   if (!isOwner && !hasSellerRole) {
     await interaction.reply({
       content: "> `❗` × Brak wymaganych uprawnień.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  const channel = interaction.channel;
+
+  // Sprawdź czy komenda jest używana w tickecie
+  if (!isTicketChannel(channel)) {
+    await interaction.reply({
+      content: "> `❌` × Ta **komenda** działa jedynie na **ticketach**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4443,7 +4452,7 @@ async function handleZamknijZPowodemCommand(interaction) {
   // Sprawdź czy komenda jest używana w tickecie
   if (!isTicketChannel(channel)) {
     await interaction.reply({
-      content: "> `❌` × Ta **komenda** działa tylko w kanałach **ticketów**!",
+      content: "> `❌` × Ta **komenda** działa jedynie na **ticketach**!",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -5865,7 +5874,7 @@ async function handleModalSubmit(interaction) {
       formInfo = `> \`➖\` × **Serwer:** \`${serwer}\`\n` +
         `> \`➖\` × **Kwota:** \`${kwotaNum}zł\`\n` +
         `> \`➖\` × **Metoda płatności:** \`${platnosc}\`\n` +
-        `> \`➖\` × **Oczekiwana waluta:** \`${oczekiwanaWaluta}\``;
+        `> \`➖\` × **Chciałby zakupić:** \`${oczekiwanaWaluta}\``;
       break;
     }
     case "modal_sprzedaz": {
@@ -6085,6 +6094,15 @@ async function handleModalSubmit(interaction) {
       break;
     }
     case "modal_inne": {
+      // Sprawdź czy właściciel - tylko on może tworzyć tickety "INNE"
+      if (interaction.user.id !== interaction.guild.ownerId) {
+        await interaction.reply({
+          content: "> `❗` × Brak wymaganych uprawnień.",
+          flags: [MessageFlags.Ephemeral],
+        });
+        return;
+      }
+      
       const sprawa = interaction.fields.getTextInputValue("sprawa");
 
       categoryId = categories["inne"];
