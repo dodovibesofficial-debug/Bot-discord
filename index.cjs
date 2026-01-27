@@ -8451,7 +8451,7 @@ async function handleKonkursCreateModal(interaction) {
     .setDisabled(false);
 
   const newRow = new ActionRowBuilder().addComponents(joinButtonCorrect);
-  await sent.edit({ components: [newRow], attachments: [] }).catch(() => null);
+  await sent.edit({ components: [newRow] }).catch(() => null);
 
   setTimeout(() => {
     endContestByMessageId(sent.id).catch((e) => console.error(e));
@@ -8660,7 +8660,7 @@ async function handleKonkursCreateModal(interaction) {
     .setDisabled(false);
 
   const newRow = new ActionRowBuilder().addComponents(joinButtonCorrect);
-  await sent.edit({ components: [newRow], attachments: [] }).catch(() => null);
+  await sent.edit({ components: [newRow] }).catch(() => null);
 
   setTimeout(() => {
     endContestByMessageId(sent.id).catch((e) => console.error(e));
