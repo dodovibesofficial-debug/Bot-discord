@@ -86,7 +86,7 @@ const infoCooldowns = new Map(); // userId -> timestamp (ms)
 
 // banner/gif url to show at bottom of embed (change this to your gif/url)
 const REP_EMBED_BANNER_URL =
-  "https://share.creavite.co/693f180207e523c90b19fbf9.gif";
+  "https://cdn.discordapp.com/attachments/1449367698374004869/1450192787894046751/standard_1.gif";
 
 // track last info message posted by the bot per channel so we can delete it before posting a new one
 const repLastInfoMessage = new Map(); // channelId -> messageId
@@ -8393,12 +8393,19 @@ async function handleKonkursCreateModal(interaction) {
 
   // Dodaj GIF przy tworzeniu konkursu
   try {
-    embed.setImage(REP_EMBED_BANNER_URL);
+    const gifPath = path.join(
+      __dirname,
+      "attached_assets",
+      "standard (4).gif",
+    );
+    const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+    embed.setImage("attachment://konkurs_start.gif");
     
     const row = new ActionRowBuilder().addComponents(joinBtn);
     sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
+      files: [attachment]
     });
   } catch (err) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
@@ -8595,12 +8602,19 @@ async function handleKonkursCreateModal(interaction) {
 
   // Dodaj GIF przy tworzeniu konkursu
   try {
-    embed.setImage(REP_EMBED_BANNER_URL);
+    const gifPath = path.join(
+      __dirname,
+      "attached_assets",
+      "standard (4).gif",
+    );
+    const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+    embed.setImage("attachment://konkurs_start.gif");
     
     const row = new ActionRowBuilder().addComponents(joinBtn);
     sent = await targetChannel.send({ 
       embeds: [embed], 
       components: [row],
+      files: [attachment]
     });
   } catch (err) {
     console.warn("Nie udało się załadować GIFa przy tworzeniu konkursu:", err);
@@ -8890,7 +8904,7 @@ async function endContestByMessageId(messageId) {
           `**🏆 • Zwycięzcy:**\n${publicWinners}`,
         )
         .setTimestamp()
-        .setImage(REP_EMBED_BANNER_URL);
+        .setImage("attachment://konkurs_end.gif");
 
       const personForm = getPersonForm(participants.length);
       let buttonLabel;
@@ -8914,9 +8928,28 @@ async function endContestByMessageId(messageId) {
 
       const row = new ActionRowBuilder().addComponents(joinButton);
 
-      await origMsg
-        .edit({ embeds: [finalEmbed], components: [row], attachments: [] })
-        .catch(() => null);
+      // Dodaj GIF na zakończenie konkursu
+      try {
+        const gifPath = path.join(
+          __dirname,
+          "attached_assets",
+          "standard (3).gif",
+        );
+        const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_end.gif" });
+        await origMsg
+          .edit({ embeds: [finalEmbed], components: [row], files: [attachment] })
+          .catch(() => null);
+      } catch (err) {
+        console.warn("Nie udało się załadować GIFa na zakończenie konkursu:", err);
+        try {
+          finalEmbed.setImage(null);
+        } catch (e) {
+          // ignore
+        }
+        await origMsg
+          .edit({ embeds: [finalEmbed], components: [row], attachments: [] })
+          .catch(() => null);
+      }
     }
   } catch (err) {
     console.warn("Nie udało się zedytować wiadomości konkursu na końcu:", err);
