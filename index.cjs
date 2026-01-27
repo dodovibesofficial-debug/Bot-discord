@@ -4434,25 +4434,15 @@ async function handleTicketZakonczCommand(interaction) {
       return;
   }
 
-  // Wyślij jedną wiadomość z pingiem i embedem
+  // Wyślij jedną wiadomość z pingiem, embedem i +rep w obu miejscach
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
   const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
   
   await interaction.reply({
-    content: `<@${ticketOwnerId}>`,
+    content: `<@${ticketOwnerId}>\n\n\`\`\`\n${repMessage}\n\`\`\``,
     embeds: [embed],
     files: [gifAttachment]
   });
-
-  // Wyślij +rep jako followUp aby pojawiło się natychmiast po embedzie
-  try {
-    await interaction.followUp({
-      content: repMessage,
-      flags: [] // nie ephemeral - widoczne dla wszystkich
-    });
-  } catch (err) {
-    console.error("Błąd wysyłania wiadomości +rep:", err);
-  }
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
