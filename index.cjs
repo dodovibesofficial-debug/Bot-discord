@@ -8843,21 +8843,9 @@ async function handleKonkursJoinModal(interaction, msgId) {
     console.warn("Nie udało się zaktualizować embed/btn konkursu:", e);
   }
 
-  const leaveBtn = new ButtonBuilder()
-    .setCustomId(`confirm_leave_${msgId}`)
-    .setLabel("Tak")
-    .setStyle(ButtonStyle.Danger);
-
-  const cancelBtn = new ButtonBuilder()
-    .setCustomId(`cancel_leave_${msgId}`)
-    .setLabel("Anuluj")
-    .setStyle(ButtonStyle.Secondary);
-
-  const row = new ActionRowBuilder().addComponents(leaveBtn, cancelBtn);
-
+  // Prosta odpowiedź dla nowego uczestnika
   await interaction.reply({
-    content: `> ` + `✅ Jesteś zapisany do konkursu. Uczestników: ${participantsCount}`,
-    components: [row],
+    content: "> `✅` Dołączyłeś do konkursu.",
     flags: [MessageFlags.Ephemeral],
   });
 }
