@@ -4359,6 +4359,20 @@ async function handleTicketZakonczCommand(interaction) {
   // Stwórz embed instrukcji w zależności od typu
   let embed;
   const legitRepChannelId = "1449840030947217529";
+  
+  // Przygotuj wiadomość +rep
+  let repMessage;
+  switch (typ.toLowerCase()) {
+    case "zakup":
+      repMessage = `+rep @${interaction.user.username} sprzedał ${ile} ${serwer}`;
+      break;
+    case "sprzedaż":
+      repMessage = `+rep @${interaction.user.username} kupił ${ile} ${serwer}`;
+      break;
+    case "wręczył nagrodę":
+      repMessage = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
+      break;
+  }
 
   switch (typ.toLowerCase()) {
     case "zakup":
@@ -4367,7 +4381,7 @@ async function handleTicketZakonczCommand(interaction) {
         .setTitle("😎 DZIĘKUJEMY ZA ZAKUP W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep @${interaction.user.username} sprzedał ${ile} ${serwer}\n\`\`\``
+          `\`\`\`\n${repMessage}\n\`\`\``
         )
         .setImage("attachment://standard_5.gif");
       break;
@@ -4378,7 +4392,7 @@ async function handleTicketZakonczCommand(interaction) {
         .setTitle("💪 DZIĘKUJEMY ZA SPRZEDAŻ W NASZYM SKLEPIE! ❤️")
         .setDescription(
           `Aby zamknąć ten ticket wyślij wiadomość +rep na kanał \n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep @${interaction.user.username} kupił ${ile} ${serwer}\n\`\`\``
+          `\`\`\`\n${repMessage}\n\`\`\``
         )
         .setImage("attachment://standard_5.gif");
       break;
@@ -4389,7 +4403,7 @@ async function handleTicketZakonczCommand(interaction) {
         .setTitle("💰 NAGRODA ZOSTAŁA NADANA ❤️")
         .setDescription(
           `Aby zakończyć ticket, wyślij poniższą wiadomość na kanał\n<#${legitRepChannelId}>\n\n` +
-          `\`\`\`\n+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}\n\`\`\``
+          `\`\`\`\n${repMessage}\n\`\`\``
         )
         .setImage("attachment://standard_5.gif");
       
@@ -4420,39 +4434,15 @@ async function handleTicketZakonczCommand(interaction) {
       return;
   }
 
-  // Wyślij jedną wiadomość z pingiem, embedem i +rep pod embedem
+  // Wyślij jedną wiadomość z pingiem i embedem
   const gifPath = path.join(__dirname, "attached_assets", "standard (5).gif");
   const gifAttachment = new AttachmentBuilder(gifPath, { name: "standard_5.gif" });
   
-  // Przygotuj wiadomość +rep
-  let repMessage;
-  switch (typ.toLowerCase()) {
-    case "zakup":
-      repMessage = `+rep @${interaction.user.username} sprzedał ${ile} ${serwer}`;
-      break;
-    case "sprzedaż":
-      repMessage = `+rep @${interaction.user.username} kupił ${ile} ${serwer}`;
-      break;
-    case "wręczył nagrodę":
-      repMessage = `+rep @${interaction.user.username} wręczył nagrodę ${ile} ${serwer}`;
-      break;
-  }
-  
-  // Wyślij wszystko w jednej wiadomości
   await interaction.reply({
     content: `<@${ticketOwnerId}>`,
     embeds: [embed],
     files: [gifAttachment]
   });
-
-  // Wyślij +rep jako osobną wiadomość pod embedem
-  setTimeout(async () => {
-    try {
-      await interaction.channel.send(repMessage);
-    } catch (err) {
-      console.error("Błąd wysyłania wiadomości +rep:", err);
-    }
-  }, 500); // krótkie opóźnienie żeby pojawiło się pod embedem
 
   // Zapisz informację o oczekiwaniu na +rep dla tego ticketu
   pendingTicketClose.set(channel.id, {
