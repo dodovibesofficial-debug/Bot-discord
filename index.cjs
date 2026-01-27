@@ -2305,7 +2305,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2316,7 +2316,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** przejęty przez Ciebie lub **admin/sprzedawca** może zmienić nazwę.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2361,7 +2361,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** przejęty przez Ciebie lub **admin/Sprzedawca** może dodawać użytkowników.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2416,7 +2416,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2427,7 +2427,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** przejęty przez Ciebie lub **admin/Sprzedawca** może usuwać użytkowników.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -2984,7 +2984,7 @@ const nickInput = new TextInputBuilder()
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może zamknąć ticket.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3055,7 +3055,7 @@ const nickInput = new TextInputBuilder()
 
     if (interaction.user.id !== ticketUserId) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** właściciel ticketu może użyć tego **przycisku**!",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3093,8 +3093,7 @@ const nickInput = new TextInputBuilder()
     // Only administrator or seller can use settings
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content:
-          "❌ Tylko administrator lub sprzedawca może zmienić ustawienia tego ticketu.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -3259,7 +3258,7 @@ async function handleRozliczenieCommand(interaction) {
   
   if (!isOwner && !hasRole) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera lub użytkownicy z rolą **sprzedawcy** mogą użyć tej komendy!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3303,7 +3302,7 @@ async function handleRozliczenieZaplacilCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3354,7 +3353,7 @@ async function handleRozliczenieZakonczCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3481,7 +3480,7 @@ async function handleStatusBotaCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3520,7 +3519,7 @@ async function handleRozliczenieUstawCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral]
     });
     return;
@@ -3598,7 +3597,7 @@ async function handlePanelKalkulatorCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -3657,24 +3656,10 @@ async function handleAdminOdprzejmij(interaction) {
   - Bot forwards the submitted content + attachments + embeds to the target channel as a single EMBED with blue color.
 */
 async function handleSendMessageCommand(interaction) {
-  // Admin command: interactive sendmessage
-  if (!interaction.guild) {
+  // Sprawdź czy właściciel
+  if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Ta komenda** działa tylko na **serwerze**.",
-      flags: [MessageFlags.Ephemeral],
-    });
-    return;
-  }
-
-  const member = interaction.member;
-  const isAdmin =
-    member &&
-    member.permissions &&
-    (member.permissions.has(PermissionFlagsBits.Administrator) ||
-      member.permissions.has(PermissionFlagsBits.ManageGuild));
-  if (!isAdmin) {
-    await interaction.reply({
-      content: "> `❌` × **Nie masz** uprawnień **administracyjnych**.",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4041,7 +4026,7 @@ async function handlePanelWeryfikacjaCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4179,7 +4164,7 @@ async function handleTicketPanelCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4247,7 +4232,7 @@ async function handleCloseTicketCommand(interaction) {
   // only admins / sellers
   if (!isAdminOrSeller(interaction.member)) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** administrator lub **sprzedawca** może zamknąć ticket.",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4324,7 +4309,7 @@ async function handleTicketZakonczCommand(interaction) {
   
   if (!isOwner && !hasSellerRole) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera lub użytkownik z rolą **sprzedawcy** może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4449,7 +4434,7 @@ async function handleZamknijZPowodemCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4516,7 +4501,7 @@ async function handleLegitRepUstawCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4575,7 +4560,7 @@ async function handleSprawdzKogoZaprosilCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -4846,12 +4831,12 @@ async function ticketClaimCommon(interaction, channelId) {
   if (!isAdminOrSeller(interaction.member)) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może przejąć ticket.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
     } else {
       await interaction.followUp({
-        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może przejąć ticket.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       }).catch(() => null);
     }
@@ -4995,12 +4980,12 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
   if (!isAdminOrSeller(interaction.member)) {
     if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może oddać ticket.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
     } else {
       await interaction.followUp({
-        content: "> `❌` × **Tylko** administrator lub **sprzedawca** może oddać ticket.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       }).catch(() => null);
     }
@@ -5047,7 +5032,7 @@ async function ticketUnclaimCommon(interaction, channelId, expectedClaimer = nul
     !isAdminOrSeller(interaction.member)
   ) {
     await replyEphemeral(
-      "❌ Tylko osoba, która przejęła ticket (lub admin/seller) może użyć tego przycisku.",
+      "> `❗` Brak wymaganych uprawnień.",
     );
     return;
   }
@@ -5619,7 +5604,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5630,7 +5615,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** osoba która przejęła ticket lub **sprzedawca/admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5675,7 +5660,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5686,7 +5671,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** osoba która przejęła ticket lub **sprzedawca/admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5743,7 +5728,7 @@ async function handleModalSubmit(interaction) {
 
     if (!isAdminOrSeller(interaction.member)) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** sprzedawca lub **admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -5754,7 +5739,7 @@ async function handleModalSubmit(interaction) {
       !isAdminOrSeller(interaction.member)
     ) {
       await interaction.reply({
-        content: "> `❌` × **Tylko** osoba która przejęła ticket lub **sprzedawca/admin** może to zrobić.",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
       return;
@@ -7006,7 +6991,7 @@ async function handleWyczyscKanalCommand(interaction) {
   if (interaction.user.id !== interaction.guild.ownerId) {
     try {
       await interaction.editReply({
-        content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+        content: "> `❗` Brak wymaganych uprawnień.",
       });
     } catch (e) {
       // ignore
@@ -7243,7 +7228,7 @@ async function handleResetLCCommand(interaction) {
   if (interaction.user.id !== interaction.guild.ownerId) {
     try {
       await interaction.reply({
-        content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+        content: "> `❗` Brak wymaganych uprawnień.",
         flags: [MessageFlags.Ephemeral],
       });
     } catch (e) {
@@ -7349,7 +7334,7 @@ async function handleZresetujCzasCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -7964,7 +7949,7 @@ async function handleZaprosieniaStatsCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8277,7 +8262,7 @@ async function handleDodajKonkursCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
@@ -8479,7 +8464,7 @@ async function handleDodajKonkursCommand(interaction) {
   // Sprawdź czy właściciel
   if (interaction.user.id !== interaction.guild.ownerId) {
     await interaction.reply({
-      content: "> `❌` × **Tylko** właściciel serwera może użyć tej **komendy**!",
+      content: "> `❗` Brak wymaganych uprawnień.",
       flags: [MessageFlags.Ephemeral],
     });
     return;
