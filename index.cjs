@@ -8192,12 +8192,13 @@ async function handleHelpCommand(interaction) {
   try {
     const embed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setTitle("\`📋\` × Spis podstawowych komend bota")
+      .setTitle("\`📋\` × Spis komend")
       .setDescription(
         [
-          "> 🎁 × Użyj komendy </drop:1464015494876102748>, aby wylosować zniżkę na zakupy!",
-          "> 📩 × Użyj komendy </sprawdz-zaproszenia:1464015495932940398>, aby sprawdzić swoje zaproszenia",
-          "> 📋・ꜱᴘɪꜱ ᴋᴏᴍᴇɴᴅ: </help:1464015495392133316> — Pokaż tę wiadomość",
+          "**`Komendy ogólne:`**!",
+          "> 🎁 × </drop:1464015494876102748>, Wylosuj zniżke na zakupy!",
+          "> 📩 × </sprawdz-zaproszenia:1464015495932940398>, Sprawdź swoje zaproszenia",
+          "> 📋 × </help:1464015495392133316> — Pokaż tę wiadomość",
         ].join("\n"),
       )
 
