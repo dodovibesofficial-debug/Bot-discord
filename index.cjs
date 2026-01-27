@@ -2835,13 +2835,14 @@ async function handleButtonInteraction(interaction) {
       .setCustomId(`konkurs_join_modal_${msgId}`)
       .setTitle("Dołącz do konkursu");
 
-    const nickInput = new TextInputBuilder()
-      .setCustomId("konkurs_nick")
-      .setLabel("Podaj swój nick Minecraft")
-      .setStyle(TextInputStyle.Short)
-      .setRequired(false)
-      .setMaxLength(50)
-      .setPlaceholder("Na ten nick nadamy nagrode");
+const nickInput = new TextInputBuilder()
+  .setCustomId("konkurs_nick")
+  .setLabel("Twój nick w Minecraft (opcjonalnie)")
+  .setStyle(TextInputStyle.Short)
+  .setRequired(false) // <- to sprawia, że pole jest opcjonalne
+  .setMaxLength(20)
+  .setPlaceholder("Przykład: KosiaraWTF");
+
 
     const row1 = new ActionRowBuilder().addComponents(nickInput);
     modal.addComponents(row1);
