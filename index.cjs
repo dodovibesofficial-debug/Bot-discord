@@ -2862,6 +2862,20 @@ async function handleButtonInteraction(interaction) {
     return;
   }
 
+  if (customId.startsWith("confirm_leave_")) {
+    const msgId = customId.replace("confirm_leave_", "");
+    await handleKonkursLeave(interaction, msgId);
+    return;
+  }
+
+  if (customId.startsWith("cancel_leave_")) {
+    await interaction.update({
+      content: "> `📋` Anulowano.",
+      components: [],
+    });
+    return;
+  }
+
   // NEW: verification panel button
   if (customId.startsWith("verify_panel_")) {
     // very simple puzzles for preschool level: addition and multiplication with small numbers
@@ -8757,12 +8771,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
     const row = new ActionRowBuilder().addComponents(leaveButton, cancelButton);
 
     await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setColor(COLOR_BLUE)
-          .setDescription("❓ Czy chcesz opuścić konkurs?")
-          .setTimestamp(),
-      ],
+      content: "> `❓` Czy chcesz opuścić konkurs?",
       components: [row],
       flags: [MessageFlags.Ephemeral],
     });
@@ -8834,16 +8843,21 @@ async function handleKonkursJoinModal(interaction, msgId) {
     console.warn("Nie udało się zaktualizować embed/btn konkursu:", e);
   }
 
-  const joinEmbed = new EmbedBuilder()
-    .setColor(COLOR_BLUE)
-    .setDescription(
-      `✅ Jesteś zapisany do konkursu. Uczestników: ${participantsCount}`,
-    )
-    .setImage(REP_EMBED_BANNER_URL)
-    .setTimestamp();
+  const leaveBtn = new ButtonBuilder()
+    .setCustomId(`confirm_leave_${msgId}`)
+    .setLabel("Tak")
+    .setStyle(ButtonStyle.Danger);
+
+  const cancelBtn = new ButtonBuilder()
+    .setCustomId(`cancel_leave_${msgId}`)
+    .setLabel("Anuluj")
+    .setStyle(ButtonStyle.Secondary);
+
+  const row = new ActionRowBuilder().addComponents(leaveBtn, cancelBtn);
 
   await interaction.reply({
-    embeds: [joinEmbed],
+    content: `> ` + `✅ Jesteś zapisany do konkursu. Uczestników: ${participantsCount}`,
+    components: [row],
     flags: [MessageFlags.Ephemeral],
   });
 }
@@ -9070,7 +9084,7 @@ async function handleKonkursLeave(interaction, msgId) {
   }
 
   await interaction.update({
-    content: `✅ Opuściłeś konkurs.`,
+    content: "> `🚪` Opuściłeś konkurs.",
     components: [],
   });
 }
