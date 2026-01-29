@@ -1830,7 +1830,7 @@ client.once(Events.ClientReady, async (c) => {
               (emb) =>
                 typeof emb.description === "string" &&
                 (emb.description.includes(
-                  "Użyj **komendy** </drop:1454974442370240585>",
+                  "Użyj **komendy** </drop:1464015494876102748>",
                 ) ||
                   emb.description.includes(
                     "`🎁` Użyj **komendy** </drop:1464015494876102748>",
