@@ -8951,8 +8951,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
         try {
           await origMsg.edit({ 
             embeds: [existingEmbed], 
-            components: [row],
-            attachments: []
+            components: [row]
           }).catch(() => null);
         } catch (err) {
           console.warn("Nie udało się zaktualizować konkursu:", err);
@@ -9273,8 +9272,7 @@ async function handleKonkursLeave(interaction, msgId) {
         try {
           await origMsg.edit({ 
             embeds: [embed], 
-            components: [row],
-            attachments: []
+            components: [row]
           }).catch(() => null);
         } catch (err) {
           console.warn("Nie udało się zaktualizować konkursu (leave):", err);
