@@ -8491,8 +8491,8 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `**🕰️ • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
     `**🎁 • Nagroda:** ${prize}\n` +
+    `**🕐 • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
     `**👑 • Liczba zwycięzców:** ${winnersCount}\n` +
     `**👥 • Liczba uczestników:** 0`;
 
@@ -8698,8 +8698,8 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `**🕰️ • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
     `**🎁 • Nagroda:** ${prize}\n` +
+    `**🕐 • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
     `**👑 • Liczba zwycięzców:** ${winnersCount}\n` +
     `**👥 • Liczba uczestników:** 0`;
 
@@ -8909,8 +8909,8 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-          `**🕰️ • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
           `**🎁 • Nagroda:** ${contest.prize}\n` +
+          `**🕐 • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
           `**👑 • Liczba zwycięzców:** ${contest.winnersCount}\n` +
           `**👥 • Liczba uczestników:** ${participantsCount}`;
         
@@ -9235,8 +9235,8 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `**🕰️ • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
           `**🎁 • Nagroda:** ${contest.prize}\n` +
+          `**🕐 • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
           `**👑 • Liczba zwycięzców:** ${contest.winnersCount}\n` +
           `**👥 • Liczba uczestników:** ${participantsCount}`;
 
