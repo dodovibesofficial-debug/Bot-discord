@@ -8491,9 +8491,9 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `🎁 • Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `👑 • Liczba zwycięzców: ${winnersCount}\n` +
-    `👥 • Liczba uczestników: __0__`;
+    `🎁 × Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
+    `👑 × Liczba zwycięzców: ${winnersCount}\n` +
+    `👥 × Liczba uczestników: 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8584,7 +8584,7 @@ async function handleKonkursCreateModal(interaction) {
 
   try {
     await interaction.editReply({
-      content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
+      content: `\`✅\` Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
     });
   } catch (err) {
     console.error("Błąd tworzenia konkursu:", err);
@@ -8693,9 +8693,9 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `🎁 • Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `👑 • Liczba zwycięzców: ${winnersCount}\n` +
-    `👥 • Liczba uczestników: __0__`;
+    `🎁 × Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
+    `👑 × Liczba zwycięzców: ${winnersCount}\n` +
+    `👥 × Liczba uczestników: 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8786,7 +8786,7 @@ async function handleKonkursCreateModal(interaction) {
 
   try {
     await interaction.editReply({
-      content: `✅ Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
+      content: `\`✅\` Konkurs opublikowany w <#${targetChannel.id}> i potrwa ${formatTimeDelta(timeMs)} (do <t:${ts}:R>)`,
     });
   } catch (err) {
     console.error("Błąd tworzenia konkursu:", err);
@@ -8876,7 +8876,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
 
     const questionEmbed = new EmbedBuilder()
       .setColor(COLOR_BLUE)
-      .setDescription("> `❓` × Już wziąłeś udział w tym konkursie!");
+      .setDescription("> \`❓\` × Już wziąłeś udział w tym konkursie!");
 
     await interaction.reply({
       embeds: [questionEmbed],
@@ -8899,9 +8899,9 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-          `🎁 • Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `👑 • Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `👥 • Liczba uczestników: __${participantsCount}__`;
+          `🎁 × Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `👑 × Liczba zwycięzców: ${contest.winnersCount}\n` +
+          `👥 × Liczba uczestników: ${participantsCount}`;
         
         
 
@@ -8955,7 +8955,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
   // Prosta odpowiedź dla nowego uczestnika
   const joinEmbed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
-    .setDescription("> `✅` × Poprawnie dołączyłeś do konkursu.");
+    .setDescription("> \`✅\` × Poprawnie dołączyłeś do konkursu.");
 
   await interaction.reply({
     embeds: [joinEmbed],
@@ -9157,7 +9157,7 @@ async function handleEndGiveawaysCommand(interaction) {
   let description = "";
   
   if (endedContests.length > 0) {
-    description += `## ✅ Pomyślnie zakończone konkursy (${endedContests.length}):\n\n`;
+    description += `## \`✅\` Pomyślnie zakończone konkursy (${endedContests.length}):\n\n`;
     endedContests.forEach((contest, index) => {
       description += `**${index + 1}. ${contest.prize}**\n`;
       description += `> ⏱️ Pozostało czasu: \`${contest.timeLeft}\`\n`;
@@ -9224,9 +9224,9 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `🎁 • Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `👑 • Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `👥 • Liczba uczestników: __${participantsCount}__`;
+          `🎁 × Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `👑 × Liczba zwycięzców: ${contest.winnersCount}\n` +
+          `👥 × Liczba uczestników: ${participantsCount}`;
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
@@ -9275,7 +9275,7 @@ async function handleKonkursLeave(interaction, msgId) {
 
   const leaveEmbed = new EmbedBuilder()
     .setColor(COLOR_BLUE)
-    .setDescription("> `🚪` × Opuściłeś konkurs.");
+    .setDescription("> \`🚪\` × Opuściłeś konkurs.");
 
   await interaction.update({
     embeds: [leaveEmbed],
