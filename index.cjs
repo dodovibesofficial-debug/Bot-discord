@@ -1830,7 +1830,7 @@ client.once(Events.ClientReady, async (c) => {
               (emb) =>
                 typeof emb.description === "string" &&
                 (emb.description.includes(
-                  "Użyj **komendy** </drop:1464015494876102748>",
+                  "Użyj **komendy** </drop:1454974442370240585>",
                 ) ||
                   emb.description.includes(
                     "`🎁` Użyj **komendy** </drop:1464015494876102748>",
@@ -8921,9 +8921,17 @@ async function handleKonkursJoinModal(interaction, msgId) {
           updatedDescription += `\n\n⚠️ Wymagane: dodać ${contest.invitesRequired} ${inviteForm} na serwer`;
         }
 
-        // Pobierz istniejący embed i zaktualizuj TYLKO description
+        // Pobierz istniejący embed i zachowaj czarny kwadrat
         const existingEmbed = EmbedBuilder.from(origMsg.embeds[0]);
-        existingEmbed.setDescription(updatedDescription);
+        const originalDescription = existingEmbed.data.description || '';
+        
+        // Wyodrębnij czarny kwadrat z oryginalnego opisu
+        const blackBoxMatch = originalDescription.match(/```[\s\S]*?```/);
+        const blackBox = blackBoxMatch ? blackBoxMatch[0] : '';
+        
+        // Połącz czarny kwadrat z nowym opisem
+        const fullDescription = blackBox + '\n' + updatedDescription;
+        existingEmbed.setDescription(fullDescription);
 
         // Zaktualizuj przycisk
         const joinButton = new ButtonBuilder()
@@ -9245,8 +9253,16 @@ async function handleKonkursLeave(interaction, msgId) {
           updatedDescription += `\n\n⚠️ Wymagane: dodać ${contest.invitesRequired} ${inviteForm} na serwer`;
         }
 
+        // Pobierz istniejący embed i zachowaj czarny kwadrat
         const embed = origMsg.embeds[0]?.toJSON() || {};
-        embed.description = updatedDescription;
+        const originalDescription = embed.description || '';
+        
+        // Wyodrębnij czarny kwadrat z oryginalnego opisu
+        const blackBoxMatch = originalDescription.match(/```[\s\S]*?```/);
+        const blackBox = blackBoxMatch ? blackBoxMatch[0] : '';
+        
+        // Połącz czarny kwadrat z nowym opisem
+        embed.description = blackBox + '\n' + updatedDescription;
 
         const joinButton = new ButtonBuilder()
           .setCustomId(`konkurs_join_${msgId}`)
