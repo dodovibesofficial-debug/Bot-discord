@@ -9004,8 +9004,8 @@ async function endContestByMessageId(messageId) {
        "```\n" +
       "🎉 Konkurs zakończony 🎉\n" +
        "```\n" +
-      `**🎁 • Nagroda:** ${meta.prize}\n\n` +
-      `**🏆 • Zwycięzcy:**\n${winnersDetails}`,
+      `**🎁 × Nagroda:** ${meta.prize}\n\n` +
+      `**🏆 × Zwycięzcy:**\n${winnersDetails}`,
     )
     .setTimestamp();
 
@@ -9033,8 +9033,8 @@ async function endContestByMessageId(messageId) {
            "```\n" +
           "🎉 Konkurs zakończony 🎉\n" +
            "```\n" +
-          `**🎁 • Nagroda:** ${meta.prize}\n\n` +
-          `**🏆 • Zwycięzcy:**\n${publicWinners}`,
+          `**🎁 × Nagroda:** ${meta.prize}\n\n` +
+          `**🏆 × Zwycięzcy:**\n${publicWinners}`,
         )
         .setTimestamp()
         .setImage("attachment://konkurs_end.gif");
