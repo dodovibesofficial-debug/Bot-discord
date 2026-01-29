@@ -9268,9 +9268,9 @@ async function handleEndGiveawaysCommand(interaction) {
 async function handleKonkursLeave(interaction, msgId) {
   const contest = contests.get(msgId);
   if (!contest) {
-    await interaction.update({
+    await interaction.reply({
       content: "> `❌` × **Konkurs** nie został znaleziony.",
-      components: [],
+      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
@@ -9281,30 +9281,37 @@ async function handleKonkursLeave(interaction, msgId) {
   const userBlocks = contestLeaveBlocks.get(userId) || {};
   const contestBlock = userBlocks[msgId];
   
+  console.log(`[DEBUG] User ${userId} trying to leave contest ${msgId}`);
+  console.log(`[DEBUG] Current block:`, contestBlock);
+  console.log(`[DEBUG] Current time:`, Date.now());
+  console.log(`[DEBUG] Blocked until:`, contestBlock?.blockedUntil);
+  
   if (contestBlock && contestBlock.blockedUntil > Date.now()) {
     const remainingTime = contestBlock.blockedUntil - Date.now();
     const timeString = formatBlockTime(remainingTime);
     
-    await interaction.update({
+    console.log(`[DEBUG] User is BLOCKED for ${timeString}`);
+    
+    await interaction.reply({
       content: `> \`⏳\` × Musisz poczekać **${timeString}**, aby ponownie opuścić konkurs.`,
-      components: [],
+      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
   let participantsMap = contestParticipants.get(msgId);
   if (!participantsMap) {
-    await interaction.update({
+    await interaction.reply({
       content: "> `❌` × **Nie bierzesz** udziału w tym **konkursie**.",
-      components: [],
+      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
 
   if (!participantsMap.has(userId)) {
-    await interaction.update({
+    await interaction.reply({
       content: "> `❌` × **Nie bierzesz** udziału w tym **konkursie**.",
-      components: [],
+      flags: [MessageFlags.Ephemeral],
     });
     return;
   }
@@ -9312,9 +9319,13 @@ async function handleKonkursLeave(interaction, msgId) {
   // Zwiększ licznik wyjść i nałóż blokadę jeśli to drugie wyjście
   const currentLeaveCount = (contestBlock?.leaveCount || 0) + 1;
   
+  console.log(`[DEBUG] Leave count: ${currentLeaveCount}`);
+  
   if (currentLeaveCount >= 2) {
     // Nałóż blokadę 30 minut
     const blockedUntil = Date.now() + (30 * 60 * 1000); // 30 minut
+    
+    console.log(`[DEBUG] Applying BLOCK until ${blockedUntil}`);
     
     if (!userBlocks[msgId]) {
       userBlocks[msgId] = { leaveCount: 0, blockedUntil: 0 };
@@ -9327,6 +9338,8 @@ async function handleKonkursLeave(interaction, msgId) {
     scheduleSavePersistentState();
   } else {
     // Pierwsze wyjście - tylko zaktualizuj licznik
+    console.log(`[DEBUG] First leave, no block applied`);
+    
     if (!userBlocks[msgId]) {
       userBlocks[msgId] = { leaveCount: 0, blockedUntil: 0 };
     }
@@ -9411,9 +9424,9 @@ async function handleKonkursLeave(interaction, msgId) {
     .setColor(COLOR_BLUE)
     .setDescription("> \`🚪\` × Opuściłeś konkurs.");
 
-  await interaction.update({
+  await interaction.reply({
     embeds: [leaveEmbed],
-    components: [],
+    flags: [MessageFlags.Ephemeral],
   });
 }
 
