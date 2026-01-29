@@ -8934,8 +8934,8 @@ async function handleKonkursJoinModal(interaction, msgId) {
         const fullDescription = blackBox + '\n' + updatedDescription;
         existingEmbed.setDescription(fullDescription);
         
-        // Zachowaj istniejący obraz
-        if (originalImage) {
+        // Zachowaj istniejący obraz - użyj URL zamiast attachment://
+        if (originalImage && originalImage.url) {
           existingEmbed.setImage(originalImage.url);
         }
 
@@ -8947,7 +8947,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
           .setDisabled(false);
         const row = new ActionRowBuilder().addComponents(joinButton);
 
-        // Edytuj wiadomość - aktualizuj tylko tekst, zachowaj istniejący GIF
+        // Edytuj wiadomość - aktualizuj tylko tekst, użyj URL zamiast załączników
         try {
           await origMsg.edit({ 
             embeds: [existingEmbed], 
@@ -9256,9 +9256,9 @@ async function handleKonkursLeave(interaction, msgId) {
         // Połącz czarny kwadrat z nowym opisem
         embed.description = blackBox + '\n' + updatedDescription;
         
-        // Zachowaj istniejący obraz
-        if (originalImage) {
-          embed.image = originalImage;
+        // Zachowaj istniejący obraz - użyj URL zamiast attachment://
+        if (originalImage && originalImage.url) {
+          embed.image = { url: originalImage.url };
         }
 
         const joinButton = new ButtonBuilder()
@@ -9268,7 +9268,7 @@ async function handleKonkursLeave(interaction, msgId) {
           .setDisabled(false);
         const row = new ActionRowBuilder().addComponents(joinButton);
 
-        // Edytuj wiadomość - aktualizuj tylko tekst, zachowaj istniejący GIF
+        // Edytuj wiadomość - aktualizuj tylko tekst, użyj URL zamiast załączników
         try {
           await origMsg.edit({ 
             embeds: [embed], 
