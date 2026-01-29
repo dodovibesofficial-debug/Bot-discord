@@ -8491,20 +8491,24 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `🎁 × Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `👑 × Liczba zwycięzców: ${winnersCount}\n` +
-    `👥 × Liczba uczestników: 0`;
+    `**🎁 × Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
+    `**👑 × Liczba zwycięzców:** ${winnersCount}\n` +
+    `**👥 × Liczba uczestników:** 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
     description += `\n\n⚠️ Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer`;
   }
 
-  // Początkowy embed - sama nagroda w title
+  // Początkowy embed - nagroda w czarnym kwadracie
   const embed = new EmbedBuilder()
-    .setTitle(`${prize}`)
+    .setDescription(
+      "```\n" +
+      `${prize}\n` +
+      "```\n" +
+      description
+    )
     .setColor(COLOR_BLUE)
-    .setDescription(description)
     .setTimestamp();
 
   // Placeholder button (will be replaced with proper customId after message is sent)
@@ -8693,20 +8697,24 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `🎁 × Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `👑 × Liczba zwycięzców: ${winnersCount}\n` +
-    `👥 × Liczba uczestników: 0`;
+    `**🎁 × Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
+    `**👑 × Liczba zwycięzców:** ${winnersCount}\n` +
+    `**👥 × Liczba uczestników:** 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
     description += `\n\n \`❗\` **Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer**`;
   }
 
-  // Początkowy embed - sama nagroda w title
+  // Początkowy embed - nagroda w czarnym kwadracie
   const embed = new EmbedBuilder()
-    .setTitle(`${prize}`)
+    .setDescription(
+      "```\n" +
+      `${prize}\n` +
+      "```\n" +
+      description
+    )
     .setColor(COLOR_BLUE)
-    .setDescription(description)
     .setTimestamp();
 
   // Placeholder button (will be replaced with proper customId after message is sent)
@@ -8899,9 +8907,9 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-          `🎁 × Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `👑 × Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `👥 × Liczba uczestników: ${participantsCount}`;
+          `**🎁 × Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `**👑 × Liczba zwycięzców:** ${contest.winnersCount}\n` +
+          `**👥 × Liczba uczestników:** ${participantsCount}`;
         
         
 
@@ -9004,8 +9012,8 @@ async function endContestByMessageId(messageId) {
        "```\n" +
       "🎉 Konkurs zakończony 🎉\n" +
        "```\n" +
-      `**🎁 × Nagroda:** ${meta.prize}\n\n` +
-      `**🏆 × Zwycięzcy:**\n${winnersDetails}`,
+      `**🎁 • Nagroda:** ${meta.prize}\n\n` +
+      `**🏆 • Zwycięzcy:**\n${winnersDetails}`,
     )
     .setTimestamp();
 
@@ -9033,8 +9041,8 @@ async function endContestByMessageId(messageId) {
            "```\n" +
           "🎉 Konkurs zakończony 🎉\n" +
            "```\n" +
-          `**🎁 × Nagroda:** ${meta.prize}\n\n` +
-          `**🏆 × Zwycięzcy:**\n${publicWinners}`,
+          `**🎁 • Nagroda:** ${meta.prize}\n\n` +
+          `**🏆 • Zwycięzcy:**\n${publicWinners}`,
         )
         .setTimestamp()
         .setImage("attachment://konkurs_end.gif");
@@ -9224,9 +9232,9 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `🎁 × Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `👑 × Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `👥 × Liczba uczestników: ${participantsCount}`;
+          `**🎁 × Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `**👑 × Liczba zwycięzców:** ${contest.winnersCount}\n` +
+          `**👥 × Liczba uczestników:** ${participantsCount}`;
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
