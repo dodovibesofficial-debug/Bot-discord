@@ -73,6 +73,7 @@ const kalkulatorData = new Map(); // userId -> { tryb, metoda, typ }
 // Contest maps (new)
 const contestParticipants = new Map(); // messageId -> Set(userId)
 const contests = new Map(); // messageId -> { channelId, endsAt, winnersCount, title, prize, imageUrl }
+const contestLeaveBlocks = new Map(); // userId -> { messageId: { leaveCount: number, blockedUntil: number } }
 
 // --- LEGITCHECK-REP info behavior --------------------------------------------------
 // channel ID where users post freeform reps and the bot should post the informational embed
@@ -241,7 +242,6 @@ function buildPersistentStateData() {
       // Convert Set to array of [userId, ""] pairs (backward compatibility)
       participantsObj[msgId] = Array.from(setOrMap).map(userId => [userId, ""]);
     } else if (
-      setOrMap &&
       typeof setOrMap === "object" &&
       typeof setOrMap.forEach === "function"
     ) {
@@ -249,6 +249,22 @@ function buildPersistentStateData() {
       participantsObj[msgId] = Array.from(setOrMap.entries());
     } else {
       participantsObj[msgId] = [];
+    }
+  }
+
+  // Convert contest leave blocks to plain object
+  const leaveBlocksObj = {};
+  if (typeof contestLeaveBlocks !== "undefined" && contestLeaveBlocks instanceof Map) {
+    for (const [userId, contestBlocks] of contestLeaveBlocks.entries()) {
+      if (contestBlocks && typeof contestBlocks === "object") {
+        leaveBlocksObj[userId] = {};
+        for (const [msgId, blockData] of Object.entries(contestBlocks)) {
+          leaveBlocksObj[userId][msgId] = {
+            leaveCount: blockData.leaveCount || 0,
+            blockedUntil: blockData.blockedUntil || 0
+          };
+        }
+      }
     }
   }
 
@@ -445,6 +461,7 @@ function buildPersistentStateData() {
     lastInviteInstruction: Object.fromEntries(lastInviteInstruction),
     contests: contestsObj,
     contestParticipants: participantsObj,
+    contestLeaveBlocks: leaveBlocksObj,
     fourMonthBlockList: fourMonthObj,
     weeklySales: Object.fromEntries(weeklySales),
     activeCodes: Object.fromEntries(activeCodes),
@@ -713,6 +730,27 @@ async function loadPersistentState() {
           }
         }
       }
+      console.log("[state] Wczytano contestParticipants");
+    }
+
+    // Load contest leave blocks
+    if (
+      data.contestLeaveBlocks &&
+      typeof data.contestLeaveBlocks === "object"
+    ) {
+      for (const [userId, contestBlocks] of Object.entries(data.contestLeaveBlocks)) {
+        if (contestBlocks && typeof contestBlocks === "object") {
+          const userBlocks = {};
+          for (const [msgId, blockData] of Object.entries(contestBlocks)) {
+            userBlocks[msgId] = {
+              leaveCount: blockData.leaveCount || 0,
+              blockedUntil: blockData.blockedUntil || 0
+            };
+          }
+          contestLeaveBlocks.set(userId, userBlocks);
+        }
+      }
+      console.log("[state] Wczytano contestLeaveBlocks");
     }
 
     // Load weekly sales from Supabase
@@ -8372,6 +8410,22 @@ function formatTimeDelta(ms) {
   return `<t:${timestamp}:R>`;
 }
 
+// --- Pomocnicze: formatowanie czasu blokady ---
+function formatBlockTime(remainingMs) {
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  if (hours > 0) {
+    return `${hours} godzin ${minutes} minut ${seconds} sekund`;
+  } else if (minutes > 0) {
+    return `${minutes} minut ${seconds} sekund`;
+  } else {
+    return `${seconds} sekund`;
+  }
+}
+
 // --- Pomocnicze: poprawna forma liczby osób ---
 function getPersonForm(count) {
   if (count === 1) return "osoba";
@@ -8899,6 +8953,15 @@ async function handleKonkursJoinModal(interaction, msgId) {
   participantsMap.set(userId, nick);
   scheduleSavePersistentState();
 
+  // Resetuj licznik wyjść gdy użytkownik ponownie dołącza do konkursu
+  const userBlocks = contestLeaveBlocks.get(userId) || {};
+  if (userBlocks[msgId]) {
+    userBlocks[msgId].leaveCount = 0;
+    userBlocks[msgId].blockedUntil = 0;
+    contestLeaveBlocks.set(userId, userBlocks);
+    scheduleSavePersistentState();
+  }
+
   const participantsCount = participantsMap.size;
 
   // Aktualizuj wiadomość konkursu
@@ -9212,6 +9275,23 @@ async function handleKonkursLeave(interaction, msgId) {
     return;
   }
 
+  const userId = interaction.user.id;
+  
+  // Sprawdź blokadę opuszczania konkursu
+  const userBlocks = contestLeaveBlocks.get(userId) || {};
+  const contestBlock = userBlocks[msgId];
+  
+  if (contestBlock && contestBlock.blockedUntil > Date.now()) {
+    const remainingTime = contestBlock.blockedUntil - Date.now();
+    const timeString = formatBlockTime(remainingTime);
+    
+    await interaction.update({
+      content: `> \`⏳\` × Musisz poczekać **${timeString}**, aby ponownie opuścić konkurs.`,
+      components: [],
+    });
+    return;
+  }
+
   let participantsMap = contestParticipants.get(msgId);
   if (!participantsMap) {
     await interaction.update({
@@ -9221,13 +9301,39 @@ async function handleKonkursLeave(interaction, msgId) {
     return;
   }
 
-  const userId = interaction.user.id;
   if (!participantsMap.has(userId)) {
     await interaction.update({
       content: "> `❌` × **Nie bierzesz** udziału w tym **konkursie**.",
       components: [],
     });
     return;
+  }
+
+  // Zwiększ licznik wyjść i nałóż blokadę jeśli to drugie wyjście
+  const currentLeaveCount = (contestBlock?.leaveCount || 0) + 1;
+  
+  if (currentLeaveCount >= 2) {
+    // Nałóż blokadę 30 minut
+    const blockedUntil = Date.now() + (30 * 60 * 1000); // 30 minut
+    
+    if (!userBlocks[msgId]) {
+      userBlocks[msgId] = { leaveCount: 0, blockedUntil: 0 };
+    }
+    
+    userBlocks[msgId].leaveCount = currentLeaveCount;
+    userBlocks[msgId].blockedUntil = blockedUntil;
+    
+    contestLeaveBlocks.set(userId, userBlocks);
+    scheduleSavePersistentState();
+  } else {
+    // Pierwsze wyjście - tylko zaktualizuj licznik
+    if (!userBlocks[msgId]) {
+      userBlocks[msgId] = { leaveCount: 0, blockedUntil: 0 };
+    }
+    
+    userBlocks[msgId].leaveCount = currentLeaveCount;
+    contestLeaveBlocks.set(userId, userBlocks);
+    scheduleSavePersistentState();
   }
 
   // Usuwamy użytkownika z konkursu
