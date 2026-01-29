@@ -8493,8 +8493,8 @@ async function handleKonkursCreateModal(interaction) {
   let description =
     `🎁 • Nagroda: **${prize}**\n\n` +
     `🕐 • Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `👑 • Liczba zwycięzców: ${winnersCount}\n` +
-    `👥 • Liczba uczestników: 0`;
+    `**👑 • Liczba zwycięzców: ${winnersCount}**\n` +
+    `**👥 • Liczba uczestników: 0**`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8700,8 +8700,8 @@ async function handleKonkursCreateModal(interaction) {
   let description =
     `🎁 • Nagroda: **${prize}**\n\n` +
     `🕐 • Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
-    `👑 • Liczba zwycięzców: ${winnersCount}\n` +
-    `👥 • Liczba uczestników: 0`;
+    `**👑 • Liczba zwycięzców: ${winnersCount}**\n` +
+    `**👥 • Liczba uczestników: 0**`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8911,8 +8911,8 @@ async function handleKonkursJoinModal(interaction, msgId) {
         let updatedDescription =
           `🎁 • Nagroda: **${contest.prize}**\n\n` +
           `🕐 • Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `👑 • Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `👥 • Liczba uczestników: ${participantsCount}`;
+          `**👑 • Liczba zwycięzców: ${contest.winnersCount}**\n` +
+          `**👥 • Liczba uczestników: ${participantsCount}**`;
         
         
 
@@ -9237,8 +9237,8 @@ async function handleKonkursLeave(interaction, msgId) {
         let updatedDescription =
           `🎁 • Nagroda: **${contest.prize}**\n\n` +
           `🕐 • Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `👑 • Liczba zwycięzców: ${contest.winnersCount}\n` +
-          `👥 • Liczba uczestników: ${participantsCount}`;
+          `**👑 • Liczba zwycięzców: ${contest.winnersCount}**\n` +
+          `**👥 • Liczba uczestników: ${participantsCount}**`;
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
