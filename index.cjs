@@ -8491,20 +8491,21 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `**🎁 × Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
-    `**👑 × Liczba zwycięzców:** ${winnersCount}\n` +
-    `**👥 × Liczba uczestników:** 0`;
+    `**🕰️ • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
+    `**🎁 • Nagroda:** ${prize}\n` +
+    `**👑 • Liczba zwycięzców:** ${winnersCount}\n` +
+    `**👥 • Liczba uczestników:** 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
     description += `\n\n⚠️ Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer`;
   }
 
-  // Początkowy embed - nagroda w czarnym kwadracie
+  // Początkowy embed - 🎉 New Shop × KONKURS w czarnym kwadracie
   const embed = new EmbedBuilder()
     .setDescription(
       "```\n" +
-      `${prize}\n` +
+      "🎉 New Shop × KONKURS\n" +
       "```\n" +
       description
     )
@@ -8697,20 +8698,21 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `**🎁 × Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
-    `**👑 × Liczba zwycięzców:** ${winnersCount}\n` +
-    `**👥 × Liczba uczestników:** 0`;
+    `**🕰️ • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
+    `**🎁 • Nagroda:** ${prize}\n` +
+    `**👑 • Liczba zwycięzców:** ${winnersCount}\n` +
+    `**👥 • Liczba uczestników:** 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
     description += `\n\n \`❗\` **Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer**`;
   }
 
-  // Początkowy embed - nagroda w czarnym kwadracie
+  // Początkowy embed - 🎉 New Shop × KONKURS w czarnym kwadracie
   const embed = new EmbedBuilder()
     .setDescription(
       "```\n" +
-      `${prize}\n` +
+      "🎉 New Shop × KONKURS\n" +
       "```\n" +
       description
     )
@@ -8907,9 +8909,10 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-          `**🎁 × Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `**👑 × Liczba zwycięzców:** ${contest.winnersCount}\n` +
-          `**👥 × Liczba uczestników:** ${participantsCount}`;
+          `**🕰️ • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `**🎁 • Nagroda:** ${contest.prize}\n` +
+          `**👑 • Liczba zwycięzców:** ${contest.winnersCount}\n` +
+          `**👥 • Liczba uczestników:** ${participantsCount}`;
         
         
 
@@ -9232,9 +9235,10 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `**🎁 × Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `**👑 × Liczba zwycięzców:** ${contest.winnersCount}\n` +
-          `**👥 × Liczba uczestników:** ${participantsCount}`;
+          `**🕰️ • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `**🎁 • Nagroda:** ${contest.prize}\n` +
+          `**👑 • Liczba zwycięzców:** ${contest.winnersCount}\n` +
+          `**👥 • Liczba uczestników:** ${participantsCount}`;
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
