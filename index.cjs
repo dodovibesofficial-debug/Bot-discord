@@ -8924,7 +8924,6 @@ async function handleKonkursJoinModal(interaction, msgId) {
         // Pobierz istniejący embed i zachowaj czarny kwadrat
         const existingEmbed = EmbedBuilder.from(origMsg.embeds[0]);
         const originalDescription = existingEmbed.data.description || '';
-        const originalImage = existingEmbed.data.image;
         
         // Wyodrębnij czarny kwadrat z oryginalnego opisu
         const blackBoxMatch = originalDescription.match(/```[\s\S]*?```/);
@@ -8933,11 +8932,6 @@ async function handleKonkursJoinModal(interaction, msgId) {
         // Połącz czarny kwadrat z nowym opisem
         const fullDescription = blackBox + '\n' + updatedDescription;
         existingEmbed.setDescription(fullDescription);
-        
-        // Zachowaj istniejący obraz - użyj URL zamiast attachment://
-        if (originalImage && originalImage.url) {
-          existingEmbed.setImage(originalImage.url);
-        }
 
         // Zaktualizuj przycisk
         const joinButton = new ButtonBuilder()
@@ -8947,14 +8941,29 @@ async function handleKonkursJoinModal(interaction, msgId) {
           .setDisabled(false);
         const row = new ActionRowBuilder().addComponents(joinButton);
 
-        // Edytuj wiadomość - aktualizuj tylko tekst, użyj URL zamiast załączników
+        // Edytuj wiadomość - usuń stare załączniki i dodaj ten sam GIF ponownie
         try {
+          const gifPath = path.join(
+            __dirname,
+            "attached_assets",
+            "standard (4).gif",
+          );
+          const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+          existingEmbed.setImage("attachment://konkurs_start.gif");
+          
           await origMsg.edit({ 
             embeds: [existingEmbed], 
-            components: [row]
+            components: [row],
+            files: [attachment]
           }).catch(() => null);
         } catch (err) {
-          console.warn("Nie udało się zaktualizować konkursu:", err);
+          console.warn("Nie udało się załadować GIFa przy edycji konkursu:", err);
+          // Fallback: usuń załączniki bez GIFa
+          await origMsg.edit({ 
+            embeds: [existingEmbed], 
+            components: [row],
+            attachments: []
+          }).catch(() => null);
         }
       }
     }
@@ -9247,7 +9256,6 @@ async function handleKonkursLeave(interaction, msgId) {
         // Pobierz istniejący embed i zachowaj czarny kwadrat
         const embed = origMsg.embeds[0]?.toJSON() || {};
         const originalDescription = embed.description || '';
-        const originalImage = embed.image;
         
         // Wyodrębnij czarny kwadrat z oryginalnego opisu
         const blackBoxMatch = originalDescription.match(/```[\s\S]*?```/);
@@ -9255,11 +9263,6 @@ async function handleKonkursLeave(interaction, msgId) {
         
         // Połącz czarny kwadrat z nowym opisem
         embed.description = blackBox + '\n' + updatedDescription;
-        
-        // Zachowaj istniejący obraz - użyj URL zamiast attachment://
-        if (originalImage && originalImage.url) {
-          embed.image = { url: originalImage.url };
-        }
 
         const joinButton = new ButtonBuilder()
           .setCustomId(`konkurs_join_${msgId}`)
@@ -9268,14 +9271,29 @@ async function handleKonkursLeave(interaction, msgId) {
           .setDisabled(false);
         const row = new ActionRowBuilder().addComponents(joinButton);
 
-        // Edytuj wiadomość - aktualizuj tylko tekst, użyj URL zamiast załączników
+        // Edytuj wiadomość - usuń stare załączniki i dodaj ten sam GIF ponownie
         try {
+          const gifPath = path.join(
+            __dirname,
+            "attached_assets",
+            "standard (4).gif",
+          );
+          const attachment = new AttachmentBuilder(gifPath, { name: "konkurs_start.gif" });
+          embed.image = { url: "attachment://konkurs_start.gif" };
+          
           await origMsg.edit({ 
             embeds: [embed], 
-            components: [row]
+            components: [row],
+            files: [attachment]
           }).catch(() => null);
         } catch (err) {
-          console.warn("Nie udało się zaktualizować konkursu (leave):", err);
+          console.warn("Nie udało się załadować GIFa przy edycji konkursu (leave):", err);
+          // Fallback: usuń załączniki bez GIFa
+          await origMsg.edit({ 
+            embeds: [embed], 
+            components: [row],
+            attachments: []
+          }).catch(() => null);
         }
       }
     }
