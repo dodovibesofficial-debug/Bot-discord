@@ -8500,11 +8500,11 @@ async function handleKonkursCreateModal(interaction) {
     description += `\n\n⚠️ Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer`;
   }
 
-  // Początkowy embed - przenieś nagrodę do description z lepszym formatowaniem
+  // Początkowy embed - sama nagroda w title
   const embed = new EmbedBuilder()
-    .setTitle("🎉 KONKURS 🎉")
+    .setTitle(`${prize}`)
     .setColor(COLOR_BLUE)
-    .setDescription(`**🏆 NAGRODA:**\n### ${prize}\n\n${description}`)
+    .setDescription(description)
     .setTimestamp();
 
   // Placeholder button (will be replaced with proper customId after message is sent)
@@ -8702,11 +8702,11 @@ async function handleKonkursCreateModal(interaction) {
     description += `\n\n \`❗\` **Wymagane: dodać ${invitesRequired} ${inviteForm} na serwer**`;
   }
 
-  // Początkowy embed - przenieś nagrodę do description z lepszym formatowaniem
+  // Początkowy embed - sama nagroda w title
   const embed = new EmbedBuilder()
-    .setTitle("🎉 KONKURS 🎉")
+    .setTitle(`${prize}`)
     .setColor(COLOR_BLUE)
-    .setDescription(`**🏆 NAGRODA:**\n### ${prize}\n\n${description}`)
+    .setDescription(description)
     .setTimestamp();
 
   // Placeholder button (will be replaced with proper customId after message is sent)
