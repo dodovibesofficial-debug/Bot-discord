@@ -8491,10 +8491,10 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `**🎁 • Nagroda:** ${prize}\n` +
-    `**🕐 • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
-    `**👑 • Liczba zwycięzców:** ${winnersCount}\n` +
-    `**👥 • Liczba uczestników:** 0`;
+    `🎁 • Nagroda: ${prize}\n\n` +
+    `🕐 • Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
+    `👑 • Liczba zwycięzców: ${winnersCount}\n` +
+    `👥 • Liczba uczestników: 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8698,10 +8698,10 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy opis z wymaganiami zaproszeń jeśli są
   let description =
-    `**🎁 • Nagroda:** ${prize}\n` +
-    `**🕐 • Koniec konkursu:** ${formatTimeDelta(timeMs)}\n` +
-    `**👑 • Liczba zwycięzców:** ${winnersCount}\n` +
-    `**👥 • Liczba uczestników:** 0`;
+    `🎁 • Nagroda: ${prize}\n\n` +
+    `🕐 • Koniec konkursu: ${formatTimeDelta(timeMs)}\n` +
+    `👑 • Liczba zwycięzców: ${winnersCount}\n` +
+    `👥 • Liczba uczestników: 0`;
 
   if (invitesRequired > 0) {
     const inviteForm = getPersonForm(invitesRequired);
@@ -8909,10 +8909,10 @@ async function handleKonkursJoinModal(interaction, msgId) {
       if (origMsg) {
         // Zaktualizuj opis
         let updatedDescription =
-          `**🎁 • Nagroda:** ${contest.prize}\n` +
-          `**🕐 • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `**👑 • Liczba zwycięzców:** ${contest.winnersCount}\n` +
-          `**👥 • Liczba uczestników:** ${participantsCount}`;
+          `🎁 • Nagroda: ${contest.prize}\n\n` +
+          `🕐 • Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `👑 • Liczba zwycięzców: ${contest.winnersCount}\n` +
+          `👥 • Liczba uczestników: ${participantsCount}`;
         
         
 
@@ -9235,10 +9235,10 @@ async function handleKonkursLeave(interaction, msgId) {
       const origMsg = await ch.messages.fetch(msgId).catch(() => null);
       if (origMsg) {
         let updatedDescription =
-          `**🎁 • Nagroda:** ${contest.prize}\n` +
-          `**🕐 • Koniec konkursu:** ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
-          `**👑 • Liczba zwycięzców:** ${contest.winnersCount}\n` +
-          `**👥 • Liczba uczestników:** ${participantsCount}`;
+          `🎁 • Nagroda: ${contest.prize}\n\n` +
+          `🕐 • Koniec konkursu: ${formatTimeDelta(contest.endsAt - Date.now())}\n` +
+          `👑 • Liczba zwycięzców: ${contest.winnersCount}\n` +
+          `👥 • Liczba uczestników: ${participantsCount}`;
 
         if (contest.invitesRequired > 0) {
           const inviteForm = getPersonForm(contest.invitesRequired);
