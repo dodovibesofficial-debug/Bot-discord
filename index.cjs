@@ -10,7 +10,7 @@ const {
   ChannelType,
   ActionRowBuilder,
   StringSelectMenuBuilder,
-  ModalBuilder, 
+  ModalBuilder,  
   TextInputBuilder,
   TextInputStyle,
   PermissionsBitField,
