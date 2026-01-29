@@ -8844,7 +8844,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
     // Użytkownik już jest zapisany - pytaj czy chce opuścić
     const leaveBtn = new ButtonBuilder()
       .setCustomId(`confirm_leave_${msgId}`)
-      .setLabel("Tak")
+      .setLabel("Opuść Konkurs")
       .setStyle(ButtonStyle.Danger);
 
     const cancelBtn = new ButtonBuilder()
