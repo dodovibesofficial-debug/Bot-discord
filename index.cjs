@@ -236,16 +236,17 @@ function buildPersistentStateData() {
   // Convert contest participants to plain object
   const participantsObj = {};
   for (const [msgId, setOrMap] of contestParticipants.entries()) {
-    // contestParticipants may store Set or Map — normalize to array of userIds
+    // contestParticipants may store Set or Map — normalize to array of [userId, nick] pairs
     if (setOrMap instanceof Set) {
-      participantsObj[msgId] = Array.from(setOrMap);
+      // Convert Set to array of [userId, ""] pairs (backward compatibility)
+      participantsObj[msgId] = Array.from(setOrMap).map(userId => [userId, ""]);
     } else if (
       setOrMap &&
       typeof setOrMap === "object" &&
       typeof setOrMap.forEach === "function"
     ) {
-      // if it's a Map(userId -> meta) convert to array of userIds
-      participantsObj[msgId] = Array.from(setOrMap.keys());
+      // Convert Map(userId -> nick) to array of [userId, nick] pairs
+      participantsObj[msgId] = Array.from(setOrMap.entries());
     } else {
       participantsObj[msgId] = [];
     }
@@ -696,9 +697,20 @@ async function loadPersistentState() {
       data.contestParticipants &&
       typeof data.contestParticipants === "object"
     ) {
-      for (const [msgId, arr] of Object.entries(data.contestParticipants)) {
-        if (Array.isArray(arr)) {
-          contestParticipants.set(msgId, new Set(arr));
+      for (const [msgId, data] of Object.entries(data.contestParticipants)) {
+        if (Array.isArray(data)) {
+          // Check if data is array of [userId, nick] pairs or just userIds (backward compatibility)
+          if (data.length > 0 && Array.isArray(data[0])) {
+            // New format: array of [userId, nick] pairs
+            contestParticipants.set(msgId, new Map(data));
+          } else {
+            // Old format: array of userIds - convert to Map with empty nicks
+            const participantsMap = new Map();
+            data.forEach(userId => {
+              participantsMap.set(userId, "");
+            });
+            contestParticipants.set(msgId, participantsMap);
+          }
         }
       }
     }
@@ -1318,6 +1330,11 @@ const commands = [
     .setDescription(
       "Utwórz konkurs z przyciskiem do udziału i losowaniem zwycięzców",
     )
+    .setDefaultMemberPermissions(0)
+    .toJSON(),
+  new SlashCommandBuilder()
+    .setName("end-giveaways")
+    .setDescription("Zakończ wszystkie aktywne konkursy (tylko właściciel serwera)")
     .setDefaultMemberPermissions(0)
     .toJSON(),
 ];
@@ -3242,6 +3259,9 @@ async function handleSlashCommand(interaction) {
       break;
     case "stworzkonkurs":
       await handleDodajKonkursCommand(interaction);
+      break;
+    case "end-giveaways":
+      await handleEndGiveawaysCommand(interaction);
       break;
   }
 }
@@ -8482,7 +8502,7 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy embed
   const embed = new EmbedBuilder()
-    .setTitle(`${prize}`)
+    .setTitle(`## ${prize}`)
     .setColor(COLOR_BLUE)
     .setDescription(description)
     .setTimestamp();
@@ -8684,7 +8704,7 @@ async function handleKonkursCreateModal(interaction) {
 
   // Początkowy embed
   const embed = new EmbedBuilder()
-    .setTitle(`${prize}`)
+    .setTitle(`## ${prize}`)
     .setColor(COLOR_BLUE)
     .setDescription(description)
     .setTimestamp();
@@ -9071,6 +9091,95 @@ async function endContestByMessageId(messageId) {
   contests.delete(messageId);
   contestParticipants.delete(messageId);
   scheduleSavePersistentState();
+}
+
+// --- Obsługa /end-giveaways ---
+async function handleEndGiveawaysCommand(interaction) {
+  // Sprawdź czy właściciel serwera
+  const isOwner = interaction.user.id === interaction.guild.ownerId;
+  if (!isOwner) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko właściciel serwera** może użyć tej komendy.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  if (!interaction.guild) {
+    await interaction.reply({
+      content: "> `❌` × **Tylko** na **serwerze**.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  const now = Date.now();
+  const activeContests = Array.from(contests.entries()).filter(([_, meta]) => meta.endsAt > now);
+  
+  if (activeContests.length === 0) {
+    await interaction.reply({
+      content: "> `ℹ️` × **Brak aktywnych konkursów** do zakończenia.",
+      flags: [MessageFlags.Ephemeral],
+    });
+    return;
+  }
+
+  // Zakończ wszystkie aktywne konkursy
+  const endedContests = [];
+  const failedContests = [];
+
+  for (const [messageId, meta] of activeContests) {
+    try {
+      await endContestByMessageId(messageId);
+      const timeLeft = meta.endsAt - now;
+      endedContests.push({
+        prize: meta.prize,
+        timeLeft: humanizeMs(timeLeft),
+        channelId: meta.channelId,
+        messageId: messageId,
+      });
+    } catch (error) {
+      console.error(`Błąd podczas kończenia konkursu ${messageId}:`, error);
+      failedContests.push({
+        prize: meta.prize,
+        error: error.message,
+      });
+    }
+  }
+
+  // Stwórz embed z podsumowaniem
+  const summaryEmbed = new EmbedBuilder()
+    .setColor(endedContests.length > 0 ? COLOR_BLUE : COLOR_RED)
+    .setTitle("🏁 Zakończono wszystkie konkursy")
+    .setTimestamp()
+    .setFooter({ text: `Wykonane przez: ${interaction.user.tag}` });
+
+  let description = "";
+  
+  if (endedContests.length > 0) {
+    description += `## ✅ Pomyślnie zakończone konkursy (${endedContests.length}):\n\n`;
+    endedContests.forEach((contest, index) => {
+      description += `**${index + 1}. ${contest.prize}**\n`;
+      description += `> ⏱️ Pozostało czasu: \`${contest.timeLeft}\`\n`;
+      description += `> 📍 Kanał: <#${contest.channelId}>\n`;
+      description += `> 🆔 ID wiadomości: \`${contest.messageId}\`\n\n`;
+    });
+  }
+
+  if (failedContests.length > 0) {
+    description += `## ❌ Nie udało się zakończyć (${failedContests.length}):\n\n`;
+    failedContests.forEach((contest, index) => {
+      description += `**${index + 1}. ${contest.prize}**\n`;
+      description += `> 🚫 Błąd: \`${contest.error}\`\n\n`;
+    });
+  }
+
+  summaryEmbed.setDescription(description);
+
+  await interaction.reply({
+    embeds: [summaryEmbed],
+    flags: [MessageFlags.Ephemeral], // Tylko osoba wpisująca widzi odpowiedź
+  });
 }
 
 // --- Obsługa opuszczenia konkursu ---
