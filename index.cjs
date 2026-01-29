@@ -8924,6 +8924,7 @@ async function handleKonkursJoinModal(interaction, msgId) {
         // Pobierz istniejący embed i zachowaj czarny kwadrat
         const existingEmbed = EmbedBuilder.from(origMsg.embeds[0]);
         const originalDescription = existingEmbed.data.description || '';
+        const originalImage = existingEmbed.data.image;
         
         // Wyodrębnij czarny kwadrat z oryginalnego opisu
         const blackBoxMatch = originalDescription.match(/```[\s\S]*?```/);
@@ -8932,6 +8933,11 @@ async function handleKonkursJoinModal(interaction, msgId) {
         // Połącz czarny kwadrat z nowym opisem
         const fullDescription = blackBox + '\n' + updatedDescription;
         existingEmbed.setDescription(fullDescription);
+        
+        // Zachowaj istniejący obraz
+        if (originalImage) {
+          existingEmbed.setImage(originalImage.url);
+        }
 
         // Zaktualizuj przycisk
         const joinButton = new ButtonBuilder()
@@ -9241,6 +9247,7 @@ async function handleKonkursLeave(interaction, msgId) {
         // Pobierz istniejący embed i zachowaj czarny kwadrat
         const embed = origMsg.embeds[0]?.toJSON() || {};
         const originalDescription = embed.description || '';
+        const originalImage = embed.image;
         
         // Wyodrębnij czarny kwadrat z oryginalnego opisu
         const blackBoxMatch = originalDescription.match(/```[\s\S]*?```/);
@@ -9248,6 +9255,11 @@ async function handleKonkursLeave(interaction, msgId) {
         
         // Połącz czarny kwadrat z nowym opisem
         embed.description = blackBox + '\n' + updatedDescription;
+        
+        // Zachowaj istniejący obraz
+        if (originalImage) {
+          embed.image = originalImage;
+        }
 
         const joinButton = new ButtonBuilder()
           .setCustomId(`konkurs_join_${msgId}`)
