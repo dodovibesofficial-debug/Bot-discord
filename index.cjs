@@ -1755,8 +1755,9 @@ async function applyDefaultsForGuild(guildId) {
 }
 
 client.once(Events.ClientReady, async (c) => {
-  console.log(`Bot zalogowany jako ${c.user.tag}`);
-  console.log(`Bot jest na ${c.guilds.cache.size} serwerach`);
+  console.log(`[READY] Bot zalogowany jako ${c.user.tag}`);
+  console.log(`[READY] Bot jest na ${c.guilds.cache.size} serwerach`);
+  console.log(`[READY] Bot jest online i gotowy do pracy!`);
   
   // loadPersistentState() już wywołane na początku pliku
 
@@ -9948,6 +9949,19 @@ async function sendStatusReport(channel) {
 console.log("🟢 FULL MONITORING MODE aktywowany - heartbeat co 5min, alerty błędów, monitor HTTP");
 
 // ---------------------------------------------------
+
+console.log("[DEBUG] Próba połączenia z Discord...");
+console.log("[DEBUG] BOT_TOKEN exists:", !!process.env.BOT_TOKEN);
+console.log("[DEBUG] BOT_TOKEN length:", process.env.BOT_TOKEN?.length || 0);
+
+// Event dla błędów połączenia
+client.on('error', (err) => {
+  console.error('[DISCORD ERROR]', err);
+});
+
+client.on('debug', (info) => {
+  console.log('[DISCORD DEBUG]', info);
+});
 
 client
   .login(process.env.BOT_TOKEN)
