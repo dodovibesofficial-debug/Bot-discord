@@ -594,72 +594,72 @@ async function loadPersistentState() {
     
     if (supabaseData) {
       console.log("[state] Używam danych z Supabase");
-      const data = supabaseData;
+      const botStateData = supabaseData;
 
-      if (typeof data.legitRepCount === "number") {
-        legitRepCount = data.legitRepCount;
+      if (typeof botStateData.legitRepCount === "number") {
+        legitRepCount = botStateData.legitRepCount;
       }
 
-    if (data.ticketCounter && typeof data.ticketCounter === "object") {
-      for (const [guildId, value] of Object.entries(data.ticketCounter)) {
+    if (botStateData.ticketCounter && typeof botStateData.ticketCounter === "object") {
+      for (const [guildId, value] of Object.entries(botStateData.ticketCounter)) {
         if (typeof value === "number") {
           ticketCounter.set(guildId, value);
         }
       }
     }
 
-    if (data.ticketOwners && typeof data.ticketOwners === "object") {
-      for (const [channelId, ticketData] of Object.entries(data.ticketOwners)) {
+    if (botStateData.ticketOwners && typeof botStateData.ticketOwners === "object") {
+      for (const [channelId, ticketData] of Object.entries(botStateData.ticketOwners)) {
         if (ticketData && typeof ticketData === "object") {
           ticketOwners.set(channelId, ticketData);
         }
       }
     }
     if (
-      data.fourMonthBlockList &&
-      typeof data.fourMonthBlockList === "object"
+      botStateData.fourMonthBlockList &&
+      typeof botStateData.fourMonthBlockList === "object"
     ) {
-      for (const [gId, arr] of Object.entries(data.fourMonthBlockList)) {
+      for (const [gId, arr] of Object.entries(botStateData.fourMonthBlockList)) {
         if (Array.isArray(arr)) {
           fourMonthBlockList.set(gId, new Set(arr));
         }
       }
     }
 
-    if (data.inviteCounts) {
-      const loaded = nestedObjectToMapOfMaps(data.inviteCounts);
+    if (botStateData.inviteCounts) {
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteCounts);
       loaded.forEach((inner, guildId) => {
         inviteCounts.set(guildId, inner);
         console.log(`[state] Wczytano inviteCounts dla guild ${guildId}: ${inner.size} wpisów`);
       });
     }
 
-    if (data.inviteRewards) {
-      const loaded = nestedObjectToMapOfMaps(data.inviteRewards);
+    if (botStateData.inviteRewards) {
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteRewards);
       loaded.forEach((inner, guildId) => {
         inviteRewards.set(guildId, inner);
       });
     }
 
-    if (data.inviteLeaves) {
-      const loaded = nestedObjectToMapOfMaps(data.inviteLeaves);
+    if (botStateData.inviteLeaves) {
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteLeaves);
       loaded.forEach((inner, guildId) => {
         inviteLeaves.set(guildId, inner);
       });
     }
 
-    if (data.inviteRewardsGiven) {
+    if (botStateData.inviteRewardsGiven) {
       // NEW
-      const loaded = nestedObjectToMapOfMaps(data.inviteRewardsGiven);
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteRewardsGiven);
       loaded.forEach((inner, guildId) => {
         inviteRewardsGiven.set(guildId, inner);
         console.log(`[state] Wczytano inviteRewardsGiven dla guild ${guildId}: ${inner.size} wpisów`);
       });
     }
 
-    if (data.inviteRewardLevels) {
+    if (botStateData.inviteRewardLevels) {
       // Load inviteRewardLevels
-      for (const [guildId, userObj] of Object.entries(data.inviteRewardLevels)) {
+      for (const [guildId, userObj] of Object.entries(botStateData.inviteRewardLevels)) {
         const userMap = new Map();
         for (const [userId, levelsArray] of Object.entries(userObj)) {
           if (Array.isArray(levelsArray)) {
@@ -672,11 +672,11 @@ async function loadPersistentState() {
     }
 
     if (
-      data.lastInviteInstruction &&
-      typeof data.lastInviteInstruction === "object"
+      botStateData.lastInviteInstruction &&
+      typeof botStateData.lastInviteInstruction === "object"
     ) {
       for (const [channelId, messageId] of Object.entries(
-        data.lastInviteInstruction,
+        botStateData.lastInviteInstruction,
       )) {
         if (typeof messageId === "string") {
           lastInviteInstruction.set(channelId, messageId);
@@ -685,8 +685,8 @@ async function loadPersistentState() {
     }
 
     // Load contests
-    if (data.contests && typeof data.contests === "object") {
-      for (const [msgId, meta] of Object.entries(data.contests)) {
+    if (botStateData.contests && typeof botStateData.contests === "object") {
+      for (const [msgId, meta] of Object.entries(botStateData.contests)) {
         if (meta && typeof meta.endsAt === "number") {
           contests.set(msgId, meta);
           // Schedule contest end if it hasn't ended yet
@@ -711,10 +711,10 @@ async function loadPersistentState() {
 
     // Load contest participants
     if (
-      data.contestParticipants &&
-      typeof data.contestParticipants === "object"
+      botStateData.contestParticipants &&
+      typeof botStateData.contestParticipants === "object"
     ) {
-      for (const [msgId, participantData] of Object.entries(data.contestParticipants)) {
+      for (const [msgId, participantData] of Object.entries(botStateData.contestParticipants)) {
         if (Array.isArray(participantData)) {
           // Check if participantData is array of [userId, nick] pairs or just userIds (backward compatibility)
           if (participantData.length > 0 && Array.isArray(participantData[0])) {
@@ -735,10 +735,10 @@ async function loadPersistentState() {
 
     // Load contest leave blocks
     if (
-      data.contestLeaveBlocks &&
-      typeof data.contestLeaveBlocks === "object"
+      botStateData.contestLeaveBlocks &&
+      typeof botStateData.contestLeaveBlocks === "object"
     ) {
-      for (const [userId, contestBlocks] of Object.entries(data.contestLeaveBlocks)) {
+      for (const [userId, contestBlocks] of Object.entries(botStateData.contestLeaveBlocks)) {
         if (contestBlocks && typeof contestBlocks === "object") {
           const userBlocks = {};
           for (const [msgId, blockData] of Object.entries(contestBlocks)) {
@@ -803,32 +803,32 @@ async function loadPersistentState() {
     }
 
     // Load invite total joined
-    if (data.inviteTotalJoined) {
-      const loaded = nestedObjectToMapOfMaps(data.inviteTotalJoined);
+    if (botStateData.inviteTotalJoined) {
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteTotalJoined);
       loaded.forEach((inner, guildId) => {
         inviteTotalJoined.set(guildId, inner);
       });
     }
 
     // Load invite fake accounts
-    if (data.inviteFakeAccounts) {
-      const loaded = nestedObjectToMapOfMaps(data.inviteFakeAccounts);
+    if (botStateData.inviteFakeAccounts) {
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteFakeAccounts);
       loaded.forEach((inner, guildId) => {
         inviteFakeAccounts.set(guildId, inner);
       });
     }
 
     // Load invite bonus invites
-    if (data.inviteBonusInvites) {
-      const loaded = nestedObjectToMapOfMaps(data.inviteBonusInvites);
+    if (botStateData.inviteBonusInvites) {
+      const loaded = nestedObjectToMapOfMaps(botStateData.inviteBonusInvites);
       loaded.forEach((inner, guildId) => {
         inviteBonusInvites.set(guildId, inner);
       });
     }
 
     // Load guildInvites
-    if (data.guildInvites && typeof data.guildInvites === "object") {
-      for (const [guildId, inviteMap] of Object.entries(data.guildInvites)) {
+    if (botStateData.guildInvites && typeof botStateData.guildInvites === "object") {
+      for (const [guildId, inviteMap] of Object.entries(botStateData.guildInvites)) {
         if (inviteMap && typeof inviteMap === "object") {
           const map = new Map();
           for (const [code, uses] of Object.entries(inviteMap)) {
@@ -840,8 +840,8 @@ async function loadPersistentState() {
     }
 
     // Load inviterOfMember
-    if (data.inviterOfMember && typeof data.inviterOfMember === "object") {
-      for (const [key, memberData] of Object.entries(data.inviterOfMember)) {
+    if (botStateData.inviterOfMember && typeof botStateData.inviterOfMember === "object") {
+      for (const [key, memberData] of Object.entries(botStateData.inviterOfMember)) {
         if (memberData && typeof memberData === "object") {
           inviterOfMember.set(key, memberData);
         }
@@ -849,8 +849,8 @@ async function loadPersistentState() {
     }
 
     // Load inviterRateLimit
-    if (data.inviterRateLimit && typeof data.inviterRateLimit === "object") {
-      for (const [guildId, rateMap] of Object.entries(data.inviterRateLimit)) {
+    if (botStateData.inviterRateLimit && typeof botStateData.inviterRateLimit === "object") {
+      for (const [guildId, rateMap] of Object.entries(botStateData.inviterRateLimit)) {
         if (rateMap && typeof rateMap === "object") {
           const map = new Map();
           for (const [inviterId, timestamps] of Object.entries(rateMap)) {
@@ -862,106 +862,106 @@ async function loadPersistentState() {
     }
 
     // Load leaveRecords
-    if (data.leaveRecords && typeof data.leaveRecords === "object") {
-      for (const [key, inviterId] of Object.entries(data.leaveRecords)) {
+    if (botStateData.leaveRecords && typeof botStateData.leaveRecords === "object") {
+      for (const [key, inviterId] of Object.entries(botStateData.leaveRecords)) {
         leaveRecords.set(key, inviterId);
       }
     }
 
     // Load verificationRoles
-    if (data.verificationRoles && typeof data.verificationRoles === "object") {
-      for (const [guildId, roleId] of Object.entries(data.verificationRoles)) {
+    if (botStateData.verificationRoles && typeof botStateData.verificationRoles === "object") {
+      for (const [guildId, roleId] of Object.entries(botStateData.verificationRoles)) {
         verificationRoles.set(guildId, roleId);
       }
     }
 
     // Load pendingVerifications
-    if (data.pendingVerifications && typeof data.pendingVerifications === "object") {
-      for (const [modalId, verificationData] of Object.entries(data.pendingVerifications)) {
+    if (botStateData.pendingVerifications && typeof botStateData.pendingVerifications === "object") {
+      for (const [modalId, verificationData] of Object.entries(botStateData.pendingVerifications)) {
         pendingVerifications.set(modalId, verificationData);
       }
     }
 
     // Load ticketCategories
-    if (data.ticketCategories && typeof data.ticketCategories === "object") {
-      for (const [guildId, categories] of Object.entries(data.ticketCategories)) {
+    if (botStateData.ticketCategories && typeof botStateData.ticketCategories === "object") {
+      for (const [guildId, categories] of Object.entries(botStateData.ticketCategories)) {
         ticketCategories.set(guildId, categories);
       }
     }
 
     // Load dropChannels
-    if (data.dropChannels && typeof data.dropChannels === "object") {
-      for (const [guildId, channelId] of Object.entries(data.dropChannels)) {
+    if (botStateData.dropChannels && typeof botStateData.dropChannels === "object") {
+      for (const [guildId, channelId] of Object.entries(botStateData.dropChannels)) {
         dropChannels.set(guildId, channelId);
       }
     }
 
     // Load sprawdzZaproszeniaCooldowns
-    if (data.sprawdzZaproszeniaCooldowns && typeof data.sprawdzZaproszeniaCooldowns === "object") {
-      for (const [userId, timestamp] of Object.entries(data.sprawdzZaproszeniaCooldowns)) {
+    if (botStateData.sprawdzZaproszeniaCooldowns && typeof botStateData.sprawdzZaproszeniaCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(botStateData.sprawdzZaproszeniaCooldowns)) {
         sprawdzZaproszeniaCooldowns.set(userId, timestamp);
       }
     }
 
     // Load lastOpinionInstruction
-    if (data.lastOpinionInstruction && typeof data.lastOpinionInstruction === "object") {
-      for (const [channelId, messageId] of Object.entries(data.lastOpinionInstruction)) {
+    if (botStateData.lastOpinionInstruction && typeof botStateData.lastOpinionInstruction === "object") {
+      for (const [channelId, messageId] of Object.entries(botStateData.lastOpinionInstruction)) {
         lastOpinionInstruction.set(channelId, messageId);
       }
     }
 
     // Load lastDropInstruction
-    if (data.lastDropInstruction && typeof data.lastDropInstruction === "object") {
-      for (const [channelId, messageId] of Object.entries(data.lastDropInstruction)) {
+    if (botStateData.lastDropInstruction && typeof botStateData.lastDropInstruction === "object") {
+      for (const [channelId, messageId] of Object.entries(botStateData.lastDropInstruction)) {
         lastDropInstruction.set(channelId, messageId);
       }
     }
 
     // Load kalkulatorData
-    if (data.kalkulatorData && typeof data.kalkulatorData === "object") {
-      for (const [userId, calcData] of Object.entries(data.kalkulatorData)) {
+    if (botStateData.kalkulatorData && typeof botStateData.kalkulatorData === "object") {
+      for (const [userId, calcData] of Object.entries(botStateData.kalkulatorData)) {
         kalkulatorData.set(userId, calcData);
       }
     }
 
     // Load infoCooldowns
-    if (data.infoCooldowns && typeof data.infoCooldowns === "object") {
-      for (const [userId, timestamp] of Object.entries(data.infoCooldowns)) {
+    if (botStateData.infoCooldowns && typeof botStateData.infoCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(botStateData.infoCooldowns)) {
         infoCooldowns.set(userId, timestamp);
       }
     }
 
     // Load repLastInfoMessage
-    if (data.repLastInfoMessage && typeof data.repLastInfoMessage === "object") {
-      for (const [channelId, messageId] of Object.entries(data.repLastInfoMessage)) {
+    if (botStateData.repLastInfoMessage && typeof botStateData.repLastInfoMessage === "object") {
+      for (const [channelId, messageId] of Object.entries(botStateData.repLastInfoMessage)) {
         repLastInfoMessage.set(channelId, messageId);
       }
     }
 
     // Load dropCooldowns
-    if (data.dropCooldowns && typeof data.dropCooldowns === "object") {
-      for (const [userId, timestamp] of Object.entries(data.dropCooldowns)) {
+    if (botStateData.dropCooldowns && typeof botStateData.dropCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(botStateData.dropCooldowns)) {
         dropCooldowns.set(userId, timestamp);
       }
     }
 
     // Load opinionCooldowns
-    if (data.opinionCooldowns && typeof data.opinionCooldowns === "object") {
-      for (const [userId, timestamp] of Object.entries(data.opinionCooldowns)) {
+    if (botStateData.opinionCooldowns && typeof botStateData.opinionCooldowns === "object") {
+      for (const [userId, timestamp] of Object.entries(botStateData.opinionCooldowns)) {
         opinionCooldowns.set(userId, timestamp);
       }
     }
 
     // Load pendingTicketClose
-    if (data.pendingTicketClose && typeof data.pendingTicketClose === "object") {
-      for (const [channelId, ticketData] of Object.entries(data.pendingTicketClose)) {
+    if (botStateData.pendingTicketClose && typeof botStateData.pendingTicketClose === "object") {
+      for (const [channelId, ticketData] of Object.entries(botStateData.pendingTicketClose)) {
         pendingTicketClose.set(channelId, ticketData);
       }
     }
 
     // Load opinieChannels
-    if (data.opinieChannels && typeof data.opinieChannels === "object") {
-      for (const [guildId, channelId] of Object.entries(data.opinieChannels)) {
+    if (botStateData.opinieChannels && typeof botStateData.opinieChannels === "object") {
+      for (const [guildId, channelId] of Object.entries(botStateData.opinieChannels)) {
         opinieChannels.set(guildId, channelId);
       }
     }
