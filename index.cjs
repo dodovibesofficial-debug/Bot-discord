@@ -9959,7 +9959,14 @@ async function loginWithRetry(maxRetries = 3) {
   for (let i = 0; i < maxRetries; i++) {
     try {
       console.log(`[LOGIN] Próba ${i + 1}/${maxRetries}...`);
-      await client.login(process.env.BOT_TOKEN);
+      
+      // Dodaj timeout do login
+      const loginPromise = client.login(process.env.BOT_TOKEN);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Login timeout po 20 sekundach')), 20000);
+      });
+      
+      await Promise.race([loginPromise, timeoutPromise]);
       console.log("[LOGIN] Sukces! Bot połączony z Discord.");
       return;
     } catch (err) {
@@ -9971,6 +9978,30 @@ async function loginWithRetry(maxRetries = 3) {
     }
   }
   console.error("[LOGIN] Wszystkie próby nieudane!");
+  
+  // Sprawdź połączenie sieciowe
+  console.log("[NETWORK] Sprawdzam połączenie z Discord API...");
+  try {
+    const https = require('https');
+    const req = https.request('https://discord.com/api/v10/gateway', (res) => {
+      console.log(`[NETWORK] Discord API response: ${res.statusCode}`);
+      if (res.statusCode === 200) {
+        console.log("[NETWORK] Discord API jest dostępne - problem może być z WebSocket");
+      } else {
+        console.log(`[NETWORK] Discord API zwróciło: ${res.statusCode}`);
+      }
+    });
+    req.on('error', (err) => {
+      console.error("[NETWORK] Błąd połączenia z Discord API:", err.message);
+    });
+    req.setTimeout(5000, () => {
+      console.error("[NETWORK] Timeout połączenia z Discord API");
+      req.destroy();
+    });
+    req.end();
+  } catch (err) {
+    console.error("[NETWORK] Błąd sprawdzania połączenia:", err.message);
+  }
 }
 
 // Start login
