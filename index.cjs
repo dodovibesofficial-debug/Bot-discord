@@ -1755,6 +1755,7 @@ async function applyDefaultsForGuild(guildId) {
 }
 
 client.once(Events.ClientReady, async (c) => {
+  clearTimeout(connectionTimeout); // Czyść timeout
   console.log(`[READY] Bot zalogowany jako ${c.user.tag}`);
   console.log(`[READY] Bot jest na ${c.guilds.cache.size} serwerach`);
   console.log(`[READY] Bot jest online i gotowy do pracy!`);
@@ -9963,9 +9964,21 @@ client.on('debug', (info) => {
   console.log('[DISCORD DEBUG]', info);
 });
 
+// Timeout dla połączenia
+const connectionTimeout = setTimeout(() => {
+  console.error('[TIMEOUT] Bot nie połączył się z Discord w ciągu 30 sekund!');
+  console.error('[TIMEOUT] Możliwe przyczyny:');
+  console.error('[TIMEOUT] 1. Problem z siecią');
+  console.error('[TIMEOUT] 2. Discord API jest niedostępny');
+  console.error('[TIMEOUT] 3. Bot jest zablokowany');
+}, 30000);
+
 client
   .login(process.env.BOT_TOKEN)
-  .catch((err) => console.error("Discord Login Error:", err));
+  .catch((err) => {
+    clearTimeout(connectionTimeout);
+    console.error("Discord Login Error:", err);
+  });
 
 const express = require('express');
 const app = express();
