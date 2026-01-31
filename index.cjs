@@ -714,16 +714,16 @@ async function loadPersistentState() {
       data.contestParticipants &&
       typeof data.contestParticipants === "object"
     ) {
-      for (const [msgId, data] of Object.entries(data.contestParticipants)) {
-        if (Array.isArray(data)) {
-          // Check if data is array of [userId, nick] pairs or just userIds (backward compatibility)
-          if (data.length > 0 && Array.isArray(data[0])) {
+      for (const [msgId, participantData] of Object.entries(data.contestParticipants)) {
+        if (Array.isArray(participantData)) {
+          // Check if participantData is array of [userId, nick] pairs or just userIds (backward compatibility)
+          if (participantData.length > 0 && Array.isArray(participantData[0])) {
             // New format: array of [userId, nick] pairs
-            contestParticipants.set(msgId, new Map(data));
+            contestParticipants.set(msgId, new Map(participantData));
           } else {
             // Old format: array of userIds - convert to Map with empty nicks
             const participantsMap = new Map();
-            data.forEach(userId => {
+            participantData.forEach(userId => {
               participantsMap.set(userId, "");
             });
             contestParticipants.set(msgId, participantsMap);
