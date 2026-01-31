@@ -32,6 +32,15 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildMembers,
   ],
+  rest: {
+    timeout: 15000,
+    retries: 3,
+  },
+  ws: {
+    properties: {
+      browser: "Discord Android"
+    }
+  }
 });
 
 /*
@@ -9961,16 +9970,36 @@ client.on('error', (err) => {
 });
 
 client.on('debug', (info) => {
-  console.log('[DISCORD DEBUG]', info);
+  // Ogranicz debug logi do ważnych
+  if (info.includes('Gateway') || info.includes('Ready') || info.includes('Resumed')) {
+    console.log('[DISCORD DEBUG]', info);
+  }
+});
+
+// Event dla rozłączenia
+client.on('disconnect', (event) => {
+  console.log('[DISCONNECT] Bot rozłączony:', event);
+  console.log('[DISCONNECT] Próba ponownego połączenia...');
+});
+
+client.on('reconnecting', () => {
+  console.log('[RECONNECTING] Próba ponownego połączenia z Discord...');
 });
 
 // Timeout dla połączenia
 const connectionTimeout = setTimeout(() => {
   console.error('[TIMEOUT] Bot nie połączył się z Discord w ciągu 30 sekund!');
   console.error('[TIMEOUT] Możliwe przyczyny:');
-  console.error('[TIMEOUT] 1. Problem z siecią');
+  console.error('[TIMEOUT] 1. Problem z siecią Render.com');
   console.error('[TIMEOUT] 2. Discord API jest niedostępny');
   console.error('[TIMEOUT] 3. Bot jest zablokowany');
+  console.error('[TIMEOUT] 4. Problem z gateway Discord');
+  
+  // Spróbuj ręcznego reconnect
+  console.log('[TIMEOUT] Próba ponownego połączenia...');
+  setTimeout(() => {
+    client.login(process.env.BOT_TOKEN).catch(console.error);
+  }, 5000);
 }, 30000);
 
 client
@@ -9982,5 +10011,26 @@ client
 
 const express = require('express');
 const app = express();
-app.get('/', (req, res) => res.send('Bot is alive'));
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  const status = {
+    status: 'alive',
+    timestamp: new Date().toISOString(),
+    discord_status: client.isReady() ? 'connected' : 'disconnected',
+    uptime: client.uptime ? Math.floor(client.uptime / 1000) : 0,
+    guilds: client.isReady() ? client.guilds.cache.size : 0
+  };
+  res.json(status);
+});
+
+app.get('/health', (req, res) => {
+  const isHealthy = client.isReady();
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'healthy' : 'unhealthy',
+    discord_connected: isHealthy,
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.listen(3000);
