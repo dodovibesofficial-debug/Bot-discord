@@ -31,16 +31,7 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildMembers,
-  ],
-  rest: {
-    timeout: 15000,
-    retries: 3,
-  },
-  ws: {
-    properties: {
-      browser: "Discord Android"
-    }
-  }
+  ]
 });
 
 /*
@@ -1764,7 +1755,6 @@ async function applyDefaultsForGuild(guildId) {
 }
 
 client.once(Events.ClientReady, async (c) => {
-  clearTimeout(connectionTimeout); // Czyść timeout
   console.log(`[READY] Bot zalogowany jako ${c.user.tag}`);
   console.log(`[READY] Bot jest na ${c.guilds.cache.size} serwerach`);
   console.log(`[READY] Bot jest online i gotowy do pracy!`);
@@ -9964,50 +9954,27 @@ console.log("[DEBUG] Próba połączenia z Discord...");
 console.log("[DEBUG] BOT_TOKEN exists:", !!process.env.BOT_TOKEN);
 console.log("[DEBUG] BOT_TOKEN length:", process.env.BOT_TOKEN?.length || 0);
 
-// Event dla błędów połączenia
-client.on('error', (err) => {
-  console.error('[DISCORD ERROR]', err);
-});
-
-client.on('debug', (info) => {
-  // Ogranicz debug logi do ważnych
-  if (info.includes('Gateway') || info.includes('Ready') || info.includes('Resumed')) {
-    console.log('[DISCORD DEBUG]', info);
+// Prosta funkcja retry
+async function loginWithRetry(maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      console.log(`[LOGIN] Próba ${i + 1}/${maxRetries}...`);
+      await client.login(process.env.BOT_TOKEN);
+      console.log("[LOGIN] Sukces! Bot połączony z Discord.");
+      return;
+    } catch (err) {
+      console.error(`[LOGIN] Błąd próby ${i + 1}:`, err.message);
+      if (i < maxRetries - 1) {
+        console.log(`[LOGIN] Czekam 10 sekund przed kolejną próbą...`);
+        await new Promise(resolve => setTimeout(resolve, 10000));
+      }
+    }
   }
-});
+  console.error("[LOGIN] Wszystkie próby nieudane!");
+}
 
-// Event dla rozłączenia
-client.on('disconnect', (event) => {
-  console.log('[DISCONNECT] Bot rozłączony:', event);
-  console.log('[DISCONNECT] Próba ponownego połączenia...');
-});
-
-client.on('reconnecting', () => {
-  console.log('[RECONNECTING] Próba ponownego połączenia z Discord...');
-});
-
-// Timeout dla połączenia
-const connectionTimeout = setTimeout(() => {
-  console.error('[TIMEOUT] Bot nie połączył się z Discord w ciągu 30 sekund!');
-  console.error('[TIMEOUT] Możliwe przyczyny:');
-  console.error('[TIMEOUT] 1. Problem z siecią Render.com');
-  console.error('[TIMEOUT] 2. Discord API jest niedostępny');
-  console.error('[TIMEOUT] 3. Bot jest zablokowany');
-  console.error('[TIMEOUT] 4. Problem z gateway Discord');
-  
-  // Spróbuj ręcznego reconnect
-  console.log('[TIMEOUT] Próba ponownego połączenia...');
-  setTimeout(() => {
-    client.login(process.env.BOT_TOKEN).catch(console.error);
-  }, 5000);
-}, 30000);
-
-client
-  .login(process.env.BOT_TOKEN)
-  .catch((err) => {
-    clearTimeout(connectionTimeout);
-    console.error("Discord Login Error:", err);
-  });
+// Start login
+loginWithRetry();
 
 const express = require('express');
 const app = express();
@@ -10019,18 +9986,37 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     discord_status: client.isReady() ? 'connected' : 'disconnected',
     uptime: client.uptime ? Math.floor(client.uptime / 1000) : 0,
-    guilds: client.isReady() ? client.guilds.cache.size : 0
+    guilds: client.isReady() ? client.guilds.cache.size : 0,
+    bot_tag: client.user ? client.user.tag : 'Not connected',
+    ready: client.isReady()
   };
-  res.json(status);
+  
+  // Sprawdź czy request chce JSON czy HTML
+  if (req.headers.accept && req.headers.accept.includes('application/json')) {
+    res.json(status, null, 2);
+  } else {
+    // Formatowanie HTML dla lepszej czytelności
+    res.send(`
+      <h1>🤖 Bot Status Monitor</h1>
+      <pre>${JSON.stringify(status, null, 2)}</pre>
+      <hr>
+      <p><strong>Health Check:</strong> <a href="/health">/health</a></p>
+      <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
+    `);
+  }
 });
 
 app.get('/health', (req, res) => {
   const isHealthy = client.isReady();
-  res.status(isHealthy ? 200 : 503).json({
+  const status = {
     status: isHealthy ? 'healthy' : 'unhealthy',
     discord_connected: isHealthy,
-    timestamp: new Date().toISOString()
-  });
+    timestamp: new Date().toISOString(),
+    uptime: client.uptime ? Math.floor(client.uptime / 1000) : 0,
+    guilds: client.isReady() ? client.guilds.cache.size : 0
+  };
+  
+  res.status(isHealthy ? 200 : 503).json(status, null, 2);
 });
 
 app.listen(3000);
